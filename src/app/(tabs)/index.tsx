@@ -1,19 +1,22 @@
-//
 import { InfoMemberCard } from "@/components/profile/info-member";
 import MenuTile from "@/components/ui/menu-tile";
 import Text from "@/components/ui/text";
 import { useAuth } from "@/context/auth";
 import { formatDate } from "@/helpers/dates";
+import { useMemberTotal } from "@/hooks/useMember";
+import { useMemberOfBillPaymentByStaffId } from "@/hooks/usePayments";
 import { usePublicities } from "@/hooks/usePublicities";
+import { useMemberAppointmentByStaffId } from "@/hooks/useWeighMeasure";
+import { useMemberWorkoutToday } from "@/hooks/useWorkout";
 import { socket } from "@/services/socket";
 import { PATH_PUBLIC_IMAGE_PUBLICITY } from "@/utils/constants";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 import { useColorScheme } from "nativewind";
-import React from "react";
-import { useTranslation } from "react-i18next";
+import React, { useEffect, useMemo } from "react";
 import {
+  ActivityIndicator,
   Dimensions,
   FlatList,
   Image,
@@ -24,58 +27,178 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-const { width, height } = Dimensions.get("window");
 
-const DashboardScreen = () => {
-  const { t } = useTranslation();
-  console.log(t("home.title"));
+interface CountResponse {
+  total?: number;
+}
 
-  const { colorScheme } = useColorScheme(); // "light" | "dark"
-  const { user, isLoading } = useAuth();
-  console.log("ss", user);
-  const user_personal = user.user_personal;
-  const { data: promos, isLoading: isLoadingPromo } = usePublicities();
+interface Publicity {
+  _id: string;
+  photo?: string | null;
+  headline: string;
+  from_date: string;
+  thru_date: string;
+}
 
-  React.useEffect(() => {
-    console.log("(socket.connected", socket.connected);
+interface SummaryCardProps {
+  title: string;
+  value: number;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  iconColor: string;
+  iconBackgroundColor: string;
+  isLoading?: boolean;
+  onPress?: () => void;
+}
+
+const getClubId = (club: unknown): string | undefined => {
+  if (typeof club === "string") return club;
+  if (club && typeof club === "object" && "_id" in club) {
+    const clubId = (club as { _id?: unknown })._id;
+    return typeof clubId === "string" ? clubId : undefined;
+  }
+
+  return undefined;
+};
+
+const getPublicityImageUrl = (fileName?: string | null): string => {
+  if (!fileName) return "https://placehold.co/600x400/png";
+  return `${PATH_PUBLIC_IMAGE_PUBLICITY}/${fileName}`;
+};
+
+function SummaryCard({
+  title,
+  value,
+  icon,
+  iconColor,
+  iconBackgroundColor,
+  isLoading = false,
+  onPress,
+}: SummaryCardProps) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      disabled={!onPress}
+      activeOpacity={onPress ? 0.8 : 1}
+      className="mb-4 w-[48%] rounded-3xl bg-white p-4 shadow"
+    >
+      <View
+        className="h-[55px] w-[55px] items-center justify-center rounded-[18px]"
+        style={{ backgroundColor: iconBackgroundColor }}
+      >
+        <Ionicons name={icon} size={28} color={iconColor} />
+      </View>
+
+      <View className="mt-5 h-9 justify-center">
+        {isLoading ? (
+          <ActivityIndicator size="small" color={iconColor} />
+        ) : (
+          <Text className="text-3xl font-bold" style={{ color: iconColor }}>
+            {value}
+          </Text>
+        )}
+      </View>
+      <Text className="mt-1 text-gray-500">{title}</Text>
+    </TouchableOpacity>
+  );
+}
+
+function PromoCarouselCard({
+  item,
+  onPress,
+}: {
+  item: Publicity;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.9}
+      className="overflow-hidden rounded-3xl bg-white"
+      style={{ width: Dimensions.get("window").width * 0.82 }}
+    >
+      <Image
+        source={{ uri: getPublicityImageUrl(item.photo) }}
+        resizeMode="cover"
+        className="h-[180px] w-full"
+      />
+      <View className="p-4">
+        <View className="self-start rounded-full bg-pink-100 px-3 py-1">
+          <Text className="text-xs font-bold text-pink-600">PROMO</Text>
+        </View>
+        <Text
+          numberOfLines={2}
+          className="mt-3 text-lg font-bold text-gray-800"
+        >
+          {item.headline}
+        </Text>
+        <Text className="mt-2 text-gray-500">
+          {formatDate(item.from_date)} - {formatDate(item.thru_date)}
+        </Text>
+      </View>
+    </TouchableOpacity>
+  );
+}
+
+export default function DashboardScreen() {
+  const { colorScheme } = useColorScheme();
+  const { user } = useAuth();
+  const clubId = getClubId(user?.club_id?.[0]);
+
+  const { data: totalMembers = 0, isLoading: isLoadingMembers } =
+    useMemberTotal(clubId);
+  const { data: publicityData = [] } = usePublicities();
+  const {
+    mutate: loadWorkoutMembers,
+    data: workoutData,
+    isPending: isLoadingWorkout,
+  } = useMemberWorkoutToday();
+  const {
+    mutate: loadAppointments,
+    data: appointmentData,
+    isPending: isLoadingAppointments,
+  } = useMemberAppointmentByStaffId();
+  const {
+    mutate: loadMemberBills,
+    data: billingData,
+    isPending: isLoadingBills,
+  } = useMemberOfBillPaymentByStaffId();
+
+  useEffect(() => {
+    if (!user?._id) return;
+
     socket.emit("user-curves", `${user._id}_${user.source_id}`);
+    loadWorkoutMembers(user._id);
+    loadAppointments(user._id);
+    loadMemberBills(user._id);
+  }, [
+    loadAppointments,
+    loadMemberBills,
+    loadWorkoutMembers,
+    user?._id,
+    user?.source_id,
+  ]);
 
-    // if (socket.connected) {
-    //   console.log("connect success");
-    // }
-    // socket.on("message", (data) => {
-    //   console.log(data);
-    // });
+  const gradientColors = useMemo<[string, string]>(
+    () =>
+      colorScheme === "dark" ? ["#6F3FA0", "#BB86FC"] : ["#BB86FC", "#6F3FA0"],
+    [colorScheme],
+  );
 
-    // socket.emit("user-curves", `user_${user.source_id}`);
+  const promos = publicityData as Publicity[];
+  const workoutTotal = (workoutData as CountResponse | undefined)?.total ?? 0;
+  const appointmentTotal =
+    (appointmentData as CountResponse | undefined)?.total ?? 0;
+  const billingTotal = (billingData as CountResponse | undefined)?.total ?? 0;
 
-    // socket.on("notification", (data) => {
-    //   console.log("notiff=> ", data);
-    // });
-    // return () => {
-    //   socket.off("notification");
-    // };
-
-    // return () => {
-    //   socket.off("message");
-    // };
-  }, []);
-  const colors = React.useMemo<[string, string]>(() => {
-    if (colorScheme == "dark") {
-      return ["#6F3FA0", "#BB86FC"];
-    }
-    return ["#BB86FC", "#6F3FA0"];
-  }, [colorScheme]);
-
-  const onDetail = (wm: any) => {
+  const openPublicity = (publicity: Publicity) => {
     router.push({
       pathname: "/publicities/detail",
-      params: { data: JSON.stringify(wm) }, //{ ...data, bank: { ...data.bank } },
+      params: { data: JSON.stringify(publicity) },
     });
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#FFFFFF] dark:bg-[#121212]">
+    <SafeAreaView className="flex-1 bg-white dark:bg-[#121212]">
       <ImageBackground
         source={require("@/assets/images/bgcurveslightnew.png")}
         resizeMode="cover"
@@ -83,104 +206,73 @@ const DashboardScreen = () => {
       />
       <View
         pointerEvents="none"
-        className="absolute -top-24 left-0 right-0 h-[320px] rounded-b-[60px] overflow-hidden"
-        // className="absolute -top-24 left-0 right-0 h-96 rounded-b-[60px] overflow-hidden"
-        style={{
-          backgroundColor: "transparent",
-          shadowColor: "#000",
-        }}
+        className="absolute -top-24 left-0 right-0 h-[320px] overflow-hidden rounded-b-[60px]"
       >
         <LinearGradient
-          colors={colors}
-          start={{ x: 0.1, y: 0.0 }}
-          end={{ x: 0.9, y: 1.0 }}
+          colors={gradientColors}
+          start={{ x: 0.1, y: 0 }}
+          end={{ x: 0.9, y: 1 }}
           style={StyleSheet.absoluteFillObject}
         />
       </View>
+
       <ScrollView
         className="flex-1"
-        contentContainerClassName="px-6 pt-8 pb-40"
+        contentContainerClassName="px-6 pb-40 pt-8"
         showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        {/* <View className="flex-row items-start justify-between">
-          <View>
-            <Text
-              variant="title"
-              weight="bold"
-              className="text-[#FFFFFF] dark:text-[#FFFFFF] text-4xl font-extrabold tracking-tight"
-            >
-              Hi, {user.name}
-            </Text>
-            <Text
-              variant="subtitle"
-              weight="medium"
-              className="text-[#FFFFFF] dark:text-[#FFFFFF] text-base mt-2"
-            >
-              Ready to crush your workout? 💪
-            </Text>
-          </View>
-
-          <Pressable className="mt-2">
-            <View style={{ position: "relative" }}>
-              <View
-                style={{
-                  width: 76,
-                  height: 76,
-                  borderRadius: 38,
-                  padding: 3,
-                  backgroundColor: "transparent",
-                  borderWidth: 3,
-                  borderColor: "#D6B36A",
-                }}
-              >
-                <Image
-                  source={{
-                    uri: imageProfileURL(user_personal.photo),
-                  }}
-                  style={{ width: "100%", height: "100%", borderRadius: 36 }}
-                />
-              </View>
-              <View
-                style={{
-                  position: "absolute",
-                  bottom: 2,
-                  right: 2,
-                  width: 14,
-                  height: 14,
-                  borderRadius: 7,
-                  backgroundColor: "#4ADE80",
-                  borderWidth: 2,
-                  borderColor: "#FFFFFF",
-                }}
-              />
-            </View>
-          </Pressable>
-
-   
-        </View> */}
-        {/* <Divider /> */}
         <InfoMemberCard />
 
-        <View className="pt-5">
-          {/* <SectionTitle>Your Weekly Progress</SectionTitle> */}
-          <View className="flex-row gap-4">
-            <MenuTile
-              onPress={() => router.push("/user/weigh-measure")}
-              title={`Weigh & \rMeasure`}
-              icon={<Ionicons name="calendar" size={22} color="#F8BBD0" />}
+        <View className="mt-6 px-5">
+          <Text className="mb-4 text-2xl font-bold text-white">
+            Ringkasan Hari Ini
+          </Text>
+
+          <View className="flex-row flex-wrap justify-between">
+            <SummaryCard
+              title="WO Hari Ini"
+              value={workoutTotal}
+              icon="barbell-outline"
+              iconColor="#16A34A"
+              iconBackgroundColor="#F3E8FF"
+              isLoading={isLoadingWorkout}
+              onPress={() => router.push("/list-member/member-wo")}
             />
-            <MenuTile
-              onPress={() => router.push("/user/bills")}
-              title="Payment Histori"
-              icon={<Ionicons name="bar-chart" size={22} color="#F8BBD0" />}
+            <SummaryCard
+              title="Total Member"
+              value={totalMembers}
+              icon="people-outline"
+              iconColor="#7C3AED"
+              iconBackgroundColor="#F3E8FF"
+              isLoading={isLoadingMembers}
+              onPress={() => router.push("/list-member")}
+            />
+            <SummaryCard
+              title="WM Hari Ini"
+              value={appointmentTotal}
+              icon="scale-outline"
+              iconColor="#EA580C"
+              iconBackgroundColor="#FFEDD5"
+              isLoading={isLoadingAppointments}
+              onPress={() => router.push("/list-member/member-wm")}
+            />
+            <SummaryCard
+              title="Tagihan Anggota"
+              value={billingTotal}
+              icon="card-outline"
+              iconColor="#2563EB"
+              iconBackgroundColor="#DBEAFE"
+              isLoading={isLoadingBills}
             />
           </View>
-          <View className="flex-row gap-4 mt-4">
+        </View>
+
+        <View className="pt-5">
+          <View className="mt-4 flex-row gap-4">
             <MenuTile
-              onPress={() => router.push("/challenges")}
-              title="Challenge"
-              icon={<Ionicons name="barbell" size={22} color="#F8BBD0" />}
+              onPress={() => router.push("/user/weigh-measure")}
+              title={"Weigh & \rMeasure"}
+              icon={<Ionicons name="calendar" size={22} color="#F8BBD0" />}
             />
             <MenuTile
               onPress={() => router.push("/user/attendance")}
@@ -188,27 +280,14 @@ const DashboardScreen = () => {
               icon={<Ionicons name="bar-chart" size={22} color="#F8BBD0" />}
             />
           </View>
-
-          {/* <View className="flex-row gap-4 mt-4">
-            <MenuTile
-              title="Laporan"
-              icon={<Ionicons name="bar-chart" size={22} color="#F8BBD0" />}
-            />
-            <MenuTile
-              onPress={() => router.push("/publicities")}
-              title="Promo"
-              icon={<Ionicons name="pricetag" size={22} color="#F8BBD0" />}
-            />
-          </View> */}
         </View>
 
         <View className="mt-6">
           <TouchableOpacity
-            className="flex-row items-center justify-between px-5 mb-3"
+            className="mb-3 flex-row items-center justify-between px-5"
             onPress={() => router.push("/publicities")}
           >
-            <Text className="text-xl font-bold ">Promo Terbaru</Text>
-
+            <Text className="text-xl font-bold">Promo Terbaru</Text>
             <Text>Lihat Semua</Text>
           </TouchableOpacity>
 
@@ -216,74 +295,17 @@ const DashboardScreen = () => {
             horizontal
             data={promos}
             showsHorizontalScrollIndicator={false}
-            ItemSeparatorComponent={() => <View style={{ width: 16 }} />}
-            contentContainerStyle={
-              {
-                // paddingHorizontal: 20,
-              }
-            }
+            ItemSeparatorComponent={() => <View className="w-4" />}
             keyExtractor={(item) => item._id}
             renderItem={({ item }) => (
-              <PromoCarouselCard item={item} onPress={() => onDetail(item)} />
+              <PromoCarouselCard
+                item={item}
+                onPress={() => openPublicity(item)}
+              />
             )}
           />
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-};
-
-export default DashboardScreen;
-
-function PromoCarouselCard({
-  item,
-  onPress,
-}: {
-  item: any;
-  onPress: () => void;
-}) {
-  const imageChallengeURL = (fileName?: string) => {
-    if (!fileName) {
-      return "https://placehold.co/600x400/png";
-    }
-    return `${PATH_PUBLIC_IMAGE_PUBLICITY}/${fileName}`;
-  };
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.9}
-      className="bg-white rounded-3xl overflow-hidden"
-      style={{
-        width: Dimensions.get("window").width * 0.82,
-      }}
-    >
-      <Image
-        source={{
-          uri: imageChallengeURL(item.photo),
-        }}
-        resizeMode="cover"
-        style={{
-          width: "100%",
-          height: 180,
-        }}
-      />
-
-      <View className="p-4">
-        <View className="bg-pink-100 self-start px-3 py-1 rounded-full">
-          <Text className="text-pink-600 text-xs font-bold">PROMO</Text>
-        </View>
-
-        <Text
-          numberOfLines={2}
-          className="text-lg font-bold text-gray-800 mt-3"
-        >
-          {item.headline}
-        </Text>
-
-        <Text className="text-gray-500 mt-2">
-          {formatDate(item.from_date)} - {formatDate(item.thru_date)}
-        </Text>
-      </View>
-    </TouchableOpacity>
   );
 }

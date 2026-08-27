@@ -48,3 +48,32 @@ export const useWeighMeasureProgress = () => {
     },
   });
 };
+
+export const useWeighMeasureProgressByUserId = () => {
+  return useMutation({
+    mutationFn: async (user_id: string) => {
+      const { data } = await api.get(`/weigh-measure/user-progress/${user_id}`);
+      return data.response;
+    },
+  });
+};
+
+export const useWeighMeasureHistoryByUserId = () => {
+  return useMutation({
+    mutationFn: async (user_id: string) => {
+      const { data } = await api.get(`/weigh-measure?user_id=${user_id}`);
+      return data.response;
+    },
+  });
+};
+
+export const useMemberAppointmentByStaffId = () => {
+  return useMutation({
+    mutationFn: async (staff_id: string) => {
+      const { data } = await api.get(
+        `/member-appointment?staff_id=6a1e906305824f405ed79f49`, //6a1e906305824f405ed79f49
+      );
+      return data;
+    },
+  });
+};

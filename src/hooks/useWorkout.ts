@@ -19,10 +19,10 @@ export const useLastWorkout = () => {
 
 export const useWorkoutHistory = () => {
   return useMutation({
-    mutationFn: async ({ year, month }: any) => {
-      const { data } = await api.get(
-        `/user/workout?year=${year}&month=${month}`,
-      );
+    mutationFn: async ({ year, month }: { year: number; month: number }) => {
+      const { data } = await api.get("/user/workout", {
+        params: { year, month },
+      });
       return data;
     },
   });
@@ -34,6 +34,34 @@ export const useWorkoutByUserId = () => {
       const { data } = await api.get(
         `/workouts?user_id=${user_id}&offset=${offset}&limit=${limit}`,
       );
+      return data;
+    },
+  });
+};
+
+export const useWorkoutHistoryByUserId = () => {
+  return useMutation({
+    mutationFn: async (
+      params: string | { user_id: string; year?: number; month?: number },
+    ) => {
+      const { user_id, year, month } =
+        typeof params === "string" ? { user_id: params } : params;
+      const { data } = await api.get("/workouts", {
+        params: {
+          user_id,
+          ...(year !== undefined ? { year } : {}),
+          ...(month !== undefined ? { month } : {}),
+        },
+      });
+      return data.response;
+    },
+  });
+};
+
+export const useMemberWorkoutToday = () => {
+  return useMutation({
+    mutationFn: async (coach_id: string) => {
+      const { data } = await api.get(`/coach-member/member-wo/${coach_id}`);
       return data;
     },
   });

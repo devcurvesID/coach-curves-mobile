@@ -6,7 +6,7 @@ export const DataWorkoutHistoryView = React.memo(({ data }: any) => {
   // const { data: userClub, isLoading: isLoadingUserClub } = useUserClub();
   return (
     <View className="mt-4" key={data._id.toString()}>
-      <Text className="text-gray-500 text-xs mb-2">
+      <Text className="text-gray-500 text-xs m-2">
         {getDateTime(data.workout_date)}
       </Text>
 
