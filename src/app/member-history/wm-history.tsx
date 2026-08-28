@@ -236,6 +236,7 @@ function WMHistoryCard({
 export default function WMHistoryScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [filter, setFilter] = useState<HistoryFilter>("current-year");
+  console.log("ididididid", id);
 
   const {
     mutate: loadMemberDetail,

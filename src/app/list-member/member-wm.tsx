@@ -1,545 +1,417 @@
 import ContainerPage from "@/components/ui/container-page";
 import { LoadingView } from "@/components/ui/loading";
 import { useAuth } from "@/context/auth";
-import { useListMember } from "@/hooks/useMember";
+import { useInfiniteMemberAppointments } from "@/hooks/useWeighMeasure";
 import { imageProfileURL } from "@/services/image";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
-import moment from "moment";
-import React, { useState } from "react";
-
-import { FlatList, Image, Text, TouchableOpacity, View } from "react-native";
-
-import { useMemberAppointmentByStaffId } from "@/hooks/useWeighMeasure";
 import dayjs from "dayjs";
+import { useRouter } from "expo-router";
+import React, { useMemo } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
-type Props = {
-  item: any;
-  onPress: () => void;
+const PAGE_SIZE = 10;
+
+interface AppointmentUser {
+  name: string;
+  email?: string | null;
+  photo?: string | null;
+}
+
+interface MemberAppointment {
+  _id: string;
+  user_id: string;
+  user: AppointmentUser;
+  app_date: string;
+  app_hour?: string | null;
+  status?: boolean | string | null;
+  key_tag_id?: string | null;
+  phone?: string | number | null;
+}
+
+const getInitials = (name: string): string => {
+  const words = name.trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "?";
+
+  return words
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase();
 };
 
-function WeighMeasureCard({ item, onPress }: Props) {
-  const today = dayjs();
-  const appDate = dayjs(item.app_date);
+const getPhotoUrl = (photo: string): string =>
+  /^https?:\/\//i.test(photo) ? photo : imageProfileURL(photo);
 
-  const diff = appDate.diff(today, "day");
-  const canInput =
-    !item.status &&
-    !dayjs().startOf("day").isBefore(dayjs(item.app_date).startOf("day"));
-  const getStatus = () => {
-    if (item.status)
-      return {
-        color: "#22C55E",
-        bg: "#DCFCE7",
-        text: "Sudah Ditimbang",
-      };
+const isCompleted = (status: MemberAppointment["status"]): boolean => {
+  if (status === true) return true;
+  if (typeof status !== "string") return false;
+  return ["completed", "done", "true"].includes(status.toLowerCase());
+};
 
-    if (diff < 0)
-      return {
-        color: "#EF4444",
-        bg: "#FEE2E2",
-        text: `Terlambat ${Math.abs(diff)} Hari`,
-      };
+const formatAppointmentDate = (value: string): string => {
+  const date = dayjs(value);
+  return date.isValid() ? date.format("DD MMM YYYY") : "Tanggal tidak tersedia";
+};
 
-    if (diff === 0)
-      return {
-        color: "#F59E0B",
-        bg: "#FEF3C7",
-        text: "Hari Ini",
-      };
+const formatAppointmentTime = (value?: string | null): string => {
+  if (!value) return "Jam belum ditentukan";
+  return `${value.slice(0, 5)} WIB`;
+};
 
-    if (diff === 1)
-      return {
-        color: "#3B82F6",
-        bg: "#DBEAFE",
-        text: "Besok",
-      };
-
+const getScheduleStatus = (appointmentDate: string) => {
+  const date = dayjs(appointmentDate);
+  if (!date.isValid()) {
     return {
-      color: "#8B5CF6",
-      bg: "#F3E8FF",
-      text: `${diff} Hari Lagi`,
+      text: "Tanggal jadwal tidak valid",
+      icon: "alert-circle-outline" as const,
+      color: "#DC2626",
+      textClass: "text-red-600 dark:text-red-300",
+      containerClass: "bg-red-50 dark:bg-red-950",
     };
-  };
+  }
 
-  const status = getStatus();
+  const dayDifference = dayjs().startOf("day").diff(date.startOf("day"), "day");
+
+  if (dayDifference > 0) {
+    return {
+      text: `Terlambat ${dayDifference} hari`,
+      icon: "alert-circle-outline" as const,
+      color: "#DC2626",
+      textClass: "text-red-600 dark:text-red-300",
+      containerClass: "bg-red-50 dark:bg-red-950",
+    };
+  }
+
+  if (dayDifference < 0) {
+    return {
+      text: `${Math.abs(dayDifference)} hari lagi`,
+      icon: "calendar-outline" as const,
+      color: "#2563EB",
+      textClass: "text-blue-600 dark:text-blue-300",
+      containerClass: "bg-blue-50 dark:bg-blue-950",
+    };
+  }
+
+  return {
+    text: "Sesuai jadwal hari ini",
+    icon: "checkmark-circle-outline" as const,
+    color: "#16A34A",
+    textClass: "text-green-600 dark:text-green-300",
+    containerClass: "bg-green-50 dark:bg-green-950",
+  };
+};
+
+function MemberAvatar({ appointment }: { appointment: MemberAppointment }) {
+  if (appointment.user.photo) {
+    return (
+      <Image
+        source={{ uri: getPhotoUrl(appointment.user.photo) }}
+        className="h-16 w-16 rounded-2xl bg-violet-100"
+      />
+    );
+  }
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.8}
-      onPress={onPress}
-      className="bg-white rounded-2xl p-4 shadow-sm mb-4 mx-2"
-    >
-      {/* Header */}
-      <View className="flex-row">
-        <Image
-          source={{
-            uri: "https://i.pravatar.cc/150?img=10",
-          }}
-          className="w-16 h-16 rounded-full"
-        />
+    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
+      <Text className="text-xl font-bold text-[#6F3FA0]">
+        {getInitials(appointment.user.name)}
+      </Text>
+    </View>
+  );
+}
 
-        <View className="flex-1 ml-4">
-          <Text className="text-xl font-bold text-gray-800">
-            {item.user.name}
-          </Text>
+function AppointmentCard({
+  appointment,
+  onInput,
+  onHistory,
+}: {
+  appointment: MemberAppointment;
+  onInput: () => void;
+  onHistory: () => void;
+}) {
+  const completed = isCompleted(appointment.status);
+  const scheduleStatus = getScheduleStatus(appointment.app_date);
 
-          <View
-            className="self-start mt-2 px-3 py-1 rounded-full"
-            style={{
-              backgroundColor: status.bg,
-            }}
-          >
-            <Text
-              style={{
-                color: status.color,
-              }}
-              className="font-semibold"
-            >
-              {status.text}
-            </Text>
+  return (
+    <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <View className="p-5">
+        <View className="flex-row items-start">
+          <MemberAvatar appointment={appointment} />
+
+          <View className="ml-4 flex-1">
+            <View className="flex-row items-start justify-between">
+              <View className="mr-2 flex-1">
+                <Text
+                  numberOfLines={1}
+                  className="text-lg font-bold text-gray-900 dark:text-white"
+                >
+                  {appointment.user.name}
+                </Text>
+                <Text
+                  numberOfLines={1}
+                  className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                >
+                  {appointment.user.email || "Email belum tersedia"}
+                </Text>
+              </View>
+
+              <View
+                className={`rounded-full px-2.5 py-1 ${
+                  completed
+                    ? "bg-green-50 dark:bg-green-950"
+                    : "bg-amber-50 dark:bg-amber-950"
+                }`}
+              >
+                <Text
+                  className={`text-[10px] font-bold ${
+                    completed
+                      ? "text-green-700 dark:text-green-300"
+                      : "text-amber-700 dark:text-amber-300"
+                  }`}
+                >
+                  {completed ? "SELESAI" : "MENUNGGU WM"}
+                </Text>
+              </View>
+            </View>
           </View>
         </View>
-      </View>
 
-      {/* Divider */}
+        <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
+          <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
+            <Text className="text-xs text-gray-500 dark:text-gray-400">
+              TANGGAL
+            </Text>
+            <View className="mt-1.5 flex-row items-center">
+              <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
+              <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                {formatAppointmentDate(appointment.app_date)}
+              </Text>
+            </View>
+          </View>
+          <View className="flex-1 pl-4">
+            <Text className="text-xs text-gray-500 dark:text-gray-400">
+              JAM
+            </Text>
+            <View className="mt-1.5 flex-row items-center">
+              <Ionicons name="time-outline" size={17} color="#6F3FA0" />
+              <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                {formatAppointmentTime(appointment.app_hour)}
+              </Text>
+            </View>
+          </View>
+        </View>
 
-      <View className="h-px bg-gray-200 my-5" />
-
-      {/* Date */}
-
-      <View className="flex-row justify-between">
-        <View className="flex-row items-center">
-          <Ionicons name="calendar-outline" size={18} color="#8B5CF6" />
-
-          <Text className="ml-2 text-gray-600">
-            {dayjs(item.app_date).format("DD MMM YYYY")}
+        <View
+          className={`mt-3 flex-row items-center rounded-xl px-3 py-2.5 ${scheduleStatus.containerClass}`}
+        >
+          <Ionicons
+            name={scheduleStatus.icon}
+            size={18}
+            color={scheduleStatus.color}
+          />
+          <Text
+            className={`ml-2 text-sm font-semibold ${scheduleStatus.textClass}`}
+          >
+            {scheduleStatus.text}
           </Text>
         </View>
 
-        <View className="flex-row items-center">
-          <Ionicons name="time-outline" size={18} color="#8B5CF6" />
-
-          <Text className="ml-2 text-gray-600">
-            {item.app_hour.slice(0, 5)}
-          </Text>
-        </View>
+        {(appointment.key_tag_id || appointment.phone) && (
+          <View className="mt-4 gap-3">
+            {appointment.key_tag_id && (
+              <View className="flex-row items-center">
+                <Ionicons name="key-outline" size={18} color="#6F3FA0" />
+                <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
+                  Key Tag: {appointment.key_tag_id}
+                </Text>
+              </View>
+            )}
+            {appointment.phone && (
+              <View className="flex-row items-center">
+                <Ionicons name="call-outline" size={18} color="#6F3FA0" />
+                <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
+                  {String(appointment.phone)}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
-
-      {/* Status */}
-
-      <View className="flex-row items-center mt-4">
-        <MaterialCommunityIcons
-          name={item.status ? "check-circle" : "clock-outline"}
-          size={20}
-          color={item.status ? "#22C55E" : "#F59E0B"}
-        />
-
-        <Text className="ml-2 text-gray-700">
-          {item.status
-            ? "Weigh Measure Sudah Diisi"
-            : "Menunggu Input Weigh Measure"}
-        </Text>
-      </View>
-
-      {/* Button */}
 
       <TouchableOpacity
-        disabled={!canInput}
-        onPress={onPress}
-        activeOpacity={0.8}
-        className={`mt-5 rounded-2xl py-4 items-center ${
-          canInput ? "bg-purple-600" : "bg-gray-300"
+        onPress={completed ? onHistory : onInput}
+        activeOpacity={0.85}
+        className={`flex-row items-center justify-center py-4 ${
+          completed ? "bg-green-50 dark:bg-green-950" : "bg-[#6F3FA0]"
         }`}
       >
+        <Ionicons
+          name={completed ? "time-outline" : "create-outline"}
+          size={20}
+          color={completed ? "#15803D" : "white"}
+        />
         <Text
-          className={`font-bold text-base ${
-            canInput ? "text-white" : "text-gray-500"
+          className={`ml-2 font-bold ${
+            completed ? "text-green-700 dark:text-green-300" : "text-white"
           }`}
         >
-          {item.status
-            ? "Lihat Weigh Measure"
-            : canInput
-              ? "Input Weigh Measure"
-              : "Belum Bisa Input"}
+          {completed ? "Lihat Riwayat WM" : "Isi Hasil WM"}
         </Text>
       </TouchableOpacity>
-      {/* <TouchableOpacity
-        onPress={onPress}
-        className="mt-5 rounded-2xl py-4 items-center"
-        style={{
-          backgroundColor: "#8B2CF5",
-        }}
-      >
-        <Text className="text-white font-bold text-base">
-          Input Weigh Measure
-        </Text>
-      </TouchableOpacity> */}
-    </TouchableOpacity>
-  );
-}
-const tshirt = (size: number) => {
-  switch (size) {
-    case 1:
-      return "S";
-    case 2:
-      return "M";
-    case 3:
-      return "L";
-    case 4:
-      return "XL";
-    case 5:
-      return "XXL";
-    default:
-      return "-";
-  }
-};
-
-const WorkoutMemberCard = ({ item, onDetail, onWorkout }: any) => {
-  const duration = moment.duration(moment().diff(moment(item.workout_date)));
-
-  return (
-    <View className="bg-white rounded-2xl p-4 shadow-sm mb-4 mx-2">
-      <View className="bg-white dark:bg-zinc-900 rounded-3xl shadow mb-5 overflow-hidden">
-        {/* Header */}
-
-        <View className="p-5">
-          <View className="flex-row">
-            {/* Avatar */}
-
-            {item.user.photo ? (
-              <Image
-                source={{
-                  uri: item.user.photo,
-                }}
-                className="w-16 h-16 rounded-full"
-              />
-            ) : (
-              <View className="w-16 h-16 rounded-full bg-violet-100 dark:bg-violet-950 items-center justify-center">
-                <MaterialCommunityIcons
-                  name="account"
-                  size={34}
-                  color="#6F3FA0"
-                />
-              </View>
-            )}
-
-            <View className="flex-1 ml-4">
-              <View className="flex-row justify-between">
-                <View className="flex-1">
-                  <Text className="font-bold text-lg text-gray-900 dark:text-white">
-                    {item.user.name}
-                  </Text>
-
-                  <Text className="text-gray-500 dark:text-gray-400 mt-1">
-                    {item.club.club_name}
-                  </Text>
-                </View>
-
-                <View className="bg-green-500 px-3 py-1 rounded-full self-start">
-                  <Text className="text-white font-bold text-xs">LIVE</Text>
-                </View>
-              </View>
-
-              <View className="flex-row mt-4">
-                <View className="flex-1">
-                  <Text className="text-xs text-gray-400">Check In</Text>
-
-                  <Text className="font-semibold dark:text-white">
-                    {moment(item.workout_date).format("HH:mm")} WIB
-                  </Text>
-                </View>
-
-                <View className="flex-1">
-                  <Text className="text-xs text-gray-400">Durasi</Text>
-
-                  <Text className="font-semibold text-[#6F3FA0]">
-                    {duration.hours()}j {duration.minutes()}m
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </View>
-
-        {/* Footer */}
-
-        <View className="border-t border-gray-100 dark:border-zinc-800 flex-row">
-          <TouchableOpacity
-            className="flex-1 py-4 items-center"
-            onPress={() => onDetail(item)}
-          >
-            <MaterialCommunityIcons
-              name="account-outline"
-              size={22}
-              color="#6F3FA0"
-            />
-
-            <Text className="mt-1 text-[#6F3FA0] font-semibold">Detail</Text>
-          </TouchableOpacity>
-
-          <View className="w-px bg-gray-200 dark:bg-zinc-700" />
-
-          <TouchableOpacity
-            className="flex-1 py-4 items-center"
-            onPress={() => onWorkout(item)}
-          >
-            <MaterialCommunityIcons name="dumbbell" size={22} color="#6F3FA0" />
-
-            <Text className="mt-1 text-[#6F3FA0] font-semibold">Workout</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </View>
-  );
-};
-function MemberCard({
-  item,
-  onPress,
-  onMeasurement,
-}: {
-  item: any;
-  onPress: () => void;
-  onMeasurement: () => void;
-}) {
-  // const onDetailInfo = (data: any) => {
-  //   onDetail(data);
-  // };
-  return (
-    <View className="bg-white dark:bg-zinc-900 rounded-[30px] overflow-hidden shadow-lg mb-5">
-      {/* Header */}
-
-      <View className="bg-[#6F3FA0] px-5 py-5">
-        <View className="flex-row">
-          {/* Avatar */}
-
-          {item.photo ? (
-            <Image
-              source={{ uri: imageProfileURL(item.photo) }}
-              className="w-20 h-20 rounded-full border-4 border-white"
-            />
-          ) : (
-            <View className="w-20 h-20 rounded-full bg-white justify-center items-center">
-              <MaterialCommunityIcons
-                name="account"
-                size={42}
-                color="#6F3FA0"
-              />
-            </View>
-          )}
-
-          <View className="flex-1 ml-4">
-            <View className="flex-row justify-between">
-              <View className="flex-1">
-                <Text className="text-white text-xl font-bold">
-                  {item.user.name}
-                </Text>
-
-                <Text className="text-violet-100 mt-1">
-                  Member {item.flag} •{" "}
-                  {item.sex == "F" ? "Perempuan" : "Laki-laki"}
-                </Text>
-              </View>
-
-              <View className="bg-green-500 px-3 py-1 rounded-full self-start">
-                <Text className="text-white text-xs font-bold">ACTIVE</Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      </View>
-
-      {/* Body */}
-
-      <View className="p-5">
-        {/* Info Card */}
-
-        <View className="flex-row justify-between">
-          <View className="bg-violet-50 dark:bg-violet-950 rounded-2xl p-4 flex-1 mr-2">
-            <Text className="text-gray-500 dark:text-gray-400 text-xs">
-              KEY TAG
-            </Text>
-
-            <Text className="font-bold text-lg dark:text-white mt-1">
-              {item.key_tag_id}
-            </Text>
-          </View>
-
-          <View className="bg-violet-50 dark:bg-violet-950 rounded-2xl p-4 flex-1 ml-2">
-            <Text className="text-gray-500 dark:text-gray-400 text-xs">
-              T-SHIRT
-            </Text>
-
-            <Text className="font-bold text-lg dark:text-white mt-1">
-              {tshirt(item.tshirt_size)}
-            </Text>
-          </View>
-        </View>
-
-        {/* Contact */}
-
-        <View className="mt-5 space-y-4">
-          <View className="flex-row items-center">
-            <Ionicons name="call-outline" size={18} color="#6F3FA0" />
-
-            <Text className="ml-3 text-gray-700 dark:text-gray-300">
-              {item.phone}
-            </Text>
-          </View>
-
-          <View className="flex-row">
-            <Ionicons name="location-outline" size={18} color="#6F3FA0" />
-
-            <Text
-              numberOfLines={2}
-              className="ml-3 flex-1 text-gray-700 dark:text-gray-300"
-            >
-              {item.address}
-            </Text>
-          </View>
-
-          <View className="flex-row items-center">
-            <Ionicons name="calendar-outline" size={18} color="#6F3FA0" />
-
-            <Text className="ml-3 text-gray-700 dark:text-gray-300">
-              Bergabung {moment(item.joined).format("DD MMM YYYY")}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Footer */}
-
-      <View className="border-t border-gray-100 dark:border-zinc-800 flex-row">
-        <TouchableOpacity
-          onPress={onPress}
-          className="flex-1 py-4 items-center"
-        >
-          <Text className="text-[#6F3FA0] font-bold">Detail</Text>
-        </TouchableOpacity>
-
-        <View className="w-px bg-gray-200 dark:bg-zinc-700" />
-
-        <TouchableOpacity
-          onPress={onMeasurement}
-          className="flex-1 py-4 items-center"
-        >
-          <Text className="text-[#6F3FA0] font-bold">Penimbangan</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 }
+
 export default function ListMemberWMToday() {
   const router = useRouter();
-  const { user, signOut } = useAuth();
-  const { data: listMembers, isLoading: isLoadingPromo } = useListMember();
-  console.log("listMembers", listMembers);
+  const { user } = useAuth();
   const {
-    mutate: memberWorkoutFn,
-    data: memberWorkoutData,
-    isPending: isPendingMemberWorkout,
-  } = useMemberAppointmentByStaffId();
+    data,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+    isRefetching,
+    refetch,
+  } = useInfiniteMemberAppointments({
+    staffId: user?._id,
+    limit: PAGE_SIZE,
+  });
 
-  React.useEffect(() => {
-    async function getMemberWO() {
-      await memberWorkoutFn(user._id);
-    }
-    getMemberWO();
-  }, []);
-  const [search, setSearch] = useState("");
-  const onDetail = (data: any) => {
+  const appointments = useMemo(
+    () =>
+      (data?.pages.flatMap((page) => page.response) ??
+        []) as MemberAppointment[],
+    [data],
+  );
+  const totalAppointments = data?.pages[0]?.total ?? appointments.length;
+  const completedCount = appointments.filter((appointment) =>
+    isCompleted(appointment.status),
+  ).length;
+  const pendingCount = appointments.length - completedCount;
+
+  const openInputWM = (appointment: MemberAppointment) => {
     router.push({
       pathname: "/user/input-wm",
-      params: {
-        id: user._id,
-      },
+      params: { id: appointment.user_id },
     });
   };
-  const onMeasure = (data: any) => {
+
+  const openWMHistory = (appointment: MemberAppointment) => {
     router.push({
-      pathname: `/list-member/wm/[id]`,
-      params: {
-        id: data.user_id,
-      },
+      pathname: "/member-history/wm-history",
+      params: { id: appointment.user_id },
     });
   };
-  // const filteredData = React.useMemo(() => {
-  //   if (!search && memberWorkoutData) return memberWorkoutData.response;
 
-  //   return memberWorkoutData.response.filter((item: any) => {
-  //     const keyword = search.toLowerCase();
-
-  //     return (
-  //       item.user.name.toLowerCase().includes(keyword) ||
-  //       item.user.email.toLowerCase().includes(keyword)
-  //     );
-  //   });
-  // }, [search]);
-  if (isPendingMemberWorkout || !memberWorkoutData) {
-    return <LoadingView />;
-  }
-
-  //   console.log("filteredData -sss", filteredData);
-
-  // 🔥 generate bulan (dinamis)
+  if (isLoading && appointments.length === 0) return <LoadingView />;
 
   return (
-    <>
-      <ContainerPage titleHeader="List Member WM" titleContent="List Member WM">
-        {/* <View className="flex-row justify-between mt-4">
-          <View className="bg-[#6F3FA0] flex-1 rounded-3xl p-5 mr-2">
-            <MaterialCommunityIcons
-              name="account-group"
-              size={26}
-              color="white"
-            />
-
-            <Text className="text-3xl font-bold text-white mt-3">10</Text>
-
-            <Text className="text-violet-200">Workout Hari Ini</Text>
-          </View>
-
-          <View className="bg-green-500 flex-1 rounded-3xl p-5 ml-2">
-            <MaterialCommunityIcons name="dumbbell" size={26} color="white" />
-
-            <Text className="text-3xl font-bold text-white mt-3">20</Text>
-
-            <Text className="text-green-100">Sedang Workout</Text>
-          </View>
-        </View> */}
-        {/* <View className="mx-5 mt-4 mb-2">
-          <View className="flex-row items-center bg-white rounded-2xl px-4 py-3 border border-gray-100">
-            <Ionicons name="search-outline" size={22} color="#9CA3AF" />
-
-            <TextInput
-              placeholder="Cari Member..."
-              placeholderTextColor="#9CA3AF"
-              value={search}
-              onChangeText={setSearch}
-              className="flex-1 ml-3 text-base text-gray-800"
-            />
-          </View>
-        </View> */}
-        {memberWorkoutData && (
-          <FlatList
-            data={memberWorkoutData ? memberWorkoutData.response : []}
-            keyExtractor={(item) => item._id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{
-              paddingTop: 15,
-              paddingBottom: 120,
-            }}
-            renderItem={({ item }) => (
-              <WeighMeasureCard
-                item={item}
-                onPress={() => onDetail(item)}
-                // onWorkout={() => onMeasure(item)}
-              />
-            )}
+    <ContainerPage titleHeader="WM Hari Ini" titleContent="Jadwal Penimbangan">
+      <FlatList
+        data={appointments}
+        keyExtractor={(appointment, index) =>
+          appointment._id || `${appointment.user_id}-${index}`
+        }
+        renderItem={({ item }) => (
+          <AppointmentCard
+            appointment={item}
+            onInput={() => openInputWM(item)}
+            onHistory={() => openWMHistory(item)}
           />
         )}
-      </ContainerPage>
-    </>
+        onEndReached={() => {
+          if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+        }}
+        onEndReachedThreshold={0.4}
+        refreshing={isRefetching && !isFetchingNextPage}
+        onRefresh={() => void refetch()}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}
+        ListHeaderComponent={
+          <View>
+            <View className="mx-5 mb-4 mt-5 rounded-3xl bg-[#6F3FA0] p-5">
+              <View className="flex-row items-center justify-between">
+                <View className="flex-1">
+                  <Text className="text-sm font-medium text-violet-200">
+                    Jadwal Weigh & Measure hari ini
+                  </Text>
+                  <Text className="mt-1 text-3xl font-bold text-white">
+                    {totalAppointments}
+                  </Text>
+                  <Text className="mt-1 text-xs text-violet-200">
+                    {hasNextPage
+                      ? `${appointments.length} dari ${totalAppointments} jadwal dimuat`
+                      : `${pendingCount} menunggu • ${completedCount} selesai`}
+                  </Text>
+                </View>
+                <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/15">
+                  <MaterialCommunityIcons
+                    name="scale-bathroom"
+                    size={30}
+                    color="white"
+                  />
+                </View>
+              </View>
+            </View>
+
+            {appointments.length > 0 && (
+              <View className="mx-5 mb-4">
+                <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                  Daftar Member
+                </Text>
+                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  {appointments.length} dari {totalAppointments} jadwal
+                  ditampilkan
+                </Text>
+              </View>
+            )}
+          </View>
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="items-center py-5">
+              <ActivityIndicator color="#6F3FA0" />
+              <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+                Memuat jadwal berikutnya...
+              </Text>
+            </View>
+          ) : null
+        }
+        ListEmptyComponent={
+          <View className="flex-1 items-center justify-center px-8 pb-20">
+            <View
+              className={`mb-4 rounded-full p-5 ${
+                error ? "bg-red-50" : "bg-violet-50 dark:bg-violet-950"
+              }`}
+            >
+              <Ionicons
+                name={error ? "alert-circle-outline" : "calendar-outline"}
+                size={42}
+                color={error ? "#DC2626" : "#6F3FA0"}
+              />
+            </View>
+            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+              {error
+                ? "Jadwal WM gagal dimuat"
+                : "Tidak ada jadwal WM hari ini"}
+            </Text>
+            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+              {error
+                ? "Tarik layar ke bawah untuk mencoba kembali."
+                : "Belum ada member yang dijadwalkan melakukan penimbangan hari ini."}
+            </Text>
+          </View>
+        }
+      />
+    </ContainerPage>
   );
 }

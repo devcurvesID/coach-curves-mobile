@@ -18,9 +18,10 @@ import React, { useEffect } from "react";
 import { Image, Pressable, ScrollView, View } from "react-native";
 
 export default function DetailBillingHistoryScreen() {
-  const params = useLocalSearchParams<{ id: string }>();
-  const { id } = params;
-  console.log("params", id);
+  const { id, memberName } = useLocalSearchParams<{
+    id: string;
+    memberName?: string;
+  }>();
   const router = useRouter();
   const { user, signOut } = useAuth();
   const { data: userClub, isLoading: isLoadingUserClub } = useUserClub();
@@ -32,21 +33,12 @@ export default function DetailBillingHistoryScreen() {
   } = useDetailMemberBillingByUserId();
 
   const user_personal = user.user_personal;
-  const {
-    mutate: memberBillByUserIdFn,
-    data: memberBill,
-    isPending: isPendingMemberBill,
-  } = useMemberBillByUserId();
+  const { data: memberBill, isLoading: isPendingMemberBill } =
+    useMemberBillByUserId(id);
 
   useEffect(() => {
     async function getProgress() {
       await memberPaymentBillingByUserIdFn(id);
-    }
-    getProgress();
-  }, []);
-  useEffect(() => {
-    async function getProgress() {
-      await memberBillByUserIdFn(id);
     }
     getProgress();
   }, []);
@@ -71,6 +63,17 @@ export default function DetailBillingHistoryScreen() {
       },
     });
   };
+
+  const getTotalBayar = (
+    grand_total_amount_paid: any,
+    dc_amount: any,
+  ): number => {
+    const total = Number(grand_total_amount_paid) + Number(dc_amount);
+    return total;
+  };
+  const remainingDebt = Number(memberBill.rest_of_bill) || 0;
+  const isPaidOff = remainingDebt <= 0;
+
   return (
     <>
       <ContainerPage
@@ -150,7 +153,7 @@ export default function DetailBillingHistoryScreen() {
                 </View>
 
                 <Text className="font-semibold text-base text-gray-800 flex-1 text-right ml-4">
-                  {user.name}
+                  {memberName || "Member"}
                 </Text>
               </View>
               <View className="flex-row justify-between items-start">
@@ -278,7 +281,9 @@ export default function DetailBillingHistoryScreen() {
             {/* PAYMENT DETAIL */}
             <View className="gap-5">
               <View className="flex-row justify-between">
-                <Text className="text-gray-500 text-base">Biaya Layanan</Text>
+                <Text className="text-gray-500 text-base">
+                  Total biaya layanan
+                </Text>
 
                 <Text className="font-semibold text-base text-gray-800">
                   {formatCurrency(memberBill.total_bill_amount)}
@@ -288,11 +293,18 @@ export default function DetailBillingHistoryScreen() {
 
               <View className="flex-row justify-between">
                 <Text className="text-gray-500 text-base">
-                  Biaya Yang Sudah Dibayar
+                  Total biaya yang sudah dibayar
                 </Text>
 
                 <Text className="font-semibold text-base text-gray-800">
                   {formatCurrency(memberBill.grand_total_amount_paid)}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text className="text-gray-500 text-base">Total diskon</Text>
+
+                <Text className="font-semibold text-base text-gray-800">
+                  {formatCurrency(memberBill.dc_amount)}
                 </Text>
               </View>
               {/* <View className="flex-row justify-between">
@@ -326,13 +338,17 @@ export default function DetailBillingHistoryScreen() {
                   />
 
                   <Text className="text-lg font-bold text-gray-800 ml-2">
-                    Total
+                    Grand Total
                   </Text>
                 </View>
 
                 <Text className="text-2xl font-bold text-[#6F3FA0]">
-                  {formatCurrency(memberBill.grand_total_amount_paid)}
-                  {/* {total_amount()} */}
+                  {formatCurrency(
+                    getTotalBayar(
+                      memberBill.grand_total_amount_paid,
+                      memberBill.dc_amount,
+                    ),
+                  )}
                 </Text>
               </View>
 
@@ -354,14 +370,40 @@ export default function DetailBillingHistoryScreen() {
             </View> */}
 
               {/* REMAINING */}
-              <View className="flex-row justify-between items-center">
-                <Text className="text-base text-gray-500">Sisa Hutang</Text>
-
-                <Text className="text-xl font-bold text-red-500">
-                  {formatCurrency(memberBill.rest_of_bill)}
-                  {/* {formatCurrency(payment.rest_of_bill)} */}
-                </Text>
-              </View>
+              {isPaidOff ? (
+                <View className="flex-row items-center rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
+                  <View className="h-11 w-11 items-center justify-center rounded-full bg-emerald-100">
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={25}
+                      color="#059669"
+                    />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="font-bold text-emerald-700">
+                      Pembayaran Lunas
+                    </Text>
+                    <Text className="mt-1 text-xs text-emerald-600">
+                      Tidak ada sisa hutang yang perlu dibayarkan.
+                    </Text>
+                  </View>
+                  <Text className="font-bold text-emerald-700">
+                    {formatCurrency(0)}
+                  </Text>
+                </View>
+              ) : (
+                <View className="flex-row items-center rounded-2xl border border-red-100 bg-red-50 p-4">
+                  <View className="h-11 w-11 items-center justify-center rounded-full bg-red-100">
+                    <Ionicons name="alert-circle" size={25} color="#DC2626" />
+                  </View>
+                  <View className="ml-3 flex-1">
+                    <Text className="text-sm text-red-600">Sisa Hutang</Text>
+                    <Text className="mt-1 text-xl font-bold text-red-600">
+                      {formatCurrency(remainingDebt)}
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
 
             {/* DIVIDER */}
@@ -378,7 +420,9 @@ export default function DetailBillingHistoryScreen() {
               </Text>
 
               <Text className="text-gray-400 text-sm mt-2 text-center">
-                Keep crushing your workout 💪
+                {isPaidOff
+                  ? "Pembayaran Anda telah diselesaikan."
+                  : "Selesaikan pembayaran sesuai informasi tagihan."}
               </Text>
             </View>
           </View>

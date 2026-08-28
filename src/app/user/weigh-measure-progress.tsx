@@ -3,6 +3,7 @@ import { LoadingView } from "@/components/ui/loading";
 import Text from "@/components/ui/text";
 import { useAuth } from "@/context/auth";
 import { formatDate } from "@/helpers/dates";
+import { useUserClub } from "@/hooks/useClubs";
 import { useWeighMeasureProgress } from "@/hooks/useWeighMeasure";
 import { imageProfileURL } from "@/services/image";
 import { Ionicons } from "@expo/vector-icons";
@@ -166,9 +167,12 @@ export default function WeighMeasureProgressScreen() {
   const { user, signOut } = useAuth();
   const { data: weighMeasureProgress, isLoading: isLoadingProgress } =
     useWeighMeasureProgress();
+  const { data: userClubs, isLoading: isLoadingUserClub } = useUserClub();
 
   const user_personal = user.user_personal;
-  if (isLoadingProgress) {
+  const clubName = userClubs?.[0]?.club_name ?? "Club belum tersedia";
+
+  if (isLoadingProgress || isLoadingUserClub) {
     return <LoadingView />;
   }
   const { current, previous } = weighMeasureProgress;
@@ -208,7 +212,7 @@ export default function WeighMeasureProgressScreen() {
               </Text>
 
               <Text className="text-[#6F3FA0] font-semibold mt-1">
-                Curves Summarecon Bekasi
+                {clubName}
               </Text>
             </View>
           </View>

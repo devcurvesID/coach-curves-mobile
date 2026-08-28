@@ -1,18 +1,33 @@
 import ContainerPage from "@/components/ui/container-page";
 import { LoadingView } from "@/components/ui/loading";
 import Text from "@/components/ui/text";
-import { useAuth } from "@/context/auth";
-import { formatDate, formatDateString } from "@/helpers/dates";
-import {
-  useWeighMeasurePrintout,
-  useWeighMeasureProgressByUserId,
-} from "@/hooks/useWeighMeasure";
+import { formatDate } from "@/helpers/dates";
+import { useUserClub } from "@/hooks/useClubs";
+import { useDetailMemberByUserId } from "@/hooks/useMember";
+import { useWeighMeasureProgressByUserId } from "@/hooks/useWeighMeasure";
 import { imageProfileURL } from "@/services/image";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import moment from "moment";
 import React, { useEffect } from "react";
-import { ActivityIndicator, Image, ScrollView, View } from "react-native";
+import { Image, ScrollView, View } from "react-native";
+
+interface MemberIdentity {
+  photo?: string | null;
+  user?: {
+    name?: string | null;
+  };
+}
+
+const getInitials = (name: string): string =>
+  name
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase() || "?";
 
 const InfoItem = ({ icon, label, value }: any) => (
   <View className="w-1/2 mb-4">
@@ -70,25 +85,8 @@ const MeasurementRow = ({ title, previous, current, unit = " cm" }: any) => {
 };
 
 const ResultCompareWM = ({ current }: any) => {
-  const {
-    mutate: weighMeasurePrintoutFn,
-    data: weighMeasurePrintout,
-    isPending: isPendingPrintOut,
-  } = useWeighMeasurePrintout();
-  // console.log("weighMeasurePrintout", weighMeasurePrintout);
-
-  React.useEffect(() => {
-    async function getWeighMeasure({ wm_date }: any) {
-      let date_q = formatDateString(wm_date);
-      let query = `?wm_date=${date_q}`;
-      await weighMeasurePrintoutFn(query);
-    }
-    // if (data) {
-    getWeighMeasure(current);
-    // }
-  }, []);
   const formatNumber = (
-    value: string | number,
+    value: string | number | null | undefined,
     decimal: number = 1,
   ): string => {
     const parsedValue = Number(value);
@@ -99,16 +97,10 @@ const ResultCompareWM = ({ current }: any) => {
 
     return Math.abs(parsedValue).toFixed(decimal);
   };
-  const isReduction = (value: string): boolean => {
+  const isReduction = (value: string | number | null | undefined): boolean => {
     return Number(value) < 0;
   };
-  if (isPendingPrintOut) {
-    return <ActivityIndicator />;
-  }
 
-  if (!weighMeasurePrintout) {
-    return <></>;
-  }
   return (
     <View className="px-5 py-5">
       <Text className="text-base font-bold text-slate-800">
@@ -126,8 +118,8 @@ const ResultCompareWM = ({ current }: any) => {
           </View>
 
           <Text className="mt-2 text-lg font-bold text-slate-800">
-            {isReduction(weighMeasurePrintout.weigh_diff) ? "-" : "+"}
-            {formatNumber(weighMeasurePrintout.weigh_diff)}
+            {isReduction(current.weigh_diff) ? "-" : "+"}
+            {formatNumber(current.weigh_diff)}
           </Text>
 
           <Text className="text-center text-xs text-slate-500">
@@ -145,8 +137,8 @@ const ResultCompareWM = ({ current }: any) => {
           </View>
 
           <Text className="mt-2 text-lg font-bold text-slate-800">
-            {isReduction(weighMeasurePrintout.size_diff) ? "-" : "+"}
-            {formatNumber(weighMeasurePrintout.size_diff)}
+            {isReduction(current.size_diff) ? "-" : "+"}
+            {formatNumber(current.size_diff)}
           </Text>
 
           <Text className="text-center text-xs text-slate-500">
@@ -160,8 +152,8 @@ const ResultCompareWM = ({ current }: any) => {
           </View>
 
           <Text className="mt-2 text-lg font-bold text-slate-800">
-            {isReduction(weighMeasurePrintout.body_fat_diff) ? "-" : "+"}
-            {formatNumber(weighMeasurePrintout.body_fat_diff)}
+            {isReduction(current.body_fat_diff) ? "-" : "+"}
+            {formatNumber(current.body_fat_diff)}
           </Text>
 
           <Text className="text-center text-xs text-slate-500">
@@ -271,32 +263,47 @@ const BodyRowItem = ({
 export default function DetailInformasiWMScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const { id } = params;
-  console.log("params", id);
 
-  const router = useRouter();
   const {
     mutate: weighMeasureProgressFn,
     data: weighMeasureProgress,
     isPending: isPendingProgress,
   } = useWeighMeasureProgressByUserId();
-  const { user, signOut } = useAuth();
-  // const { data: weighMeasureProgress, isLoading: isLoadingProgress } =
-  //   useWeighMeasureProgress();
+  const {
+    mutate: loadMemberDetail,
+    data: memberDetailData,
+    isPending: isPendingMemberDetail,
+  } = useDetailMemberByUserId();
+  const { data: userClubs, isLoading: isLoadingUserClub } = useUserClub();
+  const clubName = userClubs?.[0]?.club_name ?? "Club belum tersedia";
 
   useEffect(() => {
-    async function getProgress() {
-      await weighMeasureProgressFn(id);
+    if (id) {
+      weighMeasureProgressFn(id);
+      loadMemberDetail(id);
     }
-    getProgress();
-  }, []);
-  if (isPendingProgress || !weighMeasureProgress) {
+  }, [id, loadMemberDetail, weighMeasureProgressFn]);
+
+  if (
+    isPendingProgress ||
+    isPendingMemberDetail ||
+    isLoadingUserClub ||
+    !weighMeasureProgress ||
+    !memberDetailData
+  ) {
     return <LoadingView />;
   }
+
   const { current, previous } = weighMeasureProgress;
-  const user_personal = user.user_personal;
+  const member = memberDetailData as MemberIdentity;
+  const memberName = member.user?.name?.trim() || "Member";
+
   return (
     <>
-      <ContainerPage titleHeader="Ringkasan Perubahan" titleContent={user.name}>
+      <ContainerPage
+        titleHeader="Ringkasan Perubahan"
+        titleContent={memberName}
+      >
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
@@ -308,20 +315,21 @@ export default function DetailInformasiWMScreen() {
           {/* Detail */}
           <View className="bg-white rounded-3xl p-5 shadow">
             <View className="items-center">
-              <Image
-                source={{
-                  uri: imageProfileURL(user_personal.photo),
-                }}
-                style={{
-                  width: 85,
-                  height: 85,
-                  borderRadius: 50,
-                }}
-                //   className="w-24 h-24 rounded-full"
-              />
+              {member.photo ? (
+                <Image
+                  source={{ uri: imageProfileURL(member.photo) }}
+                  className="h-[85px] w-[85px] rounded-full"
+                />
+              ) : (
+                <View className="h-[85px] w-[85px] items-center justify-center rounded-full bg-violet-100">
+                  <Text className="text-2xl font-bold text-[#6F3FA0]">
+                    {getInitials(memberName)}
+                  </Text>
+                </View>
+              )}
 
               <Text className="text-2xl font-bold text-gray-800 mt-3">
-                {user.name}
+                {memberName}
               </Text>
 
               <Text className="text-gray-500">
@@ -329,7 +337,7 @@ export default function DetailInformasiWMScreen() {
               </Text>
 
               <Text className="text-[#6F3FA0] font-semibold mt-1">
-                Curves Summarecon Bekasi
+                {clubName}
               </Text>
             </View>
           </View>
@@ -360,7 +368,7 @@ export default function DetailInformasiWMScreen() {
             </View>
 
             <View className="flex-1 bg-[#8E5CD9] rounded-2xl p-4 ml-1">
-              <Text className="text-white/80 text-xs">Berat</Text>
+              <Text className="text-white/80 text-xs">Berat Badan</Text>
 
               <Text className="text-white text-2xl font-bold mt-1">
                 {current.weight}

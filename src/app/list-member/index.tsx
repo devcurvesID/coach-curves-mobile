@@ -90,10 +90,9 @@ function InfoRow({
 interface MemberCardProps {
   member: Member;
   onDetail: () => void;
-  onMeasurement: () => void;
 }
 
-function MemberCard({ member, onDetail, onMeasurement }: MemberCardProps) {
+function MemberCard({ member, onDetail }: MemberCardProps) {
   const gender =
     member.sex === "F"
       ? "Perempuan"
@@ -149,19 +148,9 @@ function MemberCard({ member, onDetail, onMeasurement }: MemberCardProps) {
         </View>
       </View>
 
-      <View className="flex-row border-t border-gray-100 dark:border-zinc-800">
-        <TouchableOpacity
-          onPress={onDetail}
-          className="flex-1 items-center py-4"
-        >
+      <View className="border-t border-gray-100 dark:border-zinc-800">
+        <TouchableOpacity onPress={onDetail} className="items-center py-4">
           <Text className="font-bold text-[#6F3FA0]">Lihat Detail</Text>
-        </TouchableOpacity>
-        <View className="w-px bg-gray-100 dark:bg-zinc-800" />
-        <TouchableOpacity
-          onPress={onMeasurement}
-          className="flex-1 items-center py-4"
-        >
-          <Text className="font-bold text-[#6F3FA0]">Penimbangan</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -207,13 +196,6 @@ export default function ListMemberScreen() {
     });
   };
 
-  const openMeasurement = (member: Member) => {
-    router.push({
-      pathname: "/list-member/wm/[id]",
-      params: { id: member.user_id },
-    });
-  };
-
   if (isLoading && members.length === 0 && !search) return <LoadingView />;
 
   return (
@@ -254,11 +236,7 @@ export default function ListMemberScreen() {
         data={members}
         keyExtractor={(member) => member._id || member.user_id}
         renderItem={({ item }) => (
-          <MemberCard
-            member={item}
-            onDetail={() => openDetail(item)}
-            onMeasurement={() => openMeasurement(item)}
-          />
+          <MemberCard member={item} onDetail={() => openDetail(item)} />
         )}
         onEndReached={() => {
           if (hasNextPage && !isFetchingNextPage) void fetchNextPage();

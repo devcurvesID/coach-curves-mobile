@@ -1,5 +1,12 @@
 import { api } from "@/lib/axios";
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+
+interface MemberAppointmentPage<T = unknown> {
+  response: T[];
+  total?: number;
+  limit?: number;
+  offset?: number;
+}
 
 export const useLastWeighMeasure = () => {
   return useQuery({
@@ -70,10 +77,60 @@ export const useWeighMeasureHistoryByUserId = () => {
 export const useMemberAppointmentByStaffId = () => {
   return useMutation({
     mutationFn: async (staff_id: string) => {
-      const { data } = await api.get(
-        `/member-appointment?staff_id=6a1e906305824f405ed79f49`, //6a1e906305824f405ed79f49
+      const { data } = await api.get("/member-appointment", {
+        params: { staff_id },
+      });
+      return data;
+    },
+  });
+};
+
+export const useInfiniteMemberAppointments = ({
+  staffId,
+  limit = 10,
+}: {
+  staffId?: string;
+  limit?: number;
+}) => {
+  return useInfiniteQuery({
+    queryKey: ["member-appointments", staffId, limit],
+    enabled: Boolean(staffId),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam }) => {
+      const { data } = await api.get<MemberAppointmentPage>(
+        "/member-appointment",
+        {
+          params: {
+            staff_id: "6a1e8d9705824f405ed79f2c", //"6a1e906305824f405ed79f49",
+            offset: pageParam,
+            limit,
+          },
+        },
       );
       return data;
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce(
+        (total, page) => total + page.response.length,
+        0,
+      );
+      if (lastPage.total !== undefined) {
+        return loadedCount < lastPage.total ? loadedCount : undefined;
+      }
+      return lastPage.response.length === limit ? loadedCount : undefined;
+    },
+  });
+};
+
+export const useMemberAppointmentByUserId = (userId?: string) => {
+  return useQuery({
+    queryKey: ["member-appointment", "user", userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { data } = await api.get(
+        `/member-appointment?user_id=${encodeURIComponent(userId ?? "")}`,
+      );
+      return data.response ?? null;
     },
   });
 };

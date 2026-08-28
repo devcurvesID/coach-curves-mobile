@@ -68,10 +68,15 @@ export const useDetailMemberBillingByUserId = () => {
   });
 };
 
-export const useMemberBillByUserId = () => {
-  return useMutation({
-    mutationFn: async (user_id: string) => {
-      const { data } = await api.get(`/member-payment/bill/${user_id}`);
+export const useMemberBillByUserId = (userId?: string) => {
+  return useQuery({
+    queryKey: ["member-bill", "user", userId],
+    enabled: Boolean(userId),
+    staleTime: 5 * 60 * 1000,
+    queryFn: async () => {
+      const { data } = await api.get(
+        `/member-payment/bill/${encodeURIComponent(userId ?? "")}`,
+      );
       return data.response;
     },
   });
