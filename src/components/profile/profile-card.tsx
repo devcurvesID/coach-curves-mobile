@@ -1,5 +1,7 @@
+import { FullscreenImage } from "@/components/ui/fullscreen-image";
 import { useAuth } from "@/context/auth";
 import { formatDate } from "@/helpers/dates";
+import { getMemberFlag, MONTHLY_WORKOUT_TARGET } from "@/helpers/member-flag";
 import { useWorkoutHistory } from "@/hooks/useWorkout";
 import { imageProfileURL } from "@/services/image";
 import { Ionicons } from "@expo/vector-icons";
@@ -58,7 +60,6 @@ export const ProfileCardView = () => {
     isPending,
   } = useWorkoutHistory();
   const { user, isLoading } = useAuth();
-  const user_personal = user.user_personal;
   React.useEffect(() => {
     async function getWorkout() {
       const now = new Date();
@@ -69,6 +70,20 @@ export const ProfileCardView = () => {
     }
     getWorkout();
   }, []);
+  if (isLoading || !user?.user_personal) return null;
+
+  const user_personal = user.user_personal;
+  const monthlyWorkoutCount = workoutHistory?.total_workout_per_month ?? 0;
+  const memberFlag = getMemberFlag(monthlyWorkoutCount);
+  const remainingWorkout = Math.max(
+    MONTHLY_WORKOUT_TARGET - monthlyWorkoutCount,
+    0,
+  );
+  const progress = Math.min(
+    (monthlyWorkoutCount / MONTHLY_WORKOUT_TARGET) * 100,
+    100,
+  );
+  const photoUrl = imageProfileURL(user_personal.photo);
   return (
     // {/* ── PROFILE CARD ── */}
     <View
@@ -98,11 +113,17 @@ export const ProfileCardView = () => {
               borderColor: "#D6B36A",
             }}
           >
-            <Image
-              source={{
-                uri: imageProfileURL(user_personal.photo),
-              }}
-              style={{ width: "100%", height: "100%", borderRadius: 36 }}
+            <FullscreenImage
+              imageUrl={photoUrl}
+              accessibilityLabel="Buka foto profil dalam layar penuh"
+              thumbnailSize={64}
+              thumbnailIndicatorPosition="top-right"
+              thumbnail={
+                <Image
+                  source={{ uri: photoUrl }}
+                  style={{ width: "100%", height: "100%", borderRadius: 36 }}
+                />
+              }
             />
           </View>
           {/* Online dot */}
@@ -160,16 +181,60 @@ export const ProfileCardView = () => {
         <View style={{ flexDirection: "row", gap: 8, marginTop: 14 }}>
           <StatPill
             icon={<Ionicons name="flame" size={18} color="#E91E63" />}
-            label="Total"
-            value={`${workoutHistory.total_workout_per_month}x`}
+            label="Bulan Ini"
+            value={`${monthlyWorkoutCount}x`}
             color="#E91E63"
           />
           <StatPill
-            icon={<Ionicons name="trending-up" size={18} color="#6F3FA0" />}
-            label="Sisa Target"
-            value={`${12 - workoutHistory.total_workout_per_month}x`}
-            color="#6F3FA0"
+            icon={<Ionicons name="trophy" size={18} color={memberFlag.color} />}
+            label="Member Flag"
+            value={`Flag ${memberFlag.flag}`}
+            color={memberFlag.color}
           />
+        </View>
+      )}
+      {!isPending && workoutHistory && (
+        <View
+          style={{
+            marginTop: 12,
+            padding: 12,
+            borderRadius: 18,
+            backgroundColor: "#F8FAFC",
+          }}
+        >
+          <View
+            style={{ flexDirection: "row", justifyContent: "space-between" }}
+          >
+            <Text style={{ fontSize: 11, fontWeight: "700", color: "#64748B" }}>
+              Target bulanan
+            </Text>
+            <Text style={{ fontSize: 11, fontWeight: "800", color: "#6F3FA0" }}>
+              {remainingWorkout === 0
+                ? "Target tercapai"
+                : `${remainingWorkout} sesi lagi`}
+            </Text>
+          </View>
+          <View
+            style={{
+              height: 7,
+              marginTop: 9,
+              overflow: "hidden",
+              borderRadius: 4,
+              backgroundColor: "#E2E8F0",
+            }}
+          >
+            <View
+              style={{
+                width: `${progress}%` as `${number}%`,
+                height: "100%",
+                borderRadius: 4,
+                backgroundColor: memberFlag.color,
+              }}
+            />
+          </View>
+          <Text style={{ marginTop: 7, fontSize: 10, color: "#94A3B8" }}>
+            {monthlyWorkoutCount} dari {MONTHLY_WORKOUT_TARGET} sesi bulan ini
+          </Text>
         </View>
       )}
     </View>

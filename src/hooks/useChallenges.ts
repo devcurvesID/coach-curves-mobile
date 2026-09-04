@@ -7,6 +7,38 @@ export interface UserChallengeSummary {
   challenges_complete: number;
 }
 
+export interface CompletedUserChallenge {
+  _id: string;
+  status: string;
+  notes?: string | null;
+  is_claimed?: boolean;
+  updated_at: string;
+  challenge: {
+    _id: string;
+    challenge: string;
+    variable_target: number;
+  };
+}
+
+export const useCompletedUserChallenges = (userId?: string) =>
+  useQuery<CompletedUserChallenge[]>({
+    queryKey: ["user-challenge", "completed", userId],
+    enabled: Boolean(userId),
+    queryFn: async () => {
+      const { data } = await api.get("/user-challenge", {
+        params: { user_id: userId },
+      });
+      const response = data.response ?? [];
+      if (!Array.isArray(response)) {
+        throw new Error("Format challenge selesai tidak sesuai.");
+      }
+      return response.filter(
+        (item: CompletedUserChallenge) =>
+          item.status?.toUpperCase() === "COMPLETED",
+      );
+    },
+  });
+
 export const useChallenges = (userId?: string) => {
   return useQuery({
     queryKey: ["challenges", userId],

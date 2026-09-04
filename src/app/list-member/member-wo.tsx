@@ -12,6 +12,7 @@ import { useRouter } from "expo-router";
 import moment from "moment";
 import React, { useMemo, useState } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   Text,
@@ -37,11 +38,6 @@ interface WorkoutMember {
   user: WorkoutUser;
   club?: WorkoutClub | null;
   key_tag_id?: string | null;
-}
-
-interface WorkoutTodayResponse {
-  response?: WorkoutMember[];
-  total?: number;
 }
 
 interface WorkoutHistoryRecord {
@@ -262,19 +258,27 @@ export default function ListMemberWOScreen() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
 
+  const firstClub: unknown = user?.club_id?.[0];
+  const clubId =
+    typeof firstClub === "string"
+      ? firstClub
+      : firstClub && typeof firstClub === "object" && "_id" in firstClub
+        ? String(firstClub._id)
+        : undefined;
   const {
-    mutate: loadWorkoutMembers,
     data,
-    isPending,
+    isLoading,
     isError,
-  } = useMemberWorkoutToday();
+    isRefetching,
+    refetch,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isFetchNextPageError,
+  } = useMemberWorkoutToday<WorkoutMember>(clubId);
 
-  React.useEffect(() => {
-    if (user?._id) loadWorkoutMembers(user._id);
-  }, [loadWorkoutMembers, user?._id]);
-
-  const workoutData = data as WorkoutTodayResponse | undefined;
-  const workoutMembers = workoutData?.response ?? [];
+  const workoutMembers = data?.pages.flatMap((page) => page.response) ?? [];
+  const workoutTotal = data?.pages[0]?.total;
   const filteredMembers = useMemo(() => {
     const keyword = search.trim().toLowerCase();
     if (!keyword) return workoutMembers;
@@ -300,11 +304,7 @@ export default function ListMemberWOScreen() {
     });
   };
 
-  const refresh = () => {
-    if (user?._id) loadWorkoutMembers(user._id);
-  };
-
-  if (isPending && !data) return <LoadingView />;
+  if (isLoading) return <LoadingView />;
 
   return (
     <ContainerPage titleHeader="Workout Hari Ini" titleContent="Member Workout">
@@ -315,7 +315,7 @@ export default function ListMemberWOScreen() {
               Sedang workout hari ini
             </Text>
             <Text className="mt-1 text-3xl font-bold text-white">
-              {workoutData?.total ?? workoutMembers.length}
+              {workoutTotal ?? workoutMembers.length}
             </Text>
             <Text className="mt-1 text-xs text-violet-200">
               Terakhir diperbarui {moment().format("HH:mm")} WIB
@@ -345,7 +345,9 @@ export default function ListMemberWOScreen() {
           )}
         </View>
         <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">
-          {filteredMembers.length} member ditampilkan
+          {workoutTotal !== undefined
+            ? `${filteredMembers.length} dari ${workoutTotal} member ditampilkan`
+            : `${filteredMembers.length} member ditampilkan`}
         </Text>
       </View>
 
@@ -359,8 +361,19 @@ export default function ListMemberWOScreen() {
             onMeasurement={() => openMeasurement(item)}
           />
         )}
-        refreshing={isPending}
-        onRefresh={refresh}
+        refreshing={isRefetching && !isFetchingNextPage}
+        onRefresh={() => void refetch()}
+        onEndReachedThreshold={0.4}
+        onEndReached={() => {
+          if (
+            hasNextPage &&
+            !isFetchingNextPage &&
+            !isRefetching &&
+            !isFetchNextPageError
+          ) {
+            void fetchNextPage();
+          }
+        }}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingTop: 2,
@@ -391,6 +404,32 @@ export default function ListMemberWOScreen() {
                   : "Member yang workout hari ini akan muncul di sini."}
             </Text>
           </View>
+        }
+        ListFooterComponent={
+          isFetchingNextPage ? (
+            <View className="items-center py-5">
+              <ActivityIndicator color="#6F3FA0" />
+              <Text className="mt-2 text-xs text-gray-500">
+                Memuat member berikutnya...
+              </Text>
+            </View>
+          ) : isFetchNextPageError || hasNextPage ? (
+            <TouchableOpacity
+              accessibilityRole="button"
+              onPress={() => void fetchNextPage()}
+              className="mx-5 my-4 items-center rounded-2xl bg-violet-50 px-4 py-4"
+            >
+              <Text className="font-bold text-[#6F3FA0]">
+                {isFetchNextPageError
+                  ? "Gagal memuat lanjutan. Coba lagi"
+                  : "Muat Member Berikutnya"}
+              </Text>
+            </TouchableOpacity>
+          ) : workoutMembers.length > 0 ? (
+            <Text className="py-5 text-center text-xs text-gray-500">
+              Semua member workout hari ini telah dimuat.
+            </Text>
+          ) : null
         }
       />
     </ContainerPage>

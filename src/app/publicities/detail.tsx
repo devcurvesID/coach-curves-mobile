@@ -1,35 +1,21 @@
 import ContainerPage from "@/components/ui/container-page";
-import { useAuth } from "@/context/auth";
-import { PATH_PUBLIC_IMAGE_PUBLICITY } from "@/utils/constants";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { FullscreenImage } from "@/components/ui/fullscreen-image";
+import { PublicityNote } from "@/components/publicities/publicity-note";
+import { publicityImageURL } from "@/services/image";
+import type { Publicity } from "@/types/publicity";
+import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 
 export default function DetailPublicityScreen() {
-  const router = useRouter();
-  const params = useLocalSearchParams();
-  const promo = JSON.parse(params.data as string);
-  console.log("detail club", promo);
-  const { user, signOut } = useAuth();
+  const params = useLocalSearchParams<{ data: string }>();
+  const promo = JSON.parse(params.data) as Publicity;
 
-  const user_personal = user.user_personal;
-
-  // 🔥 generate bulan (dinamis)
-
-  const imageChallengeURL = (fileName?: string) => {
-    if (!fileName) {
-      return "https://placehold.co/600x400/png";
-    }
-    return `${PATH_PUBLIC_IMAGE_PUBLICITY}/${fileName}`;
-  };
   return (
     <>
-      <ContainerPage
-        titleHeader={promo.headline}
-        titleContent="Detail Challenge"
-      >
+      <ContainerPage titleHeader={promo.headline} titleContent="Detail Promo">
         <ScrollView
           contentContainerStyle={{
             flexGrow: 1,
@@ -39,14 +25,19 @@ export default function DetailPublicityScreen() {
           showsVerticalScrollIndicator={false}
         >
           {/* Banner */}
-          <View>
+          <FullscreenImage
+            imageUrl={publicityImageURL(promo.photo)}
+            accessibilityLabel="Buka gambar promo dalam layar penuh"
+            status="PROMO"
+          />
+          {/* <View>
             <Image
               source={{
-                uri: imageChallengeURL(promo.photo),
+                uri: publicityImageURL(promo.photo),
               }}
               style={{
                 width: "100%",
-                height: 180,
+                height: 800,
               }}
               resizeMode="cover"
             />
@@ -54,10 +45,10 @@ export default function DetailPublicityScreen() {
             <View className="absolute top-14 right-5 bg-pink-500 px-4 py-2 rounded-full">
               <Text className="text-white font-bold">PROMO</Text>
             </View>
-          </View>
+          </View> */}
 
           {/* Content */}
-          <View className="bg-white rounded-t-[35px] -mt-8 p-6">
+          <View className="bg-white rounded-t-[35px] mt-8 p-6">
             {/* Title */}
             <Text className="text-3xl font-bold text-gray-800">
               {promo.headline}
@@ -81,17 +72,18 @@ export default function DetailPublicityScreen() {
               </Text>
             </View>
 
+            {promo.note && (
+              <View className="mt-8">
+                <Text className="text-xl font-bold text-gray-800 mb-4">
+                  About Promotion
+                </Text>
+                <PublicityNote html={promo.note} />
+              </View>
+            )}
             {/* Description */}
-            <View className="mt-8">
-              <Text className="text-xl font-bold text-gray-800 mb-4">
-                About Promotion
-              </Text>
-
-              <Text className="text-gray-600 leading-7">{promo.note}</Text>
-            </View>
 
             {/* Benefits */}
-            <View className="mt-8">
+            {/* <View className="mt-8">
               <Text className="text-xl font-bold text-gray-800 mb-4">
                 Promotion Benefits
               </Text>
@@ -133,10 +125,10 @@ export default function DetailPublicityScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </View> */}
 
             {/* Terms */}
-            <View className="mt-8">
+            {/* <View className="mt-8">
               <Text className="text-xl font-bold text-gray-800 mb-4">
                 Terms & Conditions
               </Text>
@@ -154,10 +146,10 @@ export default function DetailPublicityScreen() {
                   • Tidak dapat digabung dengan promo lain.
                 </Text>
               </View>
-            </View>
+            </View> */}
 
             {/* Contact */}
-            <View className="mt-8">
+            {/* <View className="mt-8">
               <Text className="text-xl font-bold text-gray-800 mb-4">
                 Need Help?
               </Text>
@@ -171,14 +163,14 @@ export default function DetailPublicityScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </View> */}
 
             {/* Button */}
-            <TouchableOpacity className="bg-purple-600 py-4 rounded-2xl mt-8 mb-10">
+            {/* <TouchableOpacity className="bg-purple-600 py-4 rounded-2xl mt-8 mb-10">
               <Text className="text-center text-white font-bold text-lg">
                 Claim Promotion
               </Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
           </View>
         </ScrollView>
       </ContainerPage>

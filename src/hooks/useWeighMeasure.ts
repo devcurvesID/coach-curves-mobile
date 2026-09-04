@@ -1,8 +1,61 @@
 import { api } from "@/lib/axios";
-import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
+import type {
+  CreateWeighMeasurePayload,
+  CreateWeighMeasureResponse,
+  UploadWeighMeasureResultPayload,
+  WeighMeasureHistoryResponse,
+} from "@/types/weigh-measure";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
+
+export const useCreateWeighMeasure = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    retry: false,
+    mutationFn: async (payload: CreateWeighMeasurePayload) => {
+      const { data } = await api.post<CreateWeighMeasureResponse>(
+        "/weigh-measure",
+        payload,
+      );
+      return data;
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["last-weigh-measure"] });
+      void queryClient.invalidateQueries({
+        queryKey: ["weigh-measure-progress"],
+      });
+      void queryClient.invalidateQueries({ queryKey: ["member-appointment"] });
+      void queryClient.invalidateQueries({ queryKey: ["member-appointments"] });
+    },
+  });
+};
+
+export const useUploadWeighMeasureResult = () =>
+  useMutation({
+    retry: false,
+    mutationFn: async ({
+      member_id,
+      weigh_measure_id,
+      photo,
+    }: UploadWeighMeasureResultPayload) => {
+      const formData = new FormData();
+      formData.append("member_id", member_id);
+      formData.append("weigh_measure_id", weigh_measure_id);
+      formData.append("photo", photo as unknown as Blob);
+
+      const { data } = await api.post("/upload/result-wm", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      });
+      return data;
+    },
+  });
 
 interface MemberAppointmentPage<T = unknown> {
-  response: T[];
+  response: T[] | null;
   total?: number;
   limit?: number;
   offset?: number;
@@ -22,8 +75,8 @@ export const useLastWeighMeasure = () => {
 
 export const useWeighMeasureHistory = () => {
   return useMutation({
-    mutationFn: async ({ year, month }: any) => {
-      const { data } = await api.get(
+    mutationFn: async ({ year, month }: { year: number; month: number }) => {
+      const { data } = await api.get<WeighMeasureHistoryResponse>(
         `/user/weigh-measure?year=${year}&month=${month}`,
       );
       return data;
@@ -76,9 +129,9 @@ export const useWeighMeasureHistoryByUserId = () => {
 
 export const useMemberAppointmentByStaffId = () => {
   return useMutation({
-    mutationFn: async (staff_id: string) => {
+    mutationFn: async (club_id: string) => {
       const { data } = await api.get("/member-appointment", {
-        params: { staff_id },
+        params: { club_id },
       });
       return data;
     },
@@ -86,30 +139,43 @@ export const useMemberAppointmentByStaffId = () => {
 };
 
 export const useInfiniteMemberAppointments = ({
-  staffId,
+  club_id,
+  key_tag_id,
   limit = 10,
 }: {
-  staffId?: string;
+  club_id?: string;
+  key_tag_id?: string;
   limit?: number;
 }) => {
   return useInfiniteQuery({
-    queryKey: ["member-appointments", staffId, limit],
-    enabled: Boolean(staffId),
+    queryKey: ["member-appointments", club_id, key_tag_id, limit],
+    enabled: Boolean(club_id),
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
       const { data } = await api.get<MemberAppointmentPage>(
         "/member-appointment",
         {
           params: {
-            staff_id: "6a1e8d9705824f405ed79f2c", //"6a1e906305824f405ed79f49",
+            club_id: club_id, //"6a1e8d9705824f405ed79f2c", //"6a1e906305824f405ed79f49",
+            ...(key_tag_id ? { key_tag_id } : {}),
             offset: pageParam,
             limit,
           },
         },
       );
-      return data;
+      if (data.response !== null && !Array.isArray(data.response)) {
+        throw new Error("Format data appointment tidak sesuai.");
+      }
+
+      return {
+        ...data,
+        response: data.response ?? [],
+        ...(data.response === null ? { total: 0 } : {}),
+      };
     },
     getNextPageParam: (lastPage, pages) => {
+      if (lastPage.response.length === 0) return undefined;
+
       const loadedCount = pages.reduce(
         (total, page) => total + page.response.length,
         0,

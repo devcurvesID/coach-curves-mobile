@@ -1,72 +1,176 @@
 import Container from "@/components/ui/container";
 import MenuItem from "@/components/ui/menu-item";
-import Text from "@/components/ui/text";
+import RankOneCard, {
+  type RankOneCardData,
+} from "@/components/workout/rank-one-card";
 import { useAuth } from "@/context/auth";
+import { useUserClub } from "@/hooks/useClubs";
+import { useCreateMemberRank } from "@/hooks/useMemberRank";
 import { useUpdateUser } from "@/hooks/useUsers";
+import { useWeighMeasurePrintout } from "@/hooks/useWeighMeasure";
 import { imageProfileURL } from "@/services/image";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import React from "react";
-import { Image, ScrollView, View } from "react-native";
-
-function StatCard({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-1 bg-[#6F3FA0] dark:bg-[#BB86FC] border border-white/10 rounded-2xl p-4 items-center">
-      <Text className="text-[#ffffff] text-xl font-bold">{value}</Text>
-      <Text className="text-[#F5F5F5] text-xs mt-1">{label}</Text>
-    </View>
-  );
-}
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const { user, isLoading, signOut } = useAuth();
-  const { mutate: updateUserIdFn } = useUpdateUser();
+  const { user, signOut } = useAuth();
+  const { data: userClub, isLoading: isLoadingUserClub } = useUserClub();
+  const { mutateAsync: updateUser } = useUpdateUser();
+  const { mutateAsync: createMemberRank, isPending: isCreatingMemberRank } =
+    useCreateMemberRank();
+  const { mutate: loadWeighMeasurePrintout, data: weighMeasurePrintout } =
+    useWeighMeasurePrintout();
 
   const user_personal = user.user_personal;
+
+  const [isLogoutModalVisible, setIsLogoutModalVisible] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const [logoutError, setLogoutError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+
+    loadWeighMeasurePrintout(`?wm_date=${year}-${month}-${day}`);
+  }, [loadWeighMeasurePrintout]);
+
+  const rankCardData: RankOneCardData = {
+    club: {
+      club_name:
+        !isLoadingUserClub && userClub?.[0]?.club_name
+          ? userClub[0].club_name
+          : "",
+    },
+    weigh_diff: weighMeasurePrintout?.weigh_diff ?? 0,
+    size_diff: weighMeasurePrintout?.size_diff ?? 0,
+    body_fat_diff: weighMeasurePrintout?.body_fat_diff ?? 0,
+    wo_count: weighMeasurePrintout?.wo_count ?? 0,
+  };
+
+  const openWeighMeasureProgress = async () => {
+    const wmDate = weighMeasurePrintout?.current?.wm_date;
+
+    if (!wmDate) {
+      Alert.alert(
+        "Data belum tersedia",
+        "Tanggal pengukuran terbaru tidak ditemukan. Silakan coba kembali.",
+      );
+      return;
+    }
+
+    try {
+      await createMemberRank({
+        weigh_diff: rankCardData.weigh_diff,
+        size_diff: rankCardData.size_diff,
+        body_fat_diff: rankCardData.body_fat_diff,
+        wo_count: rankCardData.wo_count,
+        wm_date: wmDate,
+      });
+
+      router.push("/user/weigh-measure-progress");
+    } catch (error) {
+      Alert.alert(
+        "Gagal membuka detail",
+        error instanceof Error
+          ? error.message
+          : "Data peringkat gagal disimpan. Silakan coba kembali.",
+      );
+    }
+  };
+
   const onSignOutUser = async () => {
     try {
-      await updateUserIdFn({
+      setIsSigningOut(true);
+      setLogoutError(null);
+      await updateUser({
         is_online: false,
       });
       await signOut();
     } catch (error) {
-      console.log("error logout", error);
+      setLogoutError(
+        error instanceof Error
+          ? error.message
+          : "Logout gagal dilakukan. Silakan coba kembali.",
+      );
+    } finally {
+      setIsSigningOut(false);
     }
+  };
+
+  const openLogoutConfirmation = () => {
+    setLogoutError(null);
+    setIsLogoutModalVisible(true);
+  };
+
+  const closeLogoutConfirmation = () => {
+    if (isSigningOut) return;
+    setIsLogoutModalVisible(false);
+    setLogoutError(null);
   };
   return (
     <Container>
       <ScrollView
-        contentContainerClassName="px-6 pt-14 pb-32"
+        className="flex-1"
+        contentContainerClassName="px-6 pt-20 pb-40"
         showsVerticalScrollIndicator={false}
+        // contentContainerClassName="px-6 pt-14 pb-32"
+        // showsVerticalScrollIndicator={false}
       >
-        {/* Header */}
-        <View className="items-center">
-          <LinearGradient
-            colors={["#6F3FA0", "#BB86FC"]}
-            style={{
-              width: 110,
-              height: 110,
-              borderRadius: 55,
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <Image
-              source={{
-                uri: imageProfileURL(user_personal.photo),
-              }}
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 50,
-              }}
+        {weighMeasurePrintout ? (
+          <View className="pt-4">
+            <RankOneCard
+              data={rankCardData}
+              isDetailLoading={isCreatingMemberRank}
+              onPressDetail={() => void openWeighMeasureProgress()}
             />
-          </LinearGradient>
+          </View>
+        ) : (
+          <View className="items-center">
+            <LinearGradient
+              colors={["#6F3FA0", "#BB86FC"]}
+              style={{
+                width: 110,
+                height: 110,
+                borderRadius: 55,
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              <Image
+                source={{
+                  uri: imageProfileURL(user_personal.photo),
+                }}
+                style={{
+                  width: 100,
+                  height: 100,
+                  borderRadius: 50,
+                }}
+              />
+            </LinearGradient>
 
-          <Text className="text-2xl font-bold mt-4">{user.name}</Text>
-          <Text className=" text-sm mt-1">Premium Member</Text>
-        </View>
+            <Text className="text-2xl font-bold mt-4">{user.name}</Text>
+            {/* <Text className=" text-sm mt-1">Premium Member</Text> */}
+          </View>
+        )}
+
+        {/* Header */}
+
+        {/*  */}
 
         {/* Stats */}
         {/* <View className="flex-row gap-3 mt-8">
@@ -78,6 +182,26 @@ export default function ProfileScreen() {
         {/* Divider */}
         <View className="h-[1px] bg-white/10 my-8" />
 
+        <View className="mb-3">
+          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+            Aktivitas Saya
+          </Text>
+          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Lihat hasil pengukuran dan aktivitas workout akun Anda.
+          </Text>
+        </View>
+        <MenuItem
+          icon="scale-outline"
+          title="Weigh & Measure"
+          onPress={() => router.push("/user/weigh-measure")}
+        />
+        <MenuItem
+          icon="bar-chart-outline"
+          title="Riwayat Workout"
+          onPress={() => router.push("/user/attendance")}
+        />
+        <View className="my-5 h-px bg-gray-100 dark:bg-zinc-800" />
+
         {/* Menu */}
         <MenuItem
           icon="person-outline"
@@ -85,187 +209,115 @@ export default function ProfileScreen() {
           onPress={() => router.push("/user")}
         />
         <MenuItem
+          icon="key-outline"
+          title="Ubah Username & Password"
+          onPress={() => router.push("/user/update-account")}
+        />
+        <MenuItem
+          icon="barbell-sharp"
+          title="Rewards"
+          onPress={() => router.push("/challenges/challenge-complete")}
+        />
+        <MenuItem
           icon="notifications-outline"
           title="Notifikasi"
           onPress={() => router.push("/notification")}
         />
-        <MenuItem
+        {/* <MenuItem
+          icon="notifications-outline"
+          title="Notifikasi"
+          onPress={() => router.push("/notification")}
+        /> 
+       <MenuItem
           icon="settings-outline"
           title="Seting"
           onPress={() => router.push("/setting")}
-        />
-        <MenuItem icon="help-circle-outline" title="Help & Support" />
+        /> 
+        <MenuItem icon="help-circle-outline" title="Help & Support" /> */}
         <MenuItem
           icon="log-out-outline"
           title="Logout"
           danger
-          onPress={onSignOutUser}
+          onPress={openLogoutConfirmation}
         />
       </ScrollView>
+
+      <Modal
+        visible={isLogoutModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closeLogoutConfirmation}
+      >
+        <View className="flex-1 items-center justify-center bg-black/55 px-6">
+          <View className="w-full max-w-sm rounded-[28px] bg-white px-6 pb-6 pt-7 shadow-2xl">
+            <View className="items-center">
+              <View className="h-20 w-20 items-center justify-center rounded-full bg-red-50">
+                <View className="h-14 w-14 items-center justify-center rounded-full bg-red-100">
+                  <Ionicons name="log-out-outline" size={30} color="#DC2626" />
+                </View>
+              </View>
+
+              <Text className="mt-5 text-center text-xl font-bold text-slate-900">
+                Keluar dari Akun?
+              </Text>
+              <Text className="mt-2 text-center text-sm leading-6 text-slate-500">
+                Anda akan keluar dari akun {user.name}. Pastikan semua aktivitas
+                Anda telah selesai.
+              </Text>
+            </View>
+
+            {logoutError && (
+              <View className="mt-4 flex-row items-start rounded-xl bg-red-50 px-3 py-3">
+                <Ionicons
+                  name="alert-circle-outline"
+                  size={19}
+                  color="#DC2626"
+                />
+                <Text className="ml-2 flex-1 text-sm leading-5 text-red-600">
+                  {logoutError}
+                </Text>
+              </View>
+            )}
+
+            <View className="mt-6 flex-row gap-3">
+              <Pressable
+                disabled={isSigningOut}
+                onPress={closeLogoutConfirmation}
+                className={`flex-1 items-center rounded-2xl border border-slate-200 py-4 ${
+                  isSigningOut ? "opacity-50" : "active:bg-slate-50"
+                }`}
+              >
+                <Text className="font-bold text-slate-700">Batal</Text>
+              </Pressable>
+
+              <Pressable
+                disabled={isSigningOut}
+                onPress={() => void onSignOutUser()}
+                className={`flex-1 flex-row items-center justify-center rounded-2xl bg-red-600 py-4 ${
+                  isSigningOut ? "opacity-70" : "active:bg-red-700"
+                }`}
+              >
+                {isSigningOut ? (
+                  <>
+                    <ActivityIndicator size="small" color="#FFFFFF" />
+                    <Text className="ml-2 font-bold text-white">Keluar...</Text>
+                  </>
+                ) : (
+                  <>
+                    <Ionicons
+                      name="log-out-outline"
+                      size={18}
+                      color="#FFFFFF"
+                    />
+                    <Text className="ml-2 font-bold text-white">Logout</Text>
+                  </>
+                )}
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </Container>
   );
 }
-
-// import DashboardContainer from "@/components/dashboard-container";
-// import Ionicons from "@expo/vector-icons/Ionicons";
-// import React from "react";
-// import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
-
-// const ProfileScreen = () => {
-//   const [search, setSearch] = React.useState("");
-
-//   const stats = [
-//     { label: "Orders", value: "128", icon: "bag-handle-outline" as const },
-//     { label: "Revenue", value: "Rp 12.4jt", icon: "cash-outline" as const },
-//     { label: "Users", value: "1,342", icon: "people-outline" as const },
-//     { label: "Tickets", value: "7", icon: "help-circle-outline" as const },
-//   ];
-
-//   const actions = [
-//     { label: "New Order", icon: "add-circle-outline" as const },
-//     { label: "Scan", icon: "scan-outline" as const },
-//     { label: "Send", icon: "paper-plane-outline" as const },
-//     { label: "Report", icon: "stats-chart-outline" as const },
-//   ];
-
-//   const activities = [
-//     {
-//       title: "Payment received",
-//       desc: "INV-1024 • Rp 450.000",
-//       time: "2m ago",
-//       icon: "checkmark-circle-outline" as const,
-//     },
-//     {
-//       title: "New order created",
-//       desc: "ORD-7781 • 3 items",
-//       time: "18m ago",
-//       icon: "bag-add-outline" as const,
-//     },
-//     {
-//       title: "User signed up",
-//       desc: "jonviter@…",
-//       time: "1h ago",
-//       icon: "person-add-outline" as const,
-//     },
-//   ];
-
-//   return (
-//     <DashboardContainer isSearch>
-//       <ScrollView
-//         className="flex-1"
-//         contentContainerClassName="px-5 pb-35" // penting biar CTA gak ketutup tabbar
-//         showsVerticalScrollIndicator={false}
-//       >
-//         {/* Stats grid */}
-//         <View className="-mt-6 flex-row flex-wrap justify-between">
-//           {stats.map((s) => (
-//             <View
-//               key={s.label}
-//               className="mb-4 w-[48%] rounded-2xl bg-white p-4 border border-slate-100 shadow"
-//             >
-//               <View className="flex-row items-center justify-between">
-//                 <View className="h-11 w-11 items-center justify-center rounded-2xl bg-slate-100">
-//                   <Ionicons name={s.icon} size={20} color="#0f172a" />
-//                 </View>
-//                 <Text className="text-xs text-slate-500">Today</Text>
-//               </View>
-
-//               <Text className="mt-3 text-3xl font-semibold text-slate-900">
-//                 {s.value}
-//               </Text>
-//               <Text className="mt-1 text-sm text-slate-500">{s.label}</Text>
-//             </View>
-//           ))}
-//         </View>
-
-//         {/* Quick Actions */}
-//         <View className="rounded-2xl bg-white p-4 border border-slate-100 shadow">
-//           <View className="flex-row items-center justify-between">
-//             <Text className="text-lg font-semibold text-slate-900">
-//               Quick actions
-//             </Text>
-//             <Pressable className="active:opacity-70">
-//               <Text className="text-sm text-slate-500">Customize</Text>
-//             </Pressable>
-//           </View>
-
-//           <View className="mt-4 flex-row justify-between">
-//             {actions.map((a) => (
-//               <Pressable
-//                 key={a.label}
-//                 className="w-[23%] items-center rounded-2xl bg-slate-50 py-3 border border-slate-100 active:opacity-80"
-//               >
-//                 <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white border border-slate-100">
-//                   <Ionicons name={a.icon} size={22} color="#0f172a" />
-//                 </View>
-//                 <Text className="mt-2 text-[12px] font-medium text-slate-700">
-//                   {a.label}
-//                 </Text>
-//               </Pressable>
-//             ))}
-//           </View>
-//         </View>
-
-//         {/* Recent activity */}
-//         <View className="mt-4 rounded-2xl bg-white p-4 border border-slate-100 shadow">
-//           <View className="flex-row items-center justify-between">
-//             <Text className="text-lg font-semibold text-slate-900">
-//               Recent activity
-//             </Text>
-//             <Pressable className="active:opacity-70">
-//               <Text className="text-sm text-sky-600 font-medium">View all</Text>
-//             </Pressable>
-//           </View>
-
-//           <View className="mt-2">
-//             {activities.map((it, idx) => (
-//               <View
-//                 key={it.title + idx}
-//                 className={`flex-row items-start py-4 ${
-//                   idx !== activities.length - 1
-//                     ? "border-b border-slate-100"
-//                     : ""
-//                 }`}
-//               >
-//                 <View className="mr-3 h-11 w-11 items-center justify-center rounded-2xl bg-slate-100">
-//                   <Ionicons name={it.icon} size={20} color="#0f172a" />
-//                 </View>
-
-//                 <View className="flex-1">
-//                   <View className="flex-row items-center justify-between">
-//                     <Text className="text-sm font-semibold text-slate-900">
-//                       {it.title}
-//                     </Text>
-//                     <Text className="text-xs text-slate-400">{it.time}</Text>
-//                   </View>
-//                   <Text className="mt-1 text-sm text-slate-500">{it.desc}</Text>
-//                 </View>
-//               </View>
-//             ))}
-//           </View>
-//         </View>
-
-//         {/* CTA */}
-//         {/* <LinearGradient
-//           colors={["rgba(15,23,42,1)", "rgba(30,41,59,1)"]}
-//           className="mt-4 rounded-2xl p-5"
-//         >
-//           <Text className="text-white text-lg font-semibold">
-//             Weekly performance
-//           </Text>
-//           <Text className="mt-1 text-white/70 text-sm leading-5">
-//             Your conversion rate is up 12% compared to last week.
-//           </Text>
-
-//           <Pressable className="mt-4 self-start rounded-xl bg-white px-4 py-3 active:opacity-90">
-//             <Text className="text-slate-900 font-semibold">Open report</Text>
-//           </Pressable>
-//         </LinearGradient> */}
-//       </ScrollView>
-//     </DashboardContainer>
-//   );
-// };
-
-// export default ProfileScreen;
-
-// const styles = StyleSheet.create({});

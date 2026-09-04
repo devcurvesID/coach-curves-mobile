@@ -1,3 +1,4 @@
+import { WMConfirmationModal } from "@/components/member-detail/wm-confirmation-modal";
 import ContainerPage from "@/components/ui/container-page";
 import { LoadingView } from "@/components/ui/loading";
 import { useAuth } from "@/context/auth";
@@ -6,17 +7,138 @@ import { imageProfileURL } from "@/services/image";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { useRouter } from "expo-router";
-import React, { useMemo } from "react";
+import React, { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
   Image,
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 
 const PAGE_SIZE = 10;
+
+function KeyTagSearchModal({
+  visible,
+  initialValue,
+  onClose,
+  onSearch,
+}: {
+  visible: boolean;
+  initialValue: string;
+  onClose: () => void;
+  onSearch: (keyTagId: string) => void;
+}) {
+  const [value, setValue] = useState(initialValue);
+  const [error, setError] = useState("");
+
+  React.useEffect(() => {
+    if (visible) {
+      setValue(initialValue);
+      setError("");
+    }
+  }, [initialValue, visible]);
+
+  const submit = () => {
+    const keyTagId = value.trim();
+    if (!keyTagId) {
+      setError("Key Tag ID wajib diisi.");
+      return;
+    }
+    onSearch(keyTagId);
+  };
+
+  return (
+    <Modal
+      visible={visible}
+      transparent
+      animationType="fade"
+      onRequestClose={onClose}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+        className="flex-1 justify-center bg-black/50 px-6"
+      >
+        <Pressable
+          onPress={onClose}
+          accessible={false}
+          className="absolute inset-0"
+        />
+        <View
+          accessibilityViewIsModal
+          className="rounded-3xl bg-white p-6 dark:bg-zinc-900"
+        >
+          <View className="flex-row items-start justify-between">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
+              <Ionicons name="key-outline" size={28} color="#6F3FA0" />
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Tutup pencarian"
+              onPress={onClose}
+              className="h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+            >
+              <Ionicons name="close" size={22} color="#9CA3AF" />
+            </Pressable>
+          </View>
+          <Text className="mt-5 text-2xl font-bold text-gray-900 dark:text-white">
+            Cari Jadwal Member
+          </Text>
+          <Text className="mt-2 text-sm leading-5 text-gray-500 dark:text-gray-400">
+            Masukkan Key Tag ID member untuk menemukan jadwal penimbangannya.
+          </Text>
+          <View
+            className={`mt-5 flex-row items-center rounded-2xl border px-4 ${error ? "border-red-400" : "border-gray-200 dark:border-zinc-700"}`}
+          >
+            <Ionicons name="key-outline" size={20} color="#6F3FA0" />
+            <TextInput
+              autoFocus
+              value={value}
+              onChangeText={(text) => {
+                setValue(text);
+                if (error) setError("");
+              }}
+              onSubmitEditing={submit}
+              returnKeyType="search"
+              autoCapitalize="none"
+              autoCorrect={false}
+              placeholder="Contoh: 990226314"
+              placeholderTextColor="#9CA3AF"
+              className="ml-3 flex-1 py-4 text-gray-900 dark:text-white"
+            />
+          </View>
+          {error ? (
+            <Text className="mt-2 text-xs text-red-600">{error}</Text>
+          ) : null}
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={submit}
+            activeOpacity={0.85}
+            className="mt-6 flex-row items-center justify-center rounded-2xl bg-[#6F3FA0] py-4"
+          >
+            <Ionicons name="search-outline" size={19} color="white" />
+            <Text className="ml-2 font-bold text-white">Cari Member</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            accessibilityRole="button"
+            onPress={onClose}
+            className="mt-3 items-center rounded-2xl border border-gray-200 py-4 dark:border-zinc-700"
+          >
+            <Text className="font-semibold text-gray-600 dark:text-gray-300">
+              Batal
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+  );
+}
 
 interface AppointmentUser {
   name: string;
@@ -136,142 +258,201 @@ function AppointmentCard({
   onInput: () => void;
   onHistory: () => void;
 }) {
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const completed = isCompleted(appointment.status);
   const scheduleStatus = getScheduleStatus(appointment.app_date);
+  const appointmentDate = dayjs(appointment.app_date);
+  const hasValidDate = appointmentDate.isValid();
+  const isBeforeSchedule =
+    hasValidDate &&
+    appointmentDate.startOf("day").isAfter(dayjs().startOf("day"));
+
+  const handleAction = () => {
+    if (completed) {
+      onHistory();
+      return;
+    }
+    if (!hasValidDate) return;
+    if (isBeforeSchedule) {
+      setShowConfirmation(true);
+      return;
+    }
+    onInput();
+  };
 
   return (
-    <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <View className="p-5">
-        <View className="flex-row items-start">
-          <MemberAvatar appointment={appointment} />
+    <>
+      <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="p-5">
+          <View className="flex-row items-start">
+            <MemberAvatar appointment={appointment} />
 
-          <View className="ml-4 flex-1">
-            <View className="flex-row items-start justify-between">
-              <View className="mr-2 flex-1">
-                <Text
-                  numberOfLines={1}
-                  className="text-lg font-bold text-gray-900 dark:text-white"
-                >
-                  {appointment.user.name}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  className="mt-1 text-sm text-gray-500 dark:text-gray-400"
-                >
-                  {appointment.user.email || "Email belum tersedia"}
-                </Text>
-              </View>
+            <View className="ml-4 flex-1">
+              <View className="flex-row items-start justify-between">
+                <View className="mr-2 flex-1">
+                  <Text
+                    numberOfLines={1}
+                    className="text-lg font-bold text-gray-900 dark:text-white"
+                  >
+                    {appointment.user.name}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                  >
+                    {appointment.user.email || "Email belum tersedia"}
+                  </Text>
+                </View>
 
-              <View
-                className={`rounded-full px-2.5 py-1 ${
-                  completed
-                    ? "bg-green-50 dark:bg-green-950"
-                    : "bg-amber-50 dark:bg-amber-950"
-                }`}
-              >
-                <Text
-                  className={`text-[10px] font-bold ${
+                <View
+                  className={`rounded-full px-2.5 py-1 ${
                     completed
-                      ? "text-green-700 dark:text-green-300"
-                      : "text-amber-700 dark:text-amber-300"
+                      ? "bg-green-50 dark:bg-green-950"
+                      : "bg-amber-50 dark:bg-amber-950"
                   }`}
                 >
-                  {completed ? "SELESAI" : "MENUNGGU WM"}
+                  <Text
+                    className={`text-[10px] font-bold ${
+                      completed
+                        ? "text-green-700 dark:text-green-300"
+                        : "text-amber-700 dark:text-amber-300"
+                    }`}
+                  >
+                    {completed ? "SELESAI" : "MENUNGGU WM"}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
+            <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
+              <Text className="text-xs text-gray-500 dark:text-gray-400">
+                TANGGAL
+              </Text>
+              <View className="mt-1.5 flex-row items-center">
+                <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
+                <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                  {formatAppointmentDate(appointment.app_date)}
+                </Text>
+              </View>
+            </View>
+            <View className="flex-1 pl-4">
+              <Text className="text-xs text-gray-500 dark:text-gray-400">
+                JAM
+              </Text>
+              <View className="mt-1.5 flex-row items-center">
+                <Ionicons name="time-outline" size={17} color="#6F3FA0" />
+                <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                  {formatAppointmentTime(appointment.app_hour)}
                 </Text>
               </View>
             </View>
           </View>
-        </View>
 
-        <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-          <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              TANGGAL
-            </Text>
-            <View className="mt-1.5 flex-row items-center">
-              <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
-              <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
-                {formatAppointmentDate(appointment.app_date)}
-              </Text>
-            </View>
-          </View>
-          <View className="flex-1 pl-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              JAM
-            </Text>
-            <View className="mt-1.5 flex-row items-center">
-              <Ionicons name="time-outline" size={17} color="#6F3FA0" />
-              <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
-                {formatAppointmentTime(appointment.app_hour)}
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        <View
-          className={`mt-3 flex-row items-center rounded-xl px-3 py-2.5 ${scheduleStatus.containerClass}`}
-        >
-          <Ionicons
-            name={scheduleStatus.icon}
-            size={18}
-            color={scheduleStatus.color}
-          />
-          <Text
-            className={`ml-2 text-sm font-semibold ${scheduleStatus.textClass}`}
+          <View
+            className={`mt-3 flex-row items-center rounded-xl px-3 py-2.5 ${scheduleStatus.containerClass}`}
           >
-            {scheduleStatus.text}
-          </Text>
+            <Ionicons
+              name={scheduleStatus.icon}
+              size={18}
+              color={scheduleStatus.color}
+            />
+            <Text
+              className={`ml-2 text-sm font-semibold ${scheduleStatus.textClass}`}
+            >
+              {scheduleStatus.text}
+            </Text>
+          </View>
+
+          {(appointment.key_tag_id || appointment.phone) && (
+            <View className="mt-4 gap-3">
+              {appointment.key_tag_id && (
+                <View className="flex-row items-center">
+                  <Ionicons name="key-outline" size={18} color="#6F3FA0" />
+                  <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
+                    Key Tag: {appointment.key_tag_id}
+                  </Text>
+                </View>
+              )}
+              {appointment.phone && (
+                <View className="flex-row items-center">
+                  <Ionicons name="call-outline" size={18} color="#6F3FA0" />
+                  <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
+                    {String(appointment.phone)}
+                  </Text>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
-        {(appointment.key_tag_id || appointment.phone) && (
-          <View className="mt-4 gap-3">
-            {appointment.key_tag_id && (
-              <View className="flex-row items-center">
-                <Ionicons name="key-outline" size={18} color="#6F3FA0" />
-                <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
-                  Key Tag: {appointment.key_tag_id}
-                </Text>
-              </View>
-            )}
-            {appointment.phone && (
-              <View className="flex-row items-center">
-                <Ionicons name="call-outline" size={18} color="#6F3FA0" />
-                <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
-                  {String(appointment.phone)}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
-      </View>
-
-      <TouchableOpacity
-        onPress={completed ? onHistory : onInput}
-        activeOpacity={0.85}
-        className={`flex-row items-center justify-center py-4 ${
-          completed ? "bg-green-50 dark:bg-green-950" : "bg-[#6F3FA0]"
-        }`}
-      >
-        <Ionicons
-          name={completed ? "time-outline" : "create-outline"}
-          size={20}
-          color={completed ? "#15803D" : "white"}
-        />
-        <Text
-          className={`ml-2 font-bold ${
-            completed ? "text-green-700 dark:text-green-300" : "text-white"
+        <TouchableOpacity
+          onPress={handleAction}
+          disabled={!completed && !hasValidDate}
+          accessibilityRole="button"
+          accessibilityLabel={completed ? "Lihat riwayat WM" : "Isi hasil WM"}
+          accessibilityHint={
+            isBeforeSchedule
+              ? "Menampilkan konfirmasi input sebelum jadwal"
+              : undefined
+          }
+          accessibilityState={{ disabled: !completed && !hasValidDate }}
+          activeOpacity={0.85}
+          className={`flex-row items-center justify-center py-4 ${
+            completed ? "bg-green-50 dark:bg-green-950" : "bg-[#6F3FA0]"
           }`}
         >
-          {completed ? "Lihat Riwayat WM" : "Isi Hasil WM"}
-        </Text>
-      </TouchableOpacity>
-    </View>
+          <Ionicons
+            name={completed ? "time-outline" : "create-outline"}
+            size={20}
+            color={completed ? "#15803D" : "white"}
+          />
+          <Text
+            className={`ml-2 font-bold ${
+              completed ? "text-green-700 dark:text-green-300" : "text-white"
+            }`}
+          >
+            {completed
+              ? "Lihat Riwayat WM"
+              : !hasValidDate
+                ? "Jadwal Tidak Valid"
+                : isBeforeSchedule
+                  ? "Tetap Isi Hasil WM"
+                  : "Isi Hasil WM"}
+          </Text>
+        </TouchableOpacity>
+      </View>
+      <WMConfirmationModal
+        visible={showConfirmation && isBeforeSchedule && !completed}
+        appointmentDate={appointmentDate.format("DD MMM YYYY")}
+        onCancel={() => setShowConfirmation(false)}
+        onConfirm={() => {
+          setShowConfirmation(false);
+          onInput();
+        }}
+      />
+    </>
   );
 }
 
 export default function ListMemberWMToday() {
   const router = useRouter();
   const { user } = useAuth();
+  const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
+  const [keyTagId, setKeyTagId] = useState("");
+  const user_personal = user.user_personal;
+  const coach_club_id = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
+  const clubId =
+    typeof coach_club_id === "string"
+      ? coach_club_id
+      : coach_club_id &&
+          typeof coach_club_id === "object" &&
+          "_id" in coach_club_id
+        ? String(coach_club_id._id)
+        : undefined;
   const {
     data,
     error,
@@ -282,7 +463,8 @@ export default function ListMemberWMToday() {
     isRefetching,
     refetch,
   } = useInfiniteMemberAppointments({
-    staffId: user?._id,
+    club_id: clubId,
+    key_tag_id: keyTagId || undefined,
     limit: PAGE_SIZE,
   });
 
@@ -363,6 +545,57 @@ export default function ListMemberWMToday() {
               </View>
             </View>
 
+            <View className="mx-5 mb-5">
+              {keyTagId ? (
+                <View className="rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-950">
+                  <View className="flex-row items-center">
+                    <Ionicons name="search-outline" size={20} color="#6F3FA0" />
+                    <View className="ml-3 flex-1">
+                      <Text className="text-xs text-gray-500 dark:text-gray-400">
+                        Hasil pencarian Key Tag
+                      </Text>
+                      <Text className="mt-1 font-bold text-[#6F3FA0] dark:text-violet-300">
+                        {keyTagId}
+                      </Text>
+                    </View>
+                    <TouchableOpacity
+                      accessibilityRole="button"
+                      accessibilityLabel="Ubah pencarian"
+                      onPress={() => setIsSearchModalVisible(true)}
+                      className="h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-zinc-900"
+                    >
+                      <Ionicons
+                        name="pencil-outline"
+                        size={19}
+                        color="#6F3FA0"
+                      />
+                    </TouchableOpacity>
+                  </View>
+                  <TouchableOpacity
+                    accessibilityRole="button"
+                    onPress={() => setKeyTagId("")}
+                    className="mt-3 self-start"
+                  >
+                    <Text className="text-xs font-semibold text-violet-700 dark:text-violet-300">
+                      Hapus filter dan tampilkan semua
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={() => setIsSearchModalVisible(true)}
+                  activeOpacity={0.85}
+                  className="flex-row items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 py-4 dark:border-violet-800 dark:bg-violet-950"
+                >
+                  <Ionicons name="search-outline" size={20} color="#6F3FA0" />
+                  <Text className="ml-2 font-bold text-[#6F3FA0] dark:text-violet-300">
+                    Cari Berdasarkan Key Tag
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
             {appointments.length > 0 && (
               <View className="mx-5 mb-4">
                 <Text className="text-xl font-bold text-gray-900 dark:text-white">
@@ -402,15 +635,28 @@ export default function ListMemberWMToday() {
             <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
               {error
                 ? "Jadwal WM gagal dimuat"
-                : "Tidak ada jadwal WM hari ini"}
+                : keyTagId
+                  ? "Member tidak ditemukan"
+                  : "Tidak ada jadwal WM hari ini"}
             </Text>
             <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
               {error
                 ? "Tarik layar ke bawah untuk mencoba kembali."
-                : "Belum ada member yang dijadwalkan melakukan penimbangan hari ini."}
+                : keyTagId
+                  ? `Tidak ada jadwal WM dengan Key Tag ${keyTagId}. Periksa kembali Key Tag yang dimasukkan.`
+                  : "Belum ada member yang dijadwalkan melakukan penimbangan hari ini."}
             </Text>
           </View>
         }
+      />
+      <KeyTagSearchModal
+        visible={isSearchModalVisible}
+        initialValue={keyTagId}
+        onClose={() => setIsSearchModalVisible(false)}
+        onSearch={(value) => {
+          setKeyTagId(value);
+          setIsSearchModalVisible(false);
+        }}
       />
     </ContainerPage>
   );

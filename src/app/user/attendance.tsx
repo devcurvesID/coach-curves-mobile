@@ -1,105 +1,144 @@
 import ContainerPage from "@/components/ui/container-page";
 import DateMonthPickerModal from "@/components/ui/date-month-picker-modal";
-import { FlatListItem } from "@/components/ui/flat-list-item";
 import MenuItem from "@/components/ui/menu-item";
-import { DataWorkoutHistoryView } from "@/components/workout/list-workout";
+import { WorkoutHistoryTimeline } from "@/components/workout/workout-history-timeline";
 import { useAuth } from "@/context/auth";
-import { useLastWorkout, useWorkoutHistory } from "@/hooks/useWorkout";
-import React from "react";
-import { ActivityIndicator, Text, View } from "react-native";
+import { useWorkoutHistory } from "@/hooks/useWorkout";
+import React, { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, Text, View } from "react-native";
+
+interface SelectedPeriod {
+  year: number;
+  month: number;
+  month_value: string;
+}
+
+const getCurrentPeriod = (): SelectedPeriod => {
+  const currentDate = new Date();
+
+  return {
+    year: currentDate.getFullYear(),
+    month: currentDate.getMonth() + 1,
+    month_value: currentDate.toLocaleString("id-ID", { month: "long" }),
+  };
+};
+
 export default function AttendanceScreen() {
-  const { user, signOut } = useAuth();
-
-  const { data: lastWorkout, error, isLoading, refetch } = useLastWorkout();
-  console.log("lastWorkout", lastWorkout);
-
+  const { user } = useAuth();
   const {
-    mutate: workoutHistoryFn,
+    mutate: loadWorkoutHistory,
     data: workoutHistory,
     isPending,
+    isError,
   } = useWorkoutHistory();
+  const [selectedPeriod, setSelectedPeriod] =
+    useState<SelectedPeriod>(getCurrentPeriod);
+  const [isDatePickerVisible, setIsDatePickerVisible] = useState(false);
+  const joinedYear = new Date(user.created_at).getFullYear();
 
-  const user_personal = user.user_personal;
-  const curr_workout_date = user_personal.joined;
-  const joined_year = new Date(curr_workout_date).getFullYear();
-  const [visible, setVisible] = React.useState(false);
+  useEffect(() => {
+    loadWorkoutHistory({
+      year: selectedPeriod.year,
+      month: selectedPeriod.month - 1,
+    });
+  }, [loadWorkoutHistory, selectedPeriod]);
 
-  const now = new Date();
-  const currentYear = now.getFullYear();
-  const currentMonth = now.getMonth() + 1;
-  const [selectDateMonth, setSelectDateMonth] = React.useState<any>({
-    year: currentYear,
-    month: currentMonth,
-    month_value: new Date(0, currentMonth - 1).toLocaleString("id-ID", {
-      month: "long",
-    }),
-  });
-  React.useEffect(() => {
-    async function getWorkout() {
-      let joined_year = new Date(lastWorkout.workout_date).getFullYear();
-      let joined_month = new Date(lastWorkout.workout_date).getMonth();
-      await workoutHistoryFn({ year: joined_year, month: joined_month });
-    }
-    getWorkout();
-  }, [lastWorkout]);
-
-  const onSelectPicker = async (data: any) => {
-    console.log("onSelectPicker", data);
-    setSelectDateMonth(data);
-    await workoutHistoryFn({ year: data.year, month: data.month - 1 });
-    setVisible(false);
+  const handleSelectPeriod = (period: SelectedPeriod): void => {
+    setSelectedPeriod(period);
+    setIsDatePickerVisible(false);
   };
+
+  const workouts = workoutHistory?.response ?? [];
 
   return (
     <>
       <ContainerPage titleHeader="Workout" titleContent={user.name}>
-        <MenuItem
-          icon="calendar-outline"
-          title={`${selectDateMonth.month_value} - ${selectDateMonth.year}`}
-          isBottom
-          onPress={() => setVisible(true)}
-        />
-        {!isPending && workoutHistory && (
-          <View className=" mt-4 bg-white rounded-2xl p-4 shadow-sm">
-            <Text className="text-gray-400 text-xs">Summary</Text>
+        <ScrollView
+          contentContainerClassName="pb-32"
+          showsVerticalScrollIndicator={false}
+        >
+          <MenuItem
+            icon="calendar-outline"
+            title={`${selectedPeriod.month_value} - ${selectedPeriod.year}`}
+            isBottom
+            onPress={() => setIsDatePickerVisible(true)}
+          />
 
-            <View className="flex-row justify-between mt-3">
-              <View>
-                <Text className="text-gray-400 text-xs">{`Workout Bulan ${selectDateMonth.month_value} ${selectDateMonth.year}`}</Text>
-                <Text className="text-xl font-bold text-purple-600">
-                  {workoutHistory.total_workout_per_month}
-                </Text>
-              </View>
-
-              <View>
-                <Text className="text-gray-400 text-xs">Total Workout</Text>
-                <Text className="text-xl font-bold text-purple-600">
-                  {workoutHistory.total}
-                </Text>
+          {workoutHistory && (
+            <View className="mt-4 rounded-2xl bg-purple-50 p-4">
+              <Text className="text-xs font-semibold uppercase tracking-wide text-purple-500">
+                Ringkasan Periode
+              </Text>
+              <View className="mt-3 flex-row">
+                <View className="flex-1">
+                  <Text className="text-xs text-slate-400">
+                    Workout {selectedPeriod.month_value}
+                  </Text>
+                  <Text className="mt-1 text-2xl font-bold text-purple-600">
+                    {workoutHistory.total_workout_per_month}
+                  </Text>
+                </View>
+                <View className="mx-4 w-px bg-purple-100" />
+                <View className="flex-1">
+                  <Text className="text-xs text-slate-400">Total Workout</Text>
+                  <Text className="mt-1 text-2xl font-bold text-purple-600">
+                    {workoutHistory.total}
+                  </Text>
+                </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {workoutHistory && (
-          <FlatListItem
-            data={workoutHistory.response}
-            keyExtractor={(item: any, index) =>
-              item._id ? `${item._id}-${index}` : index.toString()
-            }
-            CustomComponent={DataWorkoutHistoryView}
-            ListFooterComponent={() =>
-              isPending ? <ActivityIndicator /> : null
-            }
-            showsVerticalScrollIndicator={false}
-          />
-        )}
+          <View className="mb-5 mt-7">
+            <Text className="text-xl font-bold text-slate-900">
+              Riwayat Workout
+            </Text>
+            <Text className="mt-1 text-sm leading-5 text-slate-500">
+              Daftar workout pada periode {selectedPeriod.month_value}{" "}
+              {selectedPeriod.year}.
+            </Text>
+          </View>
+
+          {isPending && !workoutHistory ? (
+            <ActivityIndicator
+              size="large"
+              color="#6F3FA0"
+              style={{ marginTop: 36 }}
+            />
+          ) : isError && !workoutHistory ? (
+            <View className="items-center rounded-3xl border border-red-100 bg-red-50 px-6 py-10">
+              <Text className="text-lg font-bold text-red-700">
+                Riwayat workout gagal dimuat
+              </Text>
+              <Text className="mt-2 text-center text-sm text-red-600">
+                Pilih kembali periode untuk mencoba memuat data.
+              </Text>
+            </View>
+          ) : (
+            <WorkoutHistoryTimeline
+              workouts={workouts}
+              summaryLabel={`Workout ${selectedPeriod.month_value}`}
+              emptyDescription={`Belum ada workout pada ${selectedPeriod.month_value} ${selectedPeriod.year}.`}
+            />
+          )}
+
+          {isPending && workoutHistory && (
+            <ActivityIndicator
+              size="small"
+              color="#6F3FA0"
+              style={{ marginVertical: 20 }}
+            />
+          )}
+        </ScrollView>
       </ContainerPage>
+
       <DateMonthPickerModal
-        visible={visible}
-        onSelect={onSelectPicker}
-        joined_year={joined_year}
-        onCancel={() => setVisible(false)}
+        visible={isDatePickerVisible}
+        joined_year={joinedYear}
+        selectedYear={selectedPeriod.year}
+        selectedMonth={selectedPeriod.month}
+        onCancel={() => setIsDatePickerVisible(false)}
+        onSelect={handleSelectPeriod}
       />
     </>
   );

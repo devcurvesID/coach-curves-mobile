@@ -46,7 +46,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "The app accesses your photos to let you share them with your friends.",
+          "photosPermission": "Izinkan Curves Coach mengakses galeri untuk memilih foto hasil latihan member.",
+          "cameraPermission": "Izinkan Curves Coach menggunakan kamera untuk mengambil foto hasil latihan member.",
           "colors": {
             "cropToolbarColor": "#000000"
           },

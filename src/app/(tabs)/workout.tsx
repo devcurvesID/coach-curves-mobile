@@ -1,7 +1,7 @@
 import { InformationWorkOutView } from "@/components/profile/information-workout";
 import { ProfileCardView } from "@/components/profile/profile-card";
+import { FullscreenImage } from "@/components/ui/fullscreen-image";
 import { LoadingView } from "@/components/ui/loading";
-import Text from "@/components/ui/text";
 import { DataWorkoutHistoryView } from "@/components/workout/list-workout";
 import { useAuth } from "@/context/auth";
 import { getDateTime } from "@/helpers/dates";
@@ -11,16 +11,59 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useColorScheme } from "nativewind";
 import React from "react";
 import {
-  Dimensions,
   ImageBackground,
   ScrollView,
   StyleSheet,
+  Text,
   View,
+  useWindowDimensions,
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const { width, height } = Dimensions.get("window");
+const MemberQrCode = ({
+  memberName,
+  keyTagId,
+}: {
+  memberName: string;
+  keyTagId: string;
+}) => {
+  const { width: screenWidth } = useWindowDimensions();
+  const qrSize = Math.max(Math.min(screenWidth - 128, 330), 180);
+
+  const renderQrCode = (size: number) => (
+    <View style={styles.qrCard}>
+      <QRCode
+        value={keyTagId}
+        logo={require("@/assets/images/logocurves.png")}
+        logoSize={size > 350 ? 48 : 40}
+        logoBackgroundColor="#F2F2F2"
+        color="#8B5CF6"
+        backgroundColor="#FFFFFF"
+        quietZone={12}
+        size={size}
+      />
+    </View>
+  );
+
+  return (
+    <View style={styles.qrSection}>
+      <FullscreenImage
+        accessibilityLabel="Buka QR code dalam layar penuh"
+        thumbnailSize={qrSize + 40}
+        thumbnail={renderQrCode(qrSize)}
+        fullscreenContent={({ width: modalWidth }) =>
+          renderQrCode(Math.min(modalWidth - 64, 420))
+        }
+      />
+      <View style={styles.memberInformation}>
+        <Text style={styles.memberName}>{memberName}</Text>
+        <Text style={styles.memberId}>MEMBER ID • {keyTagId}</Text>
+        <Text style={styles.qrHint}>Ketuk QR untuk memperbesar</Text>
+      </View>
+    </View>
+  );
+};
 
 const WorkOutScreen = () => {
   useLastWorkoutSocket();
@@ -110,31 +153,10 @@ const WorkOutScreen = () => {
               {/* <SectionTitle>Your Weekly Progress</SectionTitle> */}
 
               {/* QR CONTAINER */}
-              <View className="items-center justify-center">
-                <View className="bg-white p-5 rounded-[28px] shadow-2xl shadow-purple-500/40">
-                  {/* QR CODE */}
-                  <QRCode
-                    // value={`${user._id}-${user.source_id}`}
-                    value={user.user_personal.key_tag_id}
-                    logo={require("@/assets/images/logocurves.png")}
-                    logoSize={40}
-                    logoBackgroundColor="#F2F2F2"
-                    color="#BB86FC"
-                    size={300}
-                  />
-                </View>
-
-                {/* MEMBER INFO */}
-                <View className="items-center mt-5">
-                  <Text className="text-white text-lg font-bold">
-                    {user.name}
-                  </Text>
-
-                  <Text className="text-white/70 text-sm mt-1">
-                    MEMBER ID • {user.user_personal.key_tag_id}
-                  </Text>
-                </View>
-              </View>
+              <MemberQrCode
+                memberName={user.name}
+                keyTagId={String(user.user_personal.key_tag_id)}
+              />
             </View>
             {!isLoadingLastWorkout && lastWorkout && (
               <DataWorkoutHistoryView data={lastWorkout} />
@@ -147,3 +169,31 @@ const WorkOutScreen = () => {
 };
 
 export default WorkOutScreen;
+
+const styles = StyleSheet.create({
+  qrSection: { alignItems: "center", justifyContent: "center" },
+  qrCard: {
+    padding: 20,
+    borderRadius: 28,
+    backgroundColor: "#FFFFFF",
+    shadowColor: "#7C3AED",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 24,
+    elevation: 12,
+  },
+  memberInformation: { alignItems: "center", marginTop: 20 },
+  memberName: { fontSize: 18, fontWeight: "800", color: "#FFFFFF" },
+  memberId: { marginTop: 4, fontSize: 13, color: "rgba(255,255,255,0.72)" },
+  qrHint: {
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    overflow: "hidden",
+    borderRadius: 16,
+    fontSize: 11,
+    fontWeight: "600",
+    color: "rgba(255,255,255,0.86)",
+    backgroundColor: "rgba(255,255,255,0.14)",
+  },
+});

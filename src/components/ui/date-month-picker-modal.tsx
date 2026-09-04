@@ -3,8 +3,14 @@ import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import WheelPicker from "./wheel-picker";
 
 interface IDatePicker {
-  onSelect: (data: any) => void;
+  onSelect: (data: {
+    year: number;
+    month: number;
+    month_value: string;
+  }) => void;
   joined_year: number;
+  selectedYear?: number;
+  selectedMonth?: number;
   onCancel: () => void;
   visible: boolean;
 }
@@ -13,27 +19,32 @@ const DateMonthPickerModal = ({
   onSelect,
   onCancel,
   joined_year,
+  selectedYear = new Date().getFullYear(),
+  selectedMonth = new Date().getMonth() + 1,
   visible,
 }: IDatePicker) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
-  const [tempYear, setTempYear] = React.useState(currentYear);
-  const [tempMonth, setTempMonth] = React.useState(currentMonth);
+  const [tempYear, setTempYear] = React.useState(selectedYear);
+  const [tempMonth, setTempMonth] = React.useState(selectedMonth);
   const [labelMonth, setLabelMonth] = React.useState<string>(
-    new Date(0, currentMonth - 1).toLocaleString("id-ID", {
+    new Date(0, selectedMonth - 1).toLocaleString("id-ID", {
       month: "long",
     }),
   );
 
   const years = React.useMemo(() => {
     const arr = [];
-    for (let y = currentYear; y >= joined_year; y--) {
+    const firstYear = Number.isFinite(joined_year)
+      ? Math.min(joined_year, currentYear)
+      : currentYear;
+    for (let y = currentYear; y >= firstYear; y--) {
       // arr.push({ label: `${y}`, value: y });
       arr.push(y);
     }
     return arr;
-  }, []);
+  }, [currentYear, joined_year]);
 
   // 🔥 generate bulan (dinamis)
   const months = React.useMemo(() => {
@@ -51,16 +62,40 @@ const DateMonthPickerModal = ({
     return arr;
   }, [tempYear]);
 
-  if (tempYear === currentYear && tempMonth > currentMonth) {
-    setTempMonth(currentMonth);
-  }
+  React.useEffect(() => {
+    if (!visible) return;
+    const safeYear = Math.min(selectedYear, currentYear);
+    const maxMonth = safeYear === currentYear ? currentMonth : 12;
+    const safeMonth = Math.min(Math.max(selectedMonth, 1), maxMonth);
+    setTempYear(safeYear);
+    setTempMonth(safeMonth);
+    setLabelMonth(
+      new Date(0, safeMonth - 1).toLocaleString("id-ID", { month: "long" }),
+    );
+  }, [currentMonth, currentYear, selectedMonth, selectedYear, visible]);
+
+  React.useEffect(() => {
+    if (tempYear === currentYear && tempMonth > currentMonth) {
+      setTempMonth(currentMonth);
+      setLabelMonth(
+        new Date(0, currentMonth - 1).toLocaleString("id-ID", {
+          month: "long",
+        }),
+      );
+    }
+  }, [currentMonth, currentYear, tempMonth, tempYear]);
 
   const onSelectDate = async () => {
     onSelect({ year: tempYear, month: tempMonth, month_value: labelMonth });
     //   onPress();
   };
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal
+      visible={visible}
+      transparent
+      animationType="slide"
+      onRequestClose={onCancel}
+    >
       <View
         style={{
           flex: 1,
@@ -93,7 +128,7 @@ const DateMonthPickerModal = ({
             <View className="flex-1">
               <WheelPicker
                 data={years}
-                value={currentYear}
+                value={tempYear}
                 onChange={(val) => setTempYear(val)}
                 renderLabel={(item) => item.toString()}
               />
@@ -101,7 +136,7 @@ const DateMonthPickerModal = ({
             <View className="flex-1">
               <WheelPicker
                 data={months}
-                value={months[currentMonth]}
+                value={months.find((month) => month.value === tempMonth)}
                 onChange={(val) => {
                   setTempMonth(val.value);
                   setLabelMonth(val.label);

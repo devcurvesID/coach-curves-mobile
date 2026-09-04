@@ -20,13 +20,9 @@ export const COOKIE_OPTIONS = {
 };
 export const REFRESH_COOKIE_NAME = "refresh_token";
 export const PATH_PUBLIC_IMAGE_MEMBER =
-  "http://163.47.8.52/curves/images/member_photos"; // process.env.PATH_PUBLIC_IMAGE_MEMBER;
+  process.env.EXPO_PUBLIC_IMAGE_MEMBER_URL!;
 export const PATH_PUBLIC_IMAGE_REWARD =
-  "http://163.47.8.52/curves/images/rewards";
-
+  process.env.EXPO_PUBLIC_IMAGE_REWARD_URL!;
 export const PATH_PUBLIC_IMAGE_PUBLICITY =
-  "http://163.47.8.52/curves/images/publicities";
-("http://163.47.8.52/curves/images/rewards");
-
-export const PATH_PUBLIC_IMAGE_CLUB =
-  "http://163.47.8.52/curves/images/club_photos";
+  process.env.EXPO_PUBLIC_IMAGE_PUBLICITY_URL!;
+export const PATH_PUBLIC_IMAGE_CLUB = process.env.EXPO_PUBLIC_IMAGE_CLUB_URL!;

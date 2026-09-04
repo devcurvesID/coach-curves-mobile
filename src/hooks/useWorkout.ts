@@ -1,9 +1,18 @@
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/axios";
 import { socket } from "@/services/socket";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
+import type {
+  WorkoutHistoryParams,
+  WorkoutHistoryResponse,
+} from "@/types/workout";
 
 export const useLastWorkout = () => {
   return useQuery({
@@ -19,8 +28,8 @@ export const useLastWorkout = () => {
 
 export const useWorkoutHistory = () => {
   return useMutation({
-    mutationFn: async ({ year, month }: { year: number; month: number }) => {
-      const { data } = await api.get("/user/workout", {
+    mutationFn: async ({ year, month }: WorkoutHistoryParams) => {
+      const { data } = await api.get<WorkoutHistoryResponse>("/user/workout", {
         params: { year, month },
       });
       return data;
@@ -58,11 +67,44 @@ export const useWorkoutHistoryByUserId = () => {
   });
 };
 
-export const useMemberWorkoutToday = () => {
-  return useMutation({
-    mutationFn: async (coach_id: string) => {
-      const { data } = await api.get(`/coach-member/member-wo/${coach_id}`);
-      return data;
+interface WorkoutTodayPage<T = unknown> {
+  response: T[];
+  total?: number;
+  limit?: number;
+  offset?: number;
+}
+
+export const useMemberWorkoutToday = <T = unknown>(
+  clubId?: string,
+  limit = 10,
+) => {
+  return useInfiniteQuery({
+    queryKey: ["member-workout-today", clubId, limit],
+    enabled: Boolean(clubId),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam, signal }) => {
+      const { data } = await api.get<WorkoutTodayPage<T>>("/workouts/today", {
+        params: { club_id: clubId, offset: pageParam, limit },
+        signal,
+      });
+
+      return {
+        ...data,
+        response: Array.isArray(data.response) ? data.response : [],
+      };
+    },
+    getNextPageParam: (lastPage, pages) => {
+      const loadedCount = pages.reduce(
+        (total, page) => total + page.response.length,
+        0,
+      );
+
+      if (lastPage.response.length === 0) return undefined;
+      if (lastPage.total !== undefined) {
+        return loadedCount < lastPage.total ? loadedCount : undefined;
+      }
+
+      return lastPage.response.length === limit ? loadedCount : undefined;
     },
   });
 };

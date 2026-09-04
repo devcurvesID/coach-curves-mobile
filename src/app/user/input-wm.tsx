@@ -1,15 +1,23 @@
 import ContainerPage from "@/components/ui/container-page";
 import { LoadingView } from "@/components/ui/loading";
 import { useDetailMemberByUserId } from "@/hooks/useMember";
-import { api } from "@/lib/axios";
+import {
+  useCreateWeighMeasure,
+  useUploadWeighMeasureResult,
+} from "@/hooks/useWeighMeasure";
+import type {
+  CreatedWeighMeasure,
+  MeasurementKey,
+} from "@/types/weigh-measure";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useMemo, useState } from "react";
-import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
   Keyboard,
+  Image,
   Modal,
   Pressable,
   Switch,
@@ -20,26 +28,7 @@ import {
   View,
   useWindowDimensions,
 } from "react-native";
-
-type MeasurementKey =
-  | "weight"
-  | "body_fat"
-  | "muscle_mass"
-  | "bone_mass"
-  | "bmi"
-  | "bp_high"
-  | "bp_low"
-  | "rhr"
-  | "dci"
-  | "metabolic"
-  | "body_water"
-  | "visceral"
-  | "chest"
-  | "waist"
-  | "abdomen"
-  | "hip"
-  | "thigh"
-  | "arm";
+import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view";
 
 type MeasurementForm = Record<MeasurementKey, string>;
 type SectionKey = "composition" | "measurement" | "workout" | "notes";
@@ -319,7 +308,15 @@ export default function InputWeighMeasureScreen() {
   const [proWorkout, setProWorkout] = useState(false);
   const [threeTimesAWeek, setThreeTimesAWeek] = useState(false);
   const [notes, setNotes] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [resultPhoto, setResultPhoto] =
+    useState<ImagePicker.ImagePickerAsset | null>(null);
+  const { mutateAsync: createWeighMeasure, isPending: isSubmitting } =
+    useCreateWeighMeasure();
+  const { mutateAsync: uploadWeighMeasureResult, isPending: isUploadingPhoto } =
+    useUploadWeighMeasureResult();
+  const [createdMeasurement, setCreatedMeasurement] =
+    useState<CreatedWeighMeasure | null>(null);
+  const submissionInFlight = useRef(false);
   const [successVisible, setSuccessVisible] = useState(false);
 
   const {
@@ -362,7 +359,11 @@ export default function InputWeighMeasureScreen() {
   const validateForm = (): boolean => {
     const nextErrors: Partial<Record<MeasurementKey, string>> = {};
     REQUIRED_FIELDS.forEach((field) => {
-      if (!form[field.key] || Number(form[field.key]) <= 0) {
+      if (
+        !form[field.key] ||
+        !Number.isFinite(Number(form[field.key])) ||
+        Number(form[field.key]) <= 0
+      ) {
         nextErrors[field.key] =
           `${field.label} wajib diisi dengan nilai lebih dari 0`;
       }
@@ -391,32 +392,142 @@ export default function InputWeighMeasureScreen() {
     return true;
   };
 
+  const openGallery = async (): Promise<void> => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin galeri diperlukan",
+        "Aktifkan akses galeri agar foto hasil latihan dapat dipilih.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+    if (!result.canceled) setResultPhoto(result.assets[0]);
+  };
+
+  const openCamera = async (): Promise<void> => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin kamera diperlukan",
+        "Aktifkan akses kamera untuk mengambil foto hasil latihan.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+    if (!result.canceled) setResultPhoto(result.assets[0]);
+  };
+
+  const selectPhotoSource = (): void => {
+    Alert.alert(
+      resultPhoto ? "Ganti Foto Hasil" : "Tambah Foto Hasil",
+      "Pilih sumber foto yang akan diunggah.",
+      [
+        { text: "Kamera", onPress: () => void openCamera() },
+        { text: "Galeri", onPress: () => void openGallery() },
+        { text: "Batal", style: "cancel" },
+      ],
+    );
+  };
+
   const submitMeasurement = async () => {
     Keyboard.dismiss();
-    if (!id || isSubmitting || !validateForm()) return;
-
-    try {
-      setIsSubmitting(true);
-      const numericMeasurements = Object.fromEntries(
-        Object.entries(form).map(([key, value]) => [key, Number(value)]),
+    if (
+      submissionInFlight.current ||
+      isSubmitting ||
+      isUploadingPhoto ||
+      successVisible
+    )
+      return;
+    if (!id) {
+      Alert.alert(
+        "Member belum dipilih",
+        "Buka formulir WM dari detail member terlebih dahulu.",
       );
-      await api.post("/weigh-measure", {
+      return;
+    }
+    if (!validateForm()) return;
+
+    let wasMeasurementCreated = Boolean(createdMeasurement);
+    try {
+      submissionInFlight.current = true;
+      const numericMeasurements = (
+        Object.keys(form) as MeasurementKey[]
+      ).reduce(
+        (result, key) => {
+          result[key] = Number(form[key]);
+          return result;
+        },
+        {} as Record<MeasurementKey, number>,
+      );
+      const payload = {
         user_id: id,
         ...numericMeasurements,
         pro_workout: proWorkout ? "Yes" : "No",
         three_times_a_week: threeTimesAWeek ? "Yes" : "No",
         recommendation: notes.trim() || null,
-      });
+      } as const;
+
+      let savedMeasurement = createdMeasurement;
+      if (!savedMeasurement) {
+        const createResponse = await createWeighMeasure(payload);
+        wasMeasurementCreated = true;
+        if (resultPhoto) {
+          const createdData = createResponse.response ?? createResponse;
+          if (!createdData?._id || !createdData.user_id) {
+            throw new Error(
+              "Data WM tersimpan, tetapi ID hasil WM tidak tersedia pada response API.",
+            );
+          }
+          savedMeasurement = {
+            _id: createdData._id,
+            user_id: createdData.user_id,
+          };
+          setCreatedMeasurement(savedMeasurement);
+        }
+      }
+
+      if (resultPhoto && savedMeasurement) {
+        const extension = resultPhoto.mimeType?.split("/")[1] || "jpg";
+        await uploadWeighMeasureResult({
+          member_id: savedMeasurement.user_id,
+          weigh_measure_id: savedMeasurement._id,
+          photo: {
+            uri: resultPhoto.uri,
+            name:
+              resultPhoto.fileName ||
+              `hasil-wm-${savedMeasurement._id}.${extension}`,
+            type: resultPhoto.mimeType || "image/jpeg",
+          },
+        });
+      }
+      setCreatedMeasurement(null);
       setSuccessVisible(true);
     } catch (error) {
       Alert.alert(
-        "Gagal menyimpan",
-        error instanceof Error
-          ? error.message
-          : "Terjadi kesalahan saat menyimpan data WM.",
+        wasMeasurementCreated
+          ? "Foto belum berhasil diunggah"
+          : "Gagal menyimpan hasil WM",
+        wasMeasurementCreated
+          ? "Data WM sudah tersimpan. Periksa koneksi lalu tekan Simpan Hasil WM untuk mencoba upload foto kembali."
+          : error instanceof Error
+            ? error.message
+            : "Terjadi kesalahan saat menyimpan data WM.",
       );
     } finally {
-      setIsSubmitting(false);
+      submissionInFlight.current = false;
     }
   };
 
@@ -588,19 +699,90 @@ export default function InputWeighMeasureScreen() {
               </Text>
             </FormSection>
 
+            <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+              <View className="flex-row items-center">
+                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-pink-50 dark:bg-pink-950">
+                  <Ionicons name="camera-outline" size={24} color="#DB2777" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="font-bold text-gray-900 dark:text-white">
+                    Foto Hasil Latihan
+                  </Text>
+                  <Text className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                    Opsional • dokumentasikan kondisi atau progres member
+                  </Text>
+                </View>
+              </View>
+
+              {resultPhoto ? (
+                <View className="mt-5 overflow-hidden rounded-3xl bg-slate-100 dark:bg-zinc-800">
+                  <Image
+                    source={{ uri: resultPhoto.uri }}
+                    resizeMode="cover"
+                    className="h-[300px] w-full"
+                  />
+                  <View className="absolute bottom-0 left-0 right-0 flex-row gap-3 bg-black/55 p-4">
+                    <TouchableOpacity
+                      onPress={selectPhotoSource}
+                      className="h-11 flex-1 flex-row items-center justify-center rounded-xl bg-white"
+                    >
+                      <Ionicons
+                        name="camera-reverse-outline"
+                        size={19}
+                        color="#6F3FA0"
+                      />
+                      <Text className="ml-2 font-bold text-[#6F3FA0]">
+                        Ganti
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => setResultPhoto(null)}
+                      className="h-11 flex-1 flex-row items-center justify-center rounded-xl bg-red-500"
+                    >
+                      <Ionicons
+                        name="trash-outline"
+                        size={18}
+                        color="#FFFFFF"
+                      />
+                      <Text className="ml-2 font-bold text-white">Hapus</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : (
+                <TouchableOpacity
+                  accessibilityRole="button"
+                  onPress={selectPhotoSource}
+                  activeOpacity={0.8}
+                  className="mt-5 items-center justify-center rounded-3xl border-2 border-dashed border-violet-200 bg-violet-50 px-5 py-9 dark:border-violet-800 dark:bg-violet-950"
+                >
+                  <View className="h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-zinc-900">
+                    <Ionicons name="images-outline" size={30} color="#6F3FA0" />
+                  </View>
+                  <Text className="mt-4 font-bold text-[#6F3FA0] dark:text-violet-300">
+                    Tambahkan Foto Hasil
+                  </Text>
+                  <Text className="mt-2 text-center text-xs leading-5 text-gray-500 dark:text-gray-400">
+                    Ambil langsung dari kamera atau pilih foto dari galeri
+                  </Text>
+                </TouchableOpacity>
+              )}
+            </View>
+
             <TouchableOpacity
               onPress={submitMeasurement}
-              disabled={isSubmitting}
+              disabled={isSubmitting || isUploadingPhoto}
               activeOpacity={0.85}
               className={`mt-2 min-h-14 flex-row items-center justify-center rounded-2xl ${
-                isSubmitting ? "bg-violet-400" : "bg-[#6F3FA0]"
+                isSubmitting || isUploadingPhoto
+                  ? "bg-violet-400"
+                  : "bg-[#6F3FA0]"
               }`}
             >
-              {isSubmitting ? (
+              {isSubmitting || isUploadingPhoto ? (
                 <>
                   <ActivityIndicator color="white" />
                   <Text className="ml-3 text-base font-bold text-white">
-                    Menyimpan...
+                    {isUploadingPhoto ? "Mengunggah foto..." : "Menyimpan..."}
                   </Text>
                 </>
               ) : (

@@ -46,6 +46,15 @@ const displayValue = (value?: string | number | null): string => {
   return normalizedValue || "-";
 };
 
+const getDaysSinceJoining = (joined?: string | null): number | null => {
+  if (!joined) return null;
+
+  const joinedDate = moment(joined).startOf("day");
+  if (!joinedDate.isValid()) return null;
+
+  return moment().startOf("day").diff(joinedDate, "days");
+};
+
 function MemberAvatar({ member }: { member: Member }) {
   if (member.photo) {
     return (
@@ -99,6 +108,9 @@ function MemberCard({ member, onDetail }: MemberCardProps) {
       : member.sex === "M"
         ? "Laki-laki"
         : "Tidak diketahui";
+  const daysSinceJoining = getDaysSinceJoining(member.joined);
+  const isNewMember =
+    daysSinceJoining !== null && daysSinceJoining >= 0 && daysSinceJoining < 30;
 
   return (
     <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
@@ -137,14 +149,25 @@ function MemberCard({ member, onDetail }: MemberCardProps) {
           <InfoRow icon="mail-outline" value={member.user.email} />
           <InfoRow icon="call-outline" value={member.phone} />
           <InfoRow icon="location-outline" value={member.address} lines={2} />
-          <InfoRow
-            icon="calendar-outline"
-            value={
-              member.joined
+          <View className="flex-row items-center">
+            <Ionicons name="calendar-outline" size={18} color="#6F3FA0" />
+            <Text className="ml-3 flex-1 text-sm text-gray-600 dark:text-gray-300">
+              {member.joined
                 ? `Bergabung ${moment(member.joined).format("DD MMM YYYY")}`
-                : null
-            }
-          />
+                : "-"}
+            </Text>
+            {isNewMember && (
+              <View
+                accessibilityLabel={`Member baru, bergabung ${daysSinceJoining === 0 ? "hari ini" : `${daysSinceJoining} hari lalu`}`}
+                className="ml-2 flex-row items-center rounded-full bg-pink-50 px-2.5 py-1 dark:bg-pink-950"
+              >
+                <Ionicons name="sparkles" size={12} color="#DB2777" />
+                <Text className="ml-1 text-[10px] font-bold text-pink-600 dark:text-pink-300">
+                  MEMBER BARU
+                </Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
 
@@ -183,10 +206,16 @@ export default function ListMemberScreen() {
     refetch,
   } = useInfiniteMembers({ clubId, name: debouncedSearch, limit: PAGE_SIZE });
 
-  const members = useMemo(
-    () => data?.pages.flatMap((page) => page.members) ?? [],
-    [data],
-  );
+  const members = useMemo(() => {
+    const uniqueMembers = new Map<string, Member>();
+    data?.pages.forEach((page) => {
+      page.members.forEach((member) => {
+        const memberId = member._id || member.user_id;
+        if (!uniqueMembers.has(memberId)) uniqueMembers.set(memberId, member);
+      });
+    });
+    return Array.from(uniqueMembers.values());
+  }, [data]);
   const isSearching = isFetching && !isFetchingNextPage && Boolean(search);
 
   const openDetail = (member: Member) => {
@@ -239,7 +268,7 @@ export default function ListMemberScreen() {
           <MemberCard member={item} onDetail={() => openDetail(item)} />
         )}
         onEndReached={() => {
-          if (hasNextPage && !isFetchingNextPage) void fetchNextPage();
+          if (hasNextPage && !isFetching) void fetchNextPage();
         }}
         onEndReachedThreshold={0.4}
         refreshing={isLoading}
