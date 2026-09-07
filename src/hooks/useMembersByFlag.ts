@@ -1,6 +1,6 @@
 import { api } from "@/lib/axios";
 import type { MemberFlag } from "@/helpers/member-flag-options";
-import { useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 export interface MemberByFlag {
   _id?: string;
@@ -15,6 +15,45 @@ interface MembersByFlagPage {
   members: MemberByFlag[];
   total?: number;
 }
+
+export interface MemberFlagResume {
+  flag: MemberFlag["flag"];
+  total: number;
+}
+
+const FLAGS: MemberFlag["flag"][] = ["A", "B", "C", "D", "E"];
+
+type FlagResumeKey = `flag_${Lowercase<MemberFlag["flag"]>}`;
+
+interface MemberFlagResumeResponse {
+  response: Partial<Record<FlagResumeKey, number>> | null;
+}
+
+export const getMemberFlagClubId = (club: unknown): string | undefined => {
+  if (typeof club === "string") return club.trim() || undefined;
+  if (typeof club === "number" && Number.isFinite(club)) return String(club);
+  if (club && typeof club === "object" && "_id" in club) {
+    return getMemberFlagClubId(club._id);
+  }
+  return undefined;
+};
+
+export const useMemberFlagResume = (clubId?: string, enabled = true) =>
+  useQuery<MemberFlagResume[]>({
+    queryKey: ["member-flag-resume", clubId],
+    enabled: Boolean(clubId) && enabled,
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<MemberFlagResumeResponse>(
+        `/members/flag-resume/${encodeURIComponent(clubId!)}`,
+        { signal },
+      );
+      return FLAGS.map((flag) => ({
+        flag,
+        total:
+          data.response?.[`flag_${flag.toLowerCase()}` as FlagResumeKey] ?? 0,
+      }));
+    },
+  });
 
 export const useMembersByFlag = (
   clubId: string | undefined,

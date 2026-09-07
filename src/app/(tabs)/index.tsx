@@ -2,11 +2,8 @@ import { InfoMemberCard } from "@/components/profile/info-member";
 import Text from "@/components/ui/text";
 import { useAuth } from "@/context/auth";
 import { formatDate } from "@/helpers/dates";
-import { useMemberTotal } from "@/hooks/useMember";
-import { useClubMemberPayments } from "@/hooks/usePayments";
+import { useClubDashboard } from "@/hooks/useClubs";
 import { usePublicities } from "@/hooks/usePublicities";
-import { useMemberAppointmentByStaffId } from "@/hooks/useWeighMeasure";
-import { useMemberWorkoutToday } from "@/hooks/useWorkout";
 import { socket } from "@/services/socket";
 import { PATH_PUBLIC_IMAGE_PUBLICITY } from "@/utils/constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -24,10 +21,6 @@ import {
   useWindowDimensions,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-interface CountResponse {
-  total?: number;
-}
 
 interface Publicity {
   _id: string;
@@ -198,51 +191,25 @@ function QuickAction({
 export default function DashboardScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
-  console.log("user", user);
 
-  const user_personal = user.user_personal;
-  const coach_club_id = user_personal.member_club_id
-    ? user_personal.member_club_id
-    : user?.club_id?.[0];
-  const coachClubId = getClubId(coach_club_id);
+  const coachClubId = getClubId(user?.user_personal?.member_club_id);
   const {
-    data: totalMembers = 0,
-    isLoading: isLoadingMembers,
-    isError: isMembersError,
-    refetch: refreshMembers,
-  } = useMemberTotal(coach_club_id);
+    data: dashboardTotals,
+    isLoading: isLoadingDashboard,
+    isError: isDashboardError,
+    refetch: refreshDashboardTotals,
+  } = useClubDashboard(coachClubId);
   const {
     data: publicityData = [],
     isLoading: isLoadingPromos,
     isError: isPromosError,
     refetch: refreshPromos,
   } = usePublicities();
-  const {
-    data: workoutData,
-    isLoading: isLoadingWorkout,
-    isError: isWorkoutError,
-    refetch: refreshWorkoutMembers,
-  } = useMemberWorkoutToday(coachClubId);
-  const {
-    mutate: loadAppointments,
-    mutateAsync: refreshAppointments,
-    data: appointmentData,
-    isPending: isLoadingAppointments,
-    isError: isAppointmentsError,
-  } = useMemberAppointmentByStaffId();
-  const {
-    refetch: refreshMemberBills,
-    data: billingData,
-    isLoading: isLoadingBills,
-    isError: isBillsError,
-  } = useClubMemberPayments(coach_club_id);
-
   useEffect(() => {
     if (!user?._id) return;
 
     socket.emit("user-curves", `${user._id}_${user.source_id}`);
-    loadAppointments(coach_club_id);
-  }, [loadAppointments, user?._id, user?.source_id, coach_club_id]);
+  }, [user?._id, user?.source_id]);
 
   const refreshDashboard = async () => {
     if (isRefreshing) return;
@@ -250,10 +217,7 @@ export default function DashboardScreen() {
     try {
       await Promise.allSettled([
         refreshPromos(),
-        ...(coach_club_id
-          ? [refreshMembers(), refreshWorkoutMembers(), refreshMemberBills()]
-          : []),
-        ...(user?._id ? [refreshAppointments(coach_club_id)] : []),
+        ...(coachClubId ? [refreshDashboardTotals()] : []),
       ]);
     } finally {
       setIsRefreshing(false);
@@ -263,10 +227,12 @@ export default function DashboardScreen() {
   const promos = (
     Array.isArray(publicityData) ? publicityData : []
   ) as Publicity[];
-  const workoutTotal = workoutData?.pages[0]?.total ?? 0;
-  const appointmentTotal =
-    (appointmentData as CountResponse | undefined)?.total ?? 0;
-  const billingTotal = billingData?.pages[0]?.total;
+  const {
+    totalMembers = 0,
+    workoutToday = 0,
+    weighMeasureToday = 0,
+    memberBills = 0,
+  } = dashboardTotals ?? {};
 
   const openPublicity = (publicity: Publicity) => {
     router.push({
@@ -324,12 +290,12 @@ export default function DashboardScreen() {
             <SummaryCard
               title="WO Hari Ini"
               subtitle="Member yang workout hari ini"
-              value={workoutTotal}
+              value={workoutToday}
               icon="barbell-outline"
               iconColor="#16A34A"
               iconBackgroundColor="#F3E8FF"
-              isLoading={isLoadingWorkout}
-              isError={isWorkoutError || !coach_club_id}
+              isLoading={isLoadingDashboard}
+              isError={isDashboardError || !coachClubId}
               onPress={() => router.push("/list-member/member-wo")}
             />
             <SummaryCard
@@ -339,35 +305,34 @@ export default function DashboardScreen() {
               icon="people-outline"
               iconColor="#7C3AED"
               iconBackgroundColor="#F3E8FF"
-              isLoading={isLoadingMembers}
-              isError={isMembersError || !coach_club_id}
+              isLoading={isLoadingDashboard}
+              isError={isDashboardError || !coachClubId}
               onPress={() => router.push("/list-member")}
             />
             <SummaryCard
               title="WM Hari Ini"
               subtitle="Lihat jadwal penimbangan"
-              value={appointmentTotal}
+              value={weighMeasureToday}
               icon="scale-outline"
               iconColor="#EA580C"
               iconBackgroundColor="#FFEDD5"
-              isLoading={isLoadingAppointments}
-              isError={isAppointmentsError}
+              isLoading={isLoadingDashboard}
+              isError={isDashboardError || !coachClubId}
               onPress={() => router.push("/list-member/member-wm")}
             />
             <SummaryCard
               title="Tagihan Anggota"
               subtitle={
-                billingTotal === 0
+                memberBills === 0
                   ? "Belum ada tagihan di club"
                   : "Lihat daftar pembayaran club"
               }
-              value={billingTotal ?? 0}
+              value={memberBills}
               icon="card-outline"
               iconColor="#2563EB"
               iconBackgroundColor="#DBEAFE"
-              isLoading={isLoadingBills}
-              isError={isBillsError || !coach_club_id}
-              isUnavailable={!isLoadingBills && billingTotal === undefined}
+              isLoading={isLoadingDashboard}
+              isError={isDashboardError || !coachClubId}
               onPress={() => router.push("/list-member/member-payments")}
             />
           </View>
@@ -385,6 +350,24 @@ export default function DashboardScreen() {
             description="Lihat member berdasarkan kategori flag"
             icon="flag-outline"
             onPress={() => router.push("/list-member/by-flag")}
+          />
+          <QuickAction
+            title="Member Inactive & Stop"
+            description="Lihat dan hubungi member untuk bergabung kembali"
+            icon="person-remove-outline"
+            onPress={() => router.push("/list-member/nonmember-status")}
+          />
+          <QuickAction
+            title="Member Cuti"
+            description="Lihat dan hubungi member yang sedang cuti"
+            icon="bed-outline"
+            onPress={() => router.push("/list-member/member-hold")}
+          />
+          <QuickAction
+            title="Belum Pernah Workout"
+            description="Hubungi member aktif yang belum memulai workout"
+            icon="fitness-outline"
+            onPress={() => router.push("/list-member/member-hasnt-workout")}
           />
           <QuickAction
             title="Peringkat Member"

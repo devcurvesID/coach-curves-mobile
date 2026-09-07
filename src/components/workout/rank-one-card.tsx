@@ -2,6 +2,7 @@ import { useAuth } from "@/context/auth";
 import { imageProfileURL } from "@/services/image";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { useEffect, useState } from "react";
 import { ActivityIndicator, Image, Pressable, Text, View } from "react-native";
 
 export type RankOneCardData = {
@@ -18,6 +19,11 @@ type RankOneCardProps = {
   data: RankOneCardData;
   isDetailLoading?: boolean;
   onPressDetail?: () => void;
+  member?: {
+    name?: string | null;
+    photo?: string | null;
+  };
+  detailLabel?: string;
 };
 
 const formatNumber = (value: string | number, decimal: number = 1): string => {
@@ -42,13 +48,23 @@ const formatClubName = (clubName?: string): string => {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 };
 
+const getPhotoUrl = (photo: string): string =>
+  /^https?:\/\//i.test(photo) ? photo : imageProfileURL(photo);
+
 export default function RankOneCard({
   data,
   isDetailLoading = false,
   onPressDetail,
+  member,
+  detailLabel = "Lihat Detail Pengukuran",
 }: RankOneCardProps) {
   const { user } = useAuth();
-  const user_personal = user.user_personal;
+  const userPersonal = user?.user_personal;
+  const displayName = member?.name?.trim() || user?.name || "Member";
+  const displayPhoto = member ? member.photo?.trim() : userPersonal?.photo;
+  const [hasPhotoError, setHasPhotoError] = useState(false);
+
+  useEffect(() => setHasPhotoError(false), [displayPhoto]);
 
   return (
     <View className="mx-4 mt-4 overflow-hidden rounded-3xl bg-white shadow-lg">
@@ -73,16 +89,20 @@ export default function RankOneCard({
         <View className="mt-5 items-center">
           <View className="h-20 w-20 items-center justify-center rounded-full border-4 border-yellow-300 bg-white">
             {/* <MaterialCommunityIcons name="account" size={46} color="#7C3AED" /> */}
-            <Image
-              source={{
-                uri: imageProfileURL(user_personal.photo),
-              }}
-              style={{
-                width: 100,
-                height: 100,
-                borderRadius: 50,
-              }}
-            />
+            {displayPhoto && !hasPhotoError ? (
+              <Image
+                source={{ uri: getPhotoUrl(displayPhoto) }}
+                accessibilityLabel={`Foto profil ${displayName}`}
+                onError={() => setHasPhotoError(true)}
+                className="h-[72px] w-[72px] rounded-full"
+              />
+            ) : (
+              <MaterialCommunityIcons
+                name="account"
+                size={46}
+                color="#7C3AED"
+              />
+            )}
           </View>
 
           {/* <View className="mt-6 rounded-full bg-yellow-400 px-4 py-1">
@@ -95,7 +115,7 @@ export default function RankOneCard({
             className="mt-5 text-center text-2xl font-bold text-white"
             numberOfLines={2}
           >
-            {user.name}
+            {displayName}
           </Text>
 
           <View className="mt-2 flex-row items-center">
@@ -238,9 +258,7 @@ export default function RankOneCard({
               />
             )}
             <Text className="ml-2 text-base font-bold text-white">
-              {isDetailLoading
-                ? "Menyiapkan Data..."
-                : "Lihat Detail Pengukuran"}
+              {isDetailLoading ? "Menyiapkan Data..." : detailLabel}
             </Text>
             {!isDetailLoading && (
               <MaterialCommunityIcons

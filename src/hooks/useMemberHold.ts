@@ -1,0 +1,112 @@
+import { api } from "@/lib/axios";
+import { useInfiniteQuery } from "@tanstack/react-query";
+
+export interface MemberHold {
+  user_id: number | string;
+  club_id: number | string;
+  member_hold_reason_id?: number | string | null;
+  member_hold_reason?: string | null;
+  member_hold_note?: string | null;
+  from_date?: string | null;
+  thru_date?: string | null;
+  status?: string | null;
+  name?: string | null;
+  phone?: string | number | null;
+  photo?: string | null;
+}
+
+interface MemberHoldPage {
+  members: MemberHold[];
+  total?: number;
+}
+
+interface MemberHoldApiResponse {
+  response?: MemberHold[] | null;
+  data?: MemberHold[] | null;
+  total?: number | string;
+}
+
+export const getMemberHoldClubId = (club: unknown): string | undefined => {
+  if (typeof club === "string") return club.trim() || undefined;
+  if (typeof club === "number" && Number.isFinite(club)) return String(club);
+  if (club && typeof club === "object" && "_id" in club) {
+    return getMemberHoldClubId(club._id);
+  }
+  return undefined;
+};
+
+export const useMemberHolds = ({
+  clubId,
+  name,
+  limit = 10,
+}: {
+  clubId?: string;
+  name?: string;
+  limit?: number;
+}) =>
+  useInfiniteQuery<MemberHoldPage>({
+    queryKey: ["member-holds", clubId, name, limit],
+    enabled: Boolean(clubId),
+    initialPageParam: 0,
+    queryFn: async ({ pageParam, signal }) => {
+      if (!clubId) throw new Error("Club pengguna belum tersedia.");
+
+      const { data } = await api.get<MemberHoldApiResponse | MemberHold[]>(
+        `/member-hold/club/${encodeURIComponent(clubId)}`,
+        {
+          params: {
+            ...(name ? { name } : {}),
+            offset: pageParam,
+            limit,
+          },
+          signal,
+        },
+      );
+      const members = Array.isArray(data)
+        ? data
+        : Array.isArray(data.response)
+          ? data.response
+          : Array.isArray(data.data)
+            ? data.data
+            : data.response === null || data.data === null
+              ? []
+              : undefined;
+
+      if (!members) throw new Error("Format data member cuti tidak sesuai.");
+
+      const rawTotal = Array.isArray(data) ? undefined : data.total;
+      const parsedTotal = Number(rawTotal);
+      return {
+        members,
+        total:
+          rawTotal !== undefined && Number.isFinite(parsedTotal)
+            ? parsedTotal
+            : undefined,
+      };
+    },
+    getNextPageParam: (lastPage, pages) => {
+      if (!lastPage.members.length) return undefined;
+      const previousIds = new Set(
+        pages
+          .slice(0, -1)
+          .flatMap((page) =>
+            page.members.map((member) => String(member.user_id)),
+          ),
+      );
+      if (
+        lastPage.members.every((member) =>
+          previousIds.has(String(member.user_id)),
+        )
+      ) {
+        return undefined;
+      }
+      const loaded = pages.reduce(
+        (total, page) => total + page.members.length,
+        0,
+      );
+      if (lastPage.total !== undefined) {
+        return loaded < lastPage.total ? loaded : undefined;
+      }
+      return lastPage.members.length === limit ? loaded : undefined;
+    },
+  });

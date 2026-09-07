@@ -64,7 +64,8 @@
       "expo-web-browser",
       "expo-build-properties",
       "expo-notifications",
-      "expo-localization"
+      "expo-localization",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,

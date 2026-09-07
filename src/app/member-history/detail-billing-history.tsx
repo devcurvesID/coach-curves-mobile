@@ -7,72 +7,206 @@ import { useUserClub } from "@/hooks/useClubs";
 import {
   useDetailMemberBillingByUserId,
   useMemberBillByUserId,
+  useMemberBillingByUserId,
 } from "@/hooks/usePayments";
+import { buildBillingHistoryPdfHtml } from "@/utils/billing-history-pdf";
 import {
   FontAwesome5,
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect } from "react";
-import { Image, Pressable, ScrollView, View } from "react-native";
+import * as Print from "expo-print";
+import { useLocalSearchParams } from "expo-router";
+import * as Sharing from "expo-sharing";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  View,
+} from "react-native";
+
+interface PaymentHistoryItem {
+  _id?: string;
+  payment_date?: string | Date | null;
+  payment_category?: string | null;
+  payment_number?: string | null;
+  amount_paid?: number | string | null;
+  mf_amount?: number | string | null;
+  dc_amount?: number | string | null;
+  tax_amount?: number | string | null;
+  sf_amount?: number | string | null;
+}
+
+interface MemberBillSummary {
+  total_bill_amount?: number | string | null;
+  grand_total_amount_paid?: number | string | null;
+  dc_amount?: number | string | null;
+  rest_of_bill?: number | string | null;
+}
+
+const toNumber = (value?: number | string | null): number => {
+  const parsedValue = Number(value);
+  return Number.isFinite(parsedValue) ? parsedValue : 0;
+};
 
 export default function DetailBillingHistoryScreen() {
   const { id, memberName } = useLocalSearchParams<{
     id: string;
     memberName?: string;
   }>();
-  const router = useRouter();
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const [isInitializing, setIsInitializing] = useState(true);
+  const [pdfAction, setPdfAction] = useState<"preview" | "download" | null>(
+    null,
+  );
   const { data: userClub, isLoading: isLoadingUserClub } = useUserClub();
 
   const {
-    mutate: memberPaymentBillingByUserIdFn,
+    mutateAsync: loadPaymentDetails,
     data: memberPayment,
     isPending: isPendingMemberPayment,
   } = useDetailMemberBillingByUserId();
 
-  const user_personal = user.user_personal;
+  const {
+    mutateAsync: checkMemberBilling,
+    data: memberBilling,
+    isPending: isCheckingMemberBilling,
+  } = useMemberBillingByUserId();
+
   const { data: memberBill, isLoading: isPendingMemberBill } =
     useMemberBillByUserId(id);
 
   useEffect(() => {
-    async function getProgress() {
-      await memberPaymentBillingByUserIdFn(id);
+    if (!id) {
+      setIsInitializing(false);
+      return;
     }
-    getProgress();
-  }, []);
+    setIsInitializing(true);
+
+    const loadBillingInformation = async () => {
+      try {
+        await checkMemberBilling(id);
+      } catch {
+        // Detail transaksi tetap dimuat sebagai sumber perhitungan fallback.
+      }
+      try {
+        await loadPaymentDetails(id);
+      } catch {
+        // Status error dikelola oleh mutation dan tampilan data kosong.
+      } finally {
+        setIsInitializing(false);
+      }
+    };
+
+    void loadBillingInformation();
+  }, [checkMemberBilling, id, loadPaymentDetails]);
+
   if (
     isPendingMemberPayment ||
+    isCheckingMemberBilling ||
     isPendingMemberBill ||
     isLoadingUserClub ||
-    !memberPayment ||
-    !memberBill
+    isInitializing
   ) {
     return <LoadingView />;
   }
 
-  console.log("memberPayment", memberPayment);
-  console.log("memberBill", memberBill);
+  const paymentHistory = Array.isArray(memberPayment)
+    ? (memberPayment as any[])
+    : [];
+  const billingRecords = Array.isArray(memberBilling) ? memberBilling : [];
+  const billSummary = (memberBill ?? {}) as any;
+  const shouldCalculateFromHistory = billingRecords.length === 0;
+  const historyTotals = paymentHistory.reduce(
+    (total, payment: any) => ({
+      paid: total.paid + toNumber(payment.amount_paid),
+      membershipFee: toNumber(payment.mf_amount),
+      discount: total.discount + toNumber(payment.dc_amount),
+      sf_amount: toNumber(payment.sf_amount),
+    }),
+    { paid: 0, membershipFee: 0, discount: 0, sf_amount: 0 },
+  );
+  const totalPaid = shouldCalculateFromHistory
+    ? historyTotals.paid
+    : toNumber(billSummary.grand_total_amount_paid);
+  const totalDiscount = shouldCalculateFromHistory
+    ? historyTotals.discount
+    : toNumber(billSummary.dc_amount);
+  const totalServiceFee = shouldCalculateFromHistory
+    ? historyTotals.membershipFee
+    : toNumber(billSummary.total_bill_amount);
+  const grandtotalServiceFee = shouldCalculateFromHistory
+    ? historyTotals.membershipFee
+    : toNumber(billSummary.total_bill_amount);
+  const grandTotal = totalPaid;
+  const remainingDebt = toNumber(billSummary.rest_of_bill);
+  const isPaidOff = toNumber(totalPaid) - toNumber(grandTotal);
+  const totalServiceFee2 = shouldCalculateFromHistory
+    ? historyTotals.sf_amount
+    : toNumber(billSummary.sf_amount);
+  const clubName = userClub?.[0]?.club_name || "Curves";
+  const recipientName = memberName || "Member";
+  const cashierName = user?.sales_person?.name || user?.name || "Coach";
 
-  const onDetail = () => {
-    router.push({
-      pathname: "/member-history/detail-billing-history",
-      params: {
-        id: id,
-      },
+  const createPdfHtml = () =>
+    buildBillingHistoryPdfHtml({
+      clubName,
+      memberName: recipientName,
+      cashierName,
+      transactions: paymentHistory as PaymentHistoryItem[],
+      serviceFee: totalServiceFee2,
+      membershipFee: totalServiceFee,
+      discount: totalDiscount,
+      amountDue: totalPaid,
+      amountPaid: grandTotal,
+      remainingDebt,
+      isPaidOff: isPaidOff === 0,
     });
+
+  const previewPdf = async () => {
+    if (pdfAction) return;
+    setPdfAction("preview");
+    try {
+      await Print.printAsync({ html: createPdfHtml() });
+    } catch {
+      Alert.alert(
+        "PDF Tidak Dapat Ditampilkan",
+        "Terjadi kendala saat membuat preview PDF pembayaran.",
+      );
+    } finally {
+      setPdfAction(null);
+    }
   };
 
-  const getTotalBayar = (
-    grand_total_amount_paid: any,
-    dc_amount: any,
-  ): number => {
-    const total = Number(grand_total_amount_paid) + Number(dc_amount);
-    return total;
+  const downloadPdf = async () => {
+    if (pdfAction) return;
+    setPdfAction("download");
+    try {
+      const { uri } = await Print.printToFileAsync({ html: createPdfHtml() });
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert(
+          "PDF Berhasil Dibuat",
+          "Fitur penyimpanan tidak tersedia pada perangkat ini.",
+        );
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: "application/pdf",
+        UTI: "com.adobe.pdf",
+        dialogTitle: `Simpan Riwayat Pembayaran ${recipientName}`,
+      });
+    } catch {
+      Alert.alert(
+        "PDF Tidak Dapat Disimpan",
+        "Terjadi kendala saat membuat file PDF pembayaran.",
+      );
+    } finally {
+      setPdfAction(null);
+    }
   };
-  const remainingDebt = Number(memberBill.rest_of_bill) || 0;
-  const isPaidOff = remainingDebt <= 0;
 
   return (
     <>
@@ -98,7 +232,7 @@ export default function DetailBillingHistoryScreen() {
               />
 
               <Text className="text-xl font-bold text-gray-800 mt-2">
-                {userClub[0].club_name}
+                {clubName}
               </Text>
             </View>
 
@@ -153,7 +287,7 @@ export default function DetailBillingHistoryScreen() {
                 </View>
 
                 <Text className="font-semibold text-base text-gray-800 flex-1 text-right ml-4">
-                  {memberName || "Member"}
+                  {recipientName}
                 </Text>
               </View>
               <View className="flex-row justify-between items-start">
@@ -168,7 +302,7 @@ export default function DetailBillingHistoryScreen() {
                 </View>
 
                 <Text className="font-semibold text-base text-gray-800">
-                  {user.sales_person.name}
+                  {cashierName}
                 </Text>
               </View>
               <View className="border-t border-dashed border-gray-300 mt-8" />
@@ -176,9 +310,12 @@ export default function DetailBillingHistoryScreen() {
               <Text className="text-xl font-bold text-gray-800 mt-2 text-center">
                 Riwayat Pembayaran
               </Text>
-              {memberPayment.map((payment: any, idx: number) => {
+              {paymentHistory.map((payment, idx) => {
                 return (
-                  <View className="gap-5" key={idx.toString()}>
+                  <View
+                    className="gap-5"
+                    key={payment._id || `${payment.payment_date}-${idx}`}
+                  >
                     <View className="flex-row items-center">
                       <Ionicons
                         name="calendar-outline"
@@ -186,7 +323,9 @@ export default function DetailBillingHistoryScreen() {
                         color="#6F3FA0"
                       />
                       <Text className="text-lg font-bold text-gray-800 ml-3">
-                        {getDateTime(payment.payment_date)}
+                        {payment.payment_date
+                          ? getDateTime(new Date(payment.payment_date))
+                          : "Tanggal belum tersedia"}
                       </Text>
                     </View>
                     <View className="bg-[#F8F5FF] rounded-2xl p-5">
@@ -204,7 +343,7 @@ export default function DetailBillingHistoryScreen() {
                         </View>
 
                         <Text className="font-bold text-[#6F3FA0]">
-                          {formatCurrency(payment.amount_paid)}
+                          {formatCurrency(toNumber(payment.amount_paid))}
                         </Text>
                       </View>
                     </View>
@@ -241,7 +380,7 @@ export default function DetailBillingHistoryScreen() {
                       </View>
 
                       <Text className="font-semibold text-base text-gray-800">
-                        {formatCurrency(payment.amount_paid)}
+                        {formatCurrency(toNumber(payment.amount_paid))}
                       </Text>
                     </View>
                     <View className="flex-row justify-between items-start">
@@ -258,21 +397,86 @@ export default function DetailBillingHistoryScreen() {
                       </View>
 
                       <Text className="font-semibold text-base text-gray-800">
-                        {formatCurrency(payment.dc_amount)}
+                        {formatCurrency(toNumber(payment.dc_amount))}
                       </Text>
                     </View>
-                    <View className="flex-row justify-between">
+                    {/* <View className="flex-row justify-between">
                       <Text className="text-gray-500 text-base">Pajak</Text>
 
                       <Text className="font-semibold text-base text-gray-800">
-                        {formatCurrency(payment.tax_amount)}
+                        {formatCurrency(toNumber(payment.tax_amount))}
                       </Text>
-                    </View>
+                    </View> */}
                   </View>
                 );
               })}
+              {paymentHistory.length === 0 && (
+                <View className="items-center rounded-2xl bg-slate-50 px-5 py-8">
+                  <Ionicons name="receipt-outline" size={34} color="#94A3B8" />
+                  <Text className="mt-3 text-center font-semibold text-slate-700">
+                    Belum ada detail transaksi
+                  </Text>
+                  <Text className="mt-1 text-center text-xs leading-5 text-slate-500">
+                    Riwayat pembayaran per tanggal belum tersedia.
+                  </Text>
+                </View>
+              )}
 
               {/* Cashier */}
+            </View>
+
+            <View className="mt-8 rounded-3xl border border-violet-100 bg-violet-50 p-5">
+              <View className="flex-row items-start">
+                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white">
+                  <Ionicons
+                    name="document-text-outline"
+                    size={23}
+                    color="#6F3FA0"
+                  />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-lg font-bold text-gray-900">
+                    Riwayat Pembayaran PDF
+                  </Text>
+                  <Text className="mt-1 text-xs leading-5 text-gray-500">
+                    Lihat dokumen atau simpan untuk arsip dan dibagikan kepada
+                    member.
+                  </Text>
+                </View>
+              </View>
+
+              <View className="mt-4 flex-row gap-3">
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Lihat riwayat pembayaran dalam PDF"
+                  disabled={pdfAction !== null}
+                  onPress={() => void previewPdf()}
+                  className="flex-1 flex-row items-center justify-center rounded-2xl border border-violet-200 bg-white py-3.5"
+                >
+                  {pdfAction === "preview" ? (
+                    <ActivityIndicator size="small" color="#6F3FA0" />
+                  ) : (
+                    <Ionicons name="eye-outline" size={19} color="#6F3FA0" />
+                  )}
+                  <Text className="ml-2 font-bold text-[#6F3FA0]">
+                    Lihat PDF
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Simpan riwayat pembayaran sebagai PDF"
+                  disabled={pdfAction !== null}
+                  onPress={() => void downloadPdf()}
+                  className="flex-1 flex-row items-center justify-center rounded-2xl bg-[#6F3FA0] py-3.5"
+                >
+                  {pdfAction === "download" ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Ionicons name="download-outline" size={19} color="white" />
+                  )}
+                  <Text className="ml-2 font-bold text-white">Simpan PDF</Text>
+                </Pressable>
+              </View>
             </View>
 
             {/* DIVIDER */}
@@ -282,31 +486,55 @@ export default function DetailBillingHistoryScreen() {
             <View className="gap-5">
               <View className="flex-row justify-between">
                 <Text className="text-gray-500 text-base">
-                  Total biaya layanan
+                  Total Biaya Layanan
                 </Text>
 
                 <Text className="font-semibold text-base text-gray-800">
-                  {formatCurrency(memberBill.total_bill_amount)}
+                  {formatCurrency(totalServiceFee2)}
+                  {/* {formatCurrency(payment.amount_due)} */}
+                </Text>
+              </View>
+              <View className="flex-row justify-between">
+                <Text className="text-gray-500 text-base">
+                  Total Biaya Keanggotaan
+                </Text>
+
+                <Text className="font-semibold text-base text-gray-800">
+                  {formatCurrency(totalServiceFee)}
                   {/* {formatCurrency(payment.amount_due)} */}
                 </Text>
               </View>
 
               <View className="flex-row justify-between">
-                <Text className="text-gray-500 text-base">
-                  Total biaya yang sudah dibayar
-                </Text>
-
-                <Text className="font-semibold text-base text-gray-800">
-                  {formatCurrency(memberBill.grand_total_amount_paid)}
-                </Text>
-              </View>
-              <View className="flex-row justify-between">
                 <Text className="text-gray-500 text-base">Total diskon</Text>
 
                 <Text className="font-semibold text-base text-gray-800">
-                  {formatCurrency(memberBill.dc_amount)}
+                  {formatCurrency(totalDiscount)}
                 </Text>
               </View>
+              <View className="flex-row justify-between">
+                <Text className="text-gray-500 text-base">
+                  Total yang harus dibayar
+                </Text>
+
+                <Text className="font-semibold text-base text-gray-800">
+                  {formatCurrency(totalPaid)}
+                </Text>
+              </View>
+
+              {shouldCalculateFromHistory && paymentHistory.length > 0 && (
+                <View className="flex-row items-start rounded-2xl bg-amber-50 p-4">
+                  <Ionicons
+                    name="calculator-outline"
+                    size={20}
+                    color="#D97706"
+                  />
+                  <Text className="ml-3 flex-1 text-xs leading-5 text-amber-700">
+                    Ringkasan dihitung dari seluruh pembayaran dan diskon pada
+                    setiap tanggal transaksi.
+                  </Text>
+                </View>
+              )}
               {/* <View className="flex-row justify-between">
               <Text className="text-gray-500 text-base">Pajak</Text>
 
@@ -338,17 +566,12 @@ export default function DetailBillingHistoryScreen() {
                   />
 
                   <Text className="text-lg font-bold text-gray-800 ml-2">
-                    Grand Total
+                    Total yang sudah dibayar
                   </Text>
                 </View>
 
                 <Text className="text-2xl font-bold text-[#6F3FA0]">
-                  {formatCurrency(
-                    getTotalBayar(
-                      memberBill.grand_total_amount_paid,
-                      memberBill.dc_amount,
-                    ),
-                  )}
+                  {formatCurrency(grandTotal)}
                 </Text>
               </View>
 
@@ -370,7 +593,7 @@ export default function DetailBillingHistoryScreen() {
             </View> */}
 
               {/* REMAINING */}
-              {isPaidOff ? (
+              {isPaidOff == 0 ? (
                 <View className="flex-row items-center rounded-2xl border border-emerald-100 bg-emerald-50 p-4">
                   <View className="h-11 w-11 items-center justify-center rounded-full bg-emerald-100">
                     <Ionicons
@@ -431,115 +654,3 @@ export default function DetailBillingHistoryScreen() {
     </>
   );
 }
-
-const BillsView = ({ data }: any) => {
-  const router = useRouter();
-
-  const onDetail = () => {
-    console.log("SUBMIT:", data);
-    if (data.payment_number) {
-      router.push({
-        pathname: "/user/details-bill",
-        params: { data: JSON.stringify(data) }, //{ ...data, bank: { ...data.bank } },
-      });
-    }
-
-    // 🔥 call API di sini
-  };
-  return (
-    <>
-      <View key={data._id} className="bg-white rounded-3xl mb-5 ">
-        {/* TOP */}
-        <View className="flex-row items-start justify-between">
-          <View className="flex-1 pr-3">
-            <Text
-              numberOfLines={1}
-              className="text-base font-bold text-gray-800"
-            >
-              {data.payment_category}
-            </Text>
-
-            <Text className="text-xs text-gray-400 mt-1">
-              {data.payment_number}
-            </Text>
-          </View>
-
-          <View
-            className={`px-3 py-1 rounded-full ${
-              data.payment_status === "Paid" ? "bg-green-100" : "bg-orange-100"
-            }`}
-          >
-            <Text
-              className={`text-xs font-semibold ${
-                data.payment_status === "Paid"
-                  ? "text-green-600"
-                  : "text-orange-600"
-              }`}
-            >
-              {data.payment_status}
-            </Text>
-          </View>
-        </View>
-        {/* AMOUNT */}
-        <Pressable
-          onPress={onDetail}
-          className="mt-5 bg-[#F8F5FF] rounded-2xl p-4"
-        >
-          <Text className="text-xs text-gray-400">Total Dibayar</Text>
-
-          <Text className="text-2xl font-bold text-[#6F3FA0] mt-1">
-            {formatCurrency(data.amount_paid)}
-          </Text>
-
-          <View className="flex-row justify-between mt-4">
-            <View>
-              <Text className="text-xs text-gray-400">Sisa Tagihan</Text>
-
-              <Text className="text-sm font-semibold text-red-500 mt-1">
-                {formatCurrency(data.rest_of_bill)}
-              </Text>
-            </View>
-
-            <View>
-              <Text className="text-xs text-gray-400">Total Tagihan</Text>
-
-              <Text className="text-sm font-semibold text-gray-800 mt-1">
-                {formatCurrency(data.amount_due)}
-              </Text>
-            </View>
-          </View>
-        </Pressable>
-
-        {/* FOOTER */}
-        <View className="flex-row justify-between mt-5">
-          <View className="flex-row items-center">
-            {/* <Calendar size={16} color="#888" /> */}
-            <MaterialCommunityIcons
-              name="calendar-check"
-              size={18}
-              color={data.payment_status === "Paid" ? "#10B981" : "#F43F5E"}
-            />
-            <Text className="text-xs text-gray-500 ml-2">
-              {getDateTime(data.payment_date)}
-            </Text>
-          </View>
-
-          <View className="flex-row items-center">
-            {/* <CreditCard size={16} color="#888" /> */}
-            <MaterialCommunityIcons
-              name="credit-card"
-              size={18}
-              color={data.payment_status === "Paid" ? "#10B981" : "#F43F5E"}
-            />
-            <Text className="text-xs text-gray-500 ml-2">
-              {data.payment_method_id
-                ? data.payment_method.payment_method
-                : "Tunai"}
-            </Text>
-          </View>
-        </View>
-      </View>
-      <View className="h-[1px] bg-[#BB86FC] my-5" />
-    </>
-  );
-};

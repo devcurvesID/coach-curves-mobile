@@ -23,6 +23,7 @@ import {
 } from "react-native";
 
 const PAGE_SIZE = 10;
+const SEARCH_DEBOUNCE_MS = 400;
 
 function KeyTagSearchModal({
   visible,
@@ -441,6 +442,17 @@ export default function ListMemberWMToday() {
   const { user } = useAuth();
   const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
   const [keyTagId, setKeyTagId] = useState("");
+  const [nameSearch, setNameSearch] = useState("");
+  const [debouncedNameSearch, setDebouncedNameSearch] = useState("");
+
+  React.useEffect(() => {
+    const timeout = setTimeout(() => {
+      setDebouncedNameSearch(nameSearch.trim());
+    }, SEARCH_DEBOUNCE_MS);
+
+    return () => clearTimeout(timeout);
+  }, [nameSearch]);
+
   const user_personal = user.user_personal;
   const coach_club_id = user_personal.member_club_id
     ? user_personal.member_club_id
@@ -465,6 +477,7 @@ export default function ListMemberWMToday() {
   } = useInfiniteMemberAppointments({
     club_id: clubId,
     key_tag_id: keyTagId || undefined,
+    name: debouncedNameSearch || undefined,
     limit: PAGE_SIZE,
   });
 
@@ -494,7 +507,18 @@ export default function ListMemberWMToday() {
     });
   };
 
-  if (isLoading && appointments.length === 0) return <LoadingView />;
+  const isSearchingName =
+    nameSearch.trim() !== debouncedNameSearch ||
+    (Boolean(debouncedNameSearch) && isLoading);
+
+  if (
+    isLoading &&
+    appointments.length === 0 &&
+    !debouncedNameSearch &&
+    !keyTagId
+  ) {
+    return <LoadingView />;
+  }
 
   return (
     <ContainerPage titleHeader="WM Hari Ini" titleContent="Jadwal Penimbangan">
@@ -546,6 +570,42 @@ export default function ListMemberWMToday() {
             </View>
 
             <View className="mx-5 mb-5">
+              <View className="mb-3 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 dark:border-zinc-700 dark:bg-zinc-900">
+                <Ionicons name="search-outline" size={20} color="#6F3FA0" />
+                <TextInput
+                  value={nameSearch}
+                  onChangeText={(value) => {
+                    setNameSearch(value);
+                    if (value.trim()) setKeyTagId("");
+                  }}
+                  placeholder="Cari nama member..."
+                  placeholderTextColor="#9CA3AF"
+                  returnKeyType="search"
+                  autoCorrect={false}
+                  className="ml-3 flex-1 py-4 text-gray-900 dark:text-white"
+                  accessibilityLabel="Cari berdasarkan nama member"
+                />
+                {nameSearch ? (
+                  <TouchableOpacity
+                    onPress={() => setNameSearch("")}
+                    accessibilityRole="button"
+                    accessibilityLabel="Hapus pencarian nama"
+                    className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+                  >
+                    <Ionicons name="close" size={18} color="#6B7280" />
+                  </TouchableOpacity>
+                ) : null}
+              </View>
+
+              {isSearchingName ? (
+                <View className="mb-3 flex-row items-center px-1">
+                  <ActivityIndicator size="small" color="#6F3FA0" />
+                  <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                    Mencari member...
+                  </Text>
+                </View>
+              ) : null}
+
               {keyTagId ? (
                 <View className="rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-950">
                   <View className="flex-row items-center">
@@ -584,7 +644,11 @@ export default function ListMemberWMToday() {
               ) : (
                 <TouchableOpacity
                   accessibilityRole="button"
-                  onPress={() => setIsSearchModalVisible(true)}
+                  onPress={() => {
+                    setNameSearch("");
+                    setDebouncedNameSearch("");
+                    setIsSearchModalVisible(true);
+                  }}
                   activeOpacity={0.85}
                   className="flex-row items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 py-4 dark:border-violet-800 dark:bg-violet-950"
                 >
@@ -635,7 +699,7 @@ export default function ListMemberWMToday() {
             <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
               {error
                 ? "Jadwal WM gagal dimuat"
-                : keyTagId
+                : keyTagId || debouncedNameSearch
                   ? "Member tidak ditemukan"
                   : "Tidak ada jadwal WM hari ini"}
             </Text>
@@ -644,6 +708,8 @@ export default function ListMemberWMToday() {
                 ? "Tarik layar ke bawah untuk mencoba kembali."
                 : keyTagId
                   ? `Tidak ada jadwal WM dengan Key Tag ${keyTagId}. Periksa kembali Key Tag yang dimasukkan.`
+                  : debouncedNameSearch
+                    ? `Tidak ada jadwal WM atas nama “${debouncedNameSearch}”. Coba gunakan nama lain.`
                   : "Belum ada member yang dijadwalkan melakukan penimbangan hari ini."}
             </Text>
           </View>
@@ -654,6 +720,8 @@ export default function ListMemberWMToday() {
         initialValue={keyTagId}
         onClose={() => setIsSearchModalVisible(false)}
         onSearch={(value) => {
+          setNameSearch("");
+          setDebouncedNameSearch("");
           setKeyTagId(value);
           setIsSearchModalVisible(false);
         }}

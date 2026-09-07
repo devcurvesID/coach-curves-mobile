@@ -141,14 +141,16 @@ export const useMemberAppointmentByStaffId = () => {
 export const useInfiniteMemberAppointments = ({
   club_id,
   key_tag_id,
+  name,
   limit = 10,
 }: {
   club_id?: string;
   key_tag_id?: string;
+  name?: string;
   limit?: number;
 }) => {
   return useInfiniteQuery({
-    queryKey: ["member-appointments", club_id, key_tag_id, limit],
+    queryKey: ["member-appointments", club_id, key_tag_id, name, limit],
     enabled: Boolean(club_id),
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
@@ -158,6 +160,7 @@ export const useInfiniteMemberAppointments = ({
           params: {
             club_id: club_id, //"6a1e8d9705824f405ed79f2c", //"6a1e906305824f405ed79f49",
             ...(key_tag_id ? { key_tag_id } : {}),
+            ...(name ? { name } : {}),
             offset: pageParam,
             limit,
           },

@@ -4,8 +4,12 @@ import {
   MEMBER_FLAG_OPTIONS,
   type MemberFlag,
 } from "@/helpers/member-flag-options";
-import { useMembersByFlag } from "@/hooks/useMembersByFlag";
-import type { MemberByFlag } from "@/hooks/useMembersByFlag";
+import {
+  getMemberFlagClubId,
+  type MemberByFlag,
+  useMemberFlagResume,
+  useMembersByFlag,
+} from "@/hooks/useMembersByFlag";
 import { imageProfileURL } from "@/services/image";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -14,6 +18,7 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
   Pressable,
   Text,
   TextInput,
@@ -72,10 +77,11 @@ function MemberFlagAvatar({
 
 export default function MemberFlagsScreen() {
   const { user } = useAuth();
-  const club = user?.club_id?.[0];
-  const clubId = typeof club === "string" ? club : club?._id;
+  const clubId = getMemberFlagClubId(user?.user_personal?.member_club_id);
   const [flag, setFlag] = useState<MemberFlag["flag"]>("A");
   const [search, setSearch] = useState("");
+  const [isResumeVisible, setIsResumeVisible] = useState(false);
+  const resumeQuery = useMemberFlagResume(clubId, isResumeVisible);
   const {
     data,
     isLoading,
@@ -125,6 +131,23 @@ export default function MemberFlagsScreen() {
         }}
         ListHeaderComponent={
           <View>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Lihat resume semua status flag"
+              onPress={() => setIsResumeVisible(true)}
+              className="mb-5 flex-row items-center rounded-2xl bg-[#6F3FA0] p-4"
+            >
+              <View className="h-12 w-12 items-center justify-center rounded-2xl bg-white/15">
+                <Ionicons name="pie-chart-outline" size={25} color="white" />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="font-bold text-white">Resume Semua Flag</Text>
+                <Text className="mt-1 text-xs text-violet-200">
+                  Lihat jumlah member pada setiap status flag
+                </Text>
+              </View>
+              <Ionicons name="chevron-forward" size={20} color="white" />
+            </Pressable>
             <View className="mb-5 flex-row gap-2">
               {MEMBER_FLAG_OPTIONS.map((option) => (
                 <Pressable
@@ -327,6 +350,144 @@ export default function MemberFlagsScreen() {
           ) : null
         }
       />
+      <Modal
+        visible={isResumeVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsResumeVisible(false)}
+      >
+        <View className="flex-1 justify-center bg-black/50 px-6">
+          <Pressable
+            accessibilityLabel="Tutup modal resume flag"
+            className="absolute inset-0"
+            onPress={() => setIsResumeVisible(false)}
+          />
+          <View
+            accessibilityViewIsModal
+            className="rounded-3xl bg-white p-5 dark:bg-zinc-900"
+          >
+            <View className="flex-row items-start justify-between">
+              <View className="mr-4 flex-1">
+                <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                  Resume Status Flag
+                </Text>
+                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  Ringkasan seluruh member berdasarkan flag
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Tutup"
+                onPress={() => setIsResumeVisible(false)}
+                className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+              >
+                <Ionicons name="close" size={21} color="#6F3FA0" />
+              </Pressable>
+            </View>
+
+            {resumeQuery.isLoading ? (
+              <View className="items-center py-12">
+                <ActivityIndicator color="#6F3FA0" />
+                <Text className="mt-3 text-sm text-gray-500">
+                  Memuat resume flag...
+                </Text>
+              </View>
+            ) : resumeQuery.isError || !clubId ? (
+              <View className="items-center py-10">
+                <View className="rounded-full bg-red-50 p-4">
+                  <Ionicons
+                    name="alert-circle-outline"
+                    size={34}
+                    color="#DC2626"
+                  />
+                </View>
+                <Text className="mt-3 text-center font-bold text-gray-800 dark:text-white">
+                  Resume flag gagal dimuat
+                </Text>
+                <Text className="mt-1 text-center text-sm text-gray-500">
+                  {!clubId
+                    ? "Club pengguna belum tersedia."
+                    : "Periksa koneksi lalu coba kembali."}
+                </Text>
+                {clubId ? (
+                  <Pressable
+                    onPress={() => void resumeQuery.refetch()}
+                    className="mt-4 rounded-xl bg-[#6F3FA0] px-5 py-3"
+                  >
+                    <Text className="font-bold text-white">Coba Lagi</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : (
+              <>
+                <View className="mt-5 rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
+                  <Text className="text-xs text-gray-500 dark:text-gray-400">
+                    TOTAL MEMBER
+                  </Text>
+                  <Text className="mt-1 text-3xl font-bold text-[#6F3FA0] dark:text-violet-300">
+                    {resumeQuery.data?.reduce(
+                      (sum, item) => sum + item.total,
+                      0,
+                    ) ?? 0}
+                  </Text>
+                </View>
+                <View className="mt-4 gap-3">
+                  {MEMBER_FLAG_OPTIONS.map((option) => {
+                    const totalFlag =
+                      resumeQuery.data?.find(
+                        (item) => item.flag === option.flag,
+                      )?.total ?? 0;
+                    return (
+                      <Pressable
+                        key={option.flag}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Flag ${option.flag}, ${totalFlag} member`}
+                        onPress={() => {
+                          setFlag(option.flag);
+                          setSearch("");
+                          setIsResumeVisible(false);
+                        }}
+                        className="flex-row items-center rounded-2xl border border-gray-100 p-3 dark:border-zinc-800"
+                      >
+                        <View
+                          className="h-11 w-11 items-center justify-center rounded-xl"
+                          style={{ backgroundColor: option.backgroundColor }}
+                        >
+                          <Text
+                            className="text-lg font-bold"
+                            style={{ color: option.color }}
+                          >
+                            {option.flag}
+                          </Text>
+                        </View>
+                        <View className="ml-3 flex-1">
+                          <Text className="font-semibold text-gray-800 dark:text-white">
+                            Member Flag {option.flag}
+                          </Text>
+                          <Text className="mt-0.5 text-xs text-gray-500">
+                            Ketuk untuk melihat daftar member
+                          </Text>
+                        </View>
+                        <Text
+                          className="mr-2 text-xl font-bold"
+                          style={{ color: option.color }}
+                        >
+                          {totalFlag}
+                        </Text>
+                        <Ionicons
+                          name="chevron-forward"
+                          size={18}
+                          color="#9CA3AF"
+                        />
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </ContainerPage>
   );
 }

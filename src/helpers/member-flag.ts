@@ -19,7 +19,6 @@ export const getMemberFlagStyle = (
     case "D":
       return { color: "#F97316", backgroundColor: "#FFEDD5" };
     case "E":
-    case "F":
       return { color: "#EF4444", backgroundColor: "#FEE2E2" };
     default:
       return { color: "#6F3FA0", backgroundColor: "#F3E8FF" };

@@ -1,7 +1,12 @@
 import ContainerPage from "@/components/ui/container-page";
 import { LoadingView } from "@/components/ui/loading";
+import RankOneCard, {
+  type RankOneCardData,
+} from "@/components/workout/rank-one-card";
 import { useAuth } from "@/context/auth";
 import { getMemberFlag, MONTHLY_WORKOUT_TARGET } from "@/helpers/member-flag";
+import { useDetailMemberByUserId } from "@/hooks/useMember";
+import { useWeighMeasureProgressByUserId } from "@/hooks/useWeighMeasure";
 import {
   useMemberWorkoutToday,
   useWorkoutHistoryByUserId,
@@ -15,6 +20,9 @@ import {
   ActivityIndicator,
   FlatList,
   Image,
+  Modal,
+  Pressable,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -44,6 +52,23 @@ interface WorkoutHistoryRecord {
   workout_date: string;
 }
 
+interface MemberWeighMeasureProgress {
+  current?: {
+    weigh_diff?: string | number | null;
+    size_diff?: string | number | null;
+    body_fat_diff?: string | number | null;
+    wo_count?: number | null;
+  } | null;
+}
+
+interface WorkoutMemberDetail {
+  photo?: string | null;
+  key_tag_id?: string | number | null;
+  user?: {
+    name?: string | null;
+  } | null;
+}
+
 const getInitials = (name: string): string => {
   const words = name.trim().split(/\s+/).filter(Boolean);
   if (words.length === 0) return "?";
@@ -58,11 +83,22 @@ const getInitials = (name: string): string => {
 const getPhotoUrl = (photo: string): string =>
   /^https?:\/\//i.test(photo) ? photo : imageProfileURL(photo);
 
-function MemberAvatar({ member }: { member: WorkoutMember }) {
-  if (member.user.photo) {
+function MemberAvatar({
+  name,
+  photo,
+}: {
+  name: string;
+  photo?: string | null;
+}) {
+  const [hasImageError, setHasImageError] = useState(false);
+
+  if (photo && !hasImageError) {
     return (
       <Image
-        source={{ uri: getPhotoUrl(member.user.photo) }}
+        source={{ uri: getPhotoUrl(photo) }}
+        accessibilityLabel={`Foto profil ${name}`}
+        resizeMode="cover"
+        onError={() => setHasImageError(true)}
         className="h-16 w-16 rounded-2xl bg-violet-100"
       />
     );
@@ -71,7 +107,7 @@ function MemberAvatar({ member }: { member: WorkoutMember }) {
   return (
     <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
       <Text className="text-xl font-bold text-[#6F3FA0]">
-        {getInitials(member.user.name)}
+        {getInitials(name)}
       </Text>
     </View>
   );
@@ -79,15 +115,11 @@ function MemberAvatar({ member }: { member: WorkoutMember }) {
 
 interface WorkoutMemberCardProps {
   member: WorkoutMember;
-  onDetail: () => void;
   onMeasurement: () => void;
 }
 
-function WorkoutMemberCard({
-  member,
-  onDetail,
-  onMeasurement,
-}: WorkoutMemberCardProps) {
+function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
+  const [isResultModalVisible, setIsResultModalVisible] = useState(false);
   const checkInTime = moment(member.created_at);
   const {
     mutate: loadWorkoutHistoryByUserId,
@@ -95,6 +127,18 @@ function WorkoutMemberCard({
     isPending: isLoadingWorkoutHistory,
     isError: isWorkoutHistoryError,
   } = useWorkoutHistoryByUserId();
+  const {
+    mutate: loadMemberDetail,
+    data: memberDetailData,
+    isPending: isLoadingMemberDetail,
+    isError: isMemberDetailError,
+  } = useDetailMemberByUserId();
+  const {
+    mutate: loadWeighMeasureProgress,
+    data: weighMeasureProgressData,
+    isPending: isLoadingWeighMeasureProgress,
+    isError: isWeighMeasureProgressError,
+  } = useWeighMeasureProgressByUserId();
 
   React.useEffect(() => {
     const currentDate = new Date();
@@ -103,7 +147,14 @@ function WorkoutMemberCard({
       year: currentDate.getFullYear(),
       month: currentDate.getMonth(),
     });
-  }, [loadWorkoutHistoryByUserId, member.user_id]);
+    loadMemberDetail(member.user_id);
+  }, [loadMemberDetail, loadWorkoutHistoryByUserId, member.user_id]);
+
+  const memberDetail = memberDetailData as WorkoutMemberDetail | undefined;
+  const memberName =
+    memberDetail?.user?.name?.trim() || member.user.name || "Member";
+  const memberPhoto = memberDetail?.photo?.trim() || member.user.photo;
+  const keyTagId = memberDetail?.key_tag_id ?? member.key_tag_id;
 
   const currentDate = new Date();
   const workoutRecords = (workoutHistory ?? []) as WorkoutHistoryRecord[];
@@ -120,136 +171,250 @@ function WorkoutMemberCard({
     MONTHLY_WORKOUT_TARGET - monthlyWorkoutCount,
     0,
   );
+  const weighMeasureProgress = weighMeasureProgressData as
+    MemberWeighMeasureProgress | undefined;
+  const currentWeighMeasure = weighMeasureProgress?.current;
+  const rankCardData: RankOneCardData = {
+    club: { club_name: member.club?.club_name || "Club tidak tersedia" },
+    weigh_diff: currentWeighMeasure?.weigh_diff ?? 0,
+    size_diff: currentWeighMeasure?.size_diff ?? 0,
+    body_fat_diff: currentWeighMeasure?.body_fat_diff ?? 0,
+    wo_count: currentWeighMeasure?.wo_count ?? monthlyWorkoutCount,
+  };
+
+  const openResultModal = () => {
+    setIsResultModalVisible(true);
+    loadWeighMeasureProgress(member.user_id);
+  };
+
+  const closeResultModal = () => {
+    if (!isLoadingWeighMeasureProgress) setIsResultModalVisible(false);
+  };
+
+  const openMeasurementResult = () => {
+    setIsResultModalVisible(false);
+    onMeasurement();
+  };
 
   return (
-    <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-      <View className="p-5">
-        <View className="flex-row items-start">
-          <MemberAvatar member={member} />
+    <>
+      <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="p-5">
+          <View className="flex-row items-start">
+            <MemberAvatar
+              key={memberPhoto || "no-photo"}
+              name={memberName}
+              photo={memberPhoto}
+            />
 
-          <View className="ml-4 flex-1">
-            <View className="flex-row items-start justify-between">
-              <View className="mr-2 flex-1">
-                <Text
-                  numberOfLines={1}
-                  className="text-lg font-bold text-gray-900 dark:text-white"
-                >
-                  {member.user.name}
-                </Text>
-                <Text
-                  numberOfLines={1}
-                  className="mt-1 text-sm text-gray-500 dark:text-gray-400"
-                >
-                  {member.club?.club_name || "Club tidak tersedia"}
+            <View className="ml-4 flex-1">
+              <View className="flex-row items-start justify-between">
+                <View className="mr-2 flex-1">
+                  <Text
+                    numberOfLines={1}
+                    className="text-lg font-bold text-gray-900 dark:text-white"
+                  >
+                    {memberName}
+                  </Text>
+                  <Text
+                    numberOfLines={1}
+                    className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                  >
+                    {member.club?.club_name || "Club tidak tersedia"}
+                  </Text>
+                </View>
+
+                <View className="flex-row items-center rounded-full bg-green-50 px-2.5 py-1 dark:bg-green-950">
+                  <View className="mr-1.5 h-2 w-2 rounded-full bg-green-500" />
+                  <Text className="text-[10px] font-bold text-green-700 dark:text-green-300">
+                    WORKOUT
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
+            <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
+              <Text className="text-xs text-gray-500 dark:text-gray-400">
+                CHECK-IN
+              </Text>
+              <View className="mt-1.5 flex-row items-center">
+                <Ionicons name="time-outline" size={17} color="#6F3FA0" />
+                <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                  {checkInTime.isValid() ? checkInTime.format("HH:mm") : "-"}{" "}
+                  WIB
                 </Text>
               </View>
+            </View>
 
-              <View className="flex-row items-center rounded-full bg-green-50 px-2.5 py-1 dark:bg-green-950">
-                <View className="mr-1.5 h-2 w-2 rounded-full bg-green-500" />
-                <Text className="text-[10px] font-bold text-green-700 dark:text-green-300">
-                  WORKOUT
+            <View className="flex-1 pl-4">
+              <Text className="text-xs text-gray-500 dark:text-gray-400">
+                ESTIMASI SESI
+              </Text>
+              <View className="mt-1.5 flex-row items-center">
+                <Ionicons name="fitness-outline" size={17} color="#6F3FA0" />
+                <Text className="ml-1.5 font-bold text-[#6F3FA0] dark:text-violet-300">
+                  30–45 menit
                 </Text>
               </View>
             </View>
           </View>
-        </View>
 
-        <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-          <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              CHECK-IN
-            </Text>
-            <View className="mt-1.5 flex-row items-center">
-              <Ionicons name="time-outline" size={17} color="#6F3FA0" />
-              <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
-                {checkInTime.isValid() ? checkInTime.format("HH:mm") : "-"} WIB
+          <View
+            className="mt-4 flex-row items-center rounded-2xl px-4 py-3"
+            style={{ backgroundColor: memberFlag.backgroundColor }}
+          >
+            <View className="h-10 w-10 items-center justify-center rounded-full bg-white">
+              <Ionicons name="flag" size={20} color={memberFlag.color} />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="text-xs text-gray-600">STATUS FLAG</Text>
+              <Text
+                className="mt-0.5 font-bold"
+                style={{ color: memberFlag.color }}
+              >
+                {isLoadingWorkoutHistory
+                  ? "Menghitung flag..."
+                  : isWorkoutHistoryError
+                    ? "Status flag gagal dimuat"
+                    : `Flag ${memberFlag.flag} • ${monthlyWorkoutCount} workout bulan ini`}
               </Text>
+              {!isLoadingWorkoutHistory && !isWorkoutHistoryError && (
+                <Text className="mt-1 text-xs text-gray-600">
+                  {remainingWorkouts > 0
+                    ? `${remainingWorkouts} workout lagi menuju target ${MONTHLY_WORKOUT_TARGET} sesi`
+                    : "Target bulanan tercapai"}
+                </Text>
+              )}
             </View>
           </View>
 
-          <View className="flex-1 pl-4">
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
-              ESTIMASI SESI
-            </Text>
-            <View className="mt-1.5 flex-row items-center">
-              <Ionicons name="fitness-outline" size={17} color="#6F3FA0" />
-              <Text className="ml-1.5 font-bold text-[#6F3FA0] dark:text-violet-300">
-                30–45 menit
+          <View className="mt-4 flex-row items-center rounded-xl bg-gray-50 px-3 py-3 dark:bg-zinc-800">
+            <View className="h-9 w-9 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950">
+              <Ionicons name="key-outline" size={18} color="#6F3FA0" />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="text-[11px] text-gray-500 dark:text-gray-400">
+                KEY TAG MEMBER
+              </Text>
+              <Text className="mt-0.5 font-bold text-gray-800 dark:text-white">
+                {isLoadingMemberDetail
+                  ? "Memuat Key Tag..."
+                  : String(keyTagId ?? "").trim() || "Belum tersedia"}
               </Text>
             </View>
+            {isMemberDetailError ? (
+              <Ionicons name="alert-circle-outline" size={19} color="#DC2626" />
+            ) : null}
           </View>
         </View>
 
-        <View
-          className="mt-4 flex-row items-center rounded-2xl px-4 py-3"
-          style={{ backgroundColor: memberFlag.backgroundColor }}
-        >
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-white">
-            <Ionicons name="flag" size={20} color={memberFlag.color} />
-          </View>
-          <View className="ml-3 flex-1">
-            <Text className="text-xs text-gray-600">STATUS FLAG</Text>
-            <Text
-              className="mt-0.5 font-bold"
-              style={{ color: memberFlag.color }}
-            >
-              {isLoadingWorkoutHistory
-                ? "Menghitung flag..."
-                : isWorkoutHistoryError
-                  ? "Status flag gagal dimuat"
-                  : `Flag ${memberFlag.flag} • ${monthlyWorkoutCount} workout bulan ini`}
+        <View className="border-t border-gray-100 dark:border-zinc-800">
+          <TouchableOpacity
+            onPress={openResultModal}
+            accessibilityRole="button"
+            accessibilityLabel={`Lihat informasi penimbangan ${memberName}`}
+            className="flex-row items-center justify-center bg-violet-50 py-4 dark:bg-violet-950"
+          >
+            <Ionicons name="scale-outline" size={19} color="#6F3FA0" />
+            <Text className="ml-2 font-bold text-[#6F3FA0] dark:text-violet-300">
+              Lihat Hasil Penimbangan
             </Text>
-            {!isLoadingWorkoutHistory && !isWorkoutHistoryError && (
-              <Text className="mt-1 text-xs text-gray-600">
-                {remainingWorkouts > 0
-                  ? `${remainingWorkouts} workout lagi menuju target ${MONTHLY_WORKOUT_TARGET} sesi`
-                  : "Target bulanan tercapai"}
-              </Text>
-            )}
-          </View>
+          </TouchableOpacity>
         </View>
-
-        {(member.user.email || member.key_tag_id) && (
-          <View className="mt-4 gap-3">
-            {member.user.email && (
-              <View className="flex-row items-center">
-                <Ionicons name="mail-outline" size={18} color="#6F3FA0" />
-                <Text
-                  numberOfLines={1}
-                  className="ml-3 flex-1 text-sm text-gray-600 dark:text-gray-300"
-                >
-                  {member.user.email}
-                </Text>
-              </View>
-            )}
-            {member.key_tag_id && (
-              <View className="flex-row items-center">
-                <Ionicons name="key-outline" size={18} color="#6F3FA0" />
-                <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
-                  Key Tag: {member.key_tag_id}
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
       </View>
 
-      <View className="flex-row border-t border-gray-100 dark:border-zinc-800">
-        <TouchableOpacity
-          onPress={onDetail}
-          className="flex-1 items-center py-4"
-        >
-          <Text className="font-bold text-[#6F3FA0]">Lihat Detail</Text>
-        </TouchableOpacity>
-        <View className="w-px bg-gray-100 dark:bg-zinc-800" />
-        <TouchableOpacity
-          onPress={onMeasurement}
-          className="flex-1 items-center py-4"
-        >
-          <Text className="font-bold text-[#6F3FA0]">Penimbangan</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
+      <Modal
+        visible={isResultModalVisible}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+        onRequestClose={closeResultModal}
+      >
+        <View className="flex-1 bg-black/60">
+          <Pressable
+            accessibilityLabel="Tutup informasi hasil penimbangan"
+            className="absolute inset-0"
+            onPress={closeResultModal}
+          />
+          <View className="mt-auto max-h-[92%] rounded-t-[32px] bg-[#F8F7FC] pb-6 dark:bg-zinc-950">
+            <View className="flex-row items-center justify-between px-6 pb-2 pt-5">
+              <View className="mr-4 flex-1">
+                <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                  Hasil Penimbangan
+                </Text>
+                <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Resume hasil latihan {memberName}
+                </Text>
+              </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Tutup modal"
+                disabled={isLoadingWeighMeasureProgress}
+                onPress={closeResultModal}
+                className="h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-zinc-800"
+              >
+                <Ionicons name="close" size={21} color="#6F3FA0" />
+              </Pressable>
+            </View>
+
+            {isLoadingWeighMeasureProgress ? (
+              <View className="items-center px-8 py-20">
+                <ActivityIndicator color="#6F3FA0" />
+                <Text className="mt-3 text-sm text-gray-500">
+                  Memuat hasil penimbangan...
+                </Text>
+              </View>
+            ) : isWeighMeasureProgressError || !currentWeighMeasure ? (
+              <View className="items-center px-8 py-16">
+                <View className="rounded-full bg-violet-100 p-5 dark:bg-violet-950">
+                  <Ionicons
+                    name={
+                      isWeighMeasureProgressError
+                        ? "alert-circle-outline"
+                        : "scale-outline"
+                    }
+                    size={38}
+                    color={isWeighMeasureProgressError ? "#DC2626" : "#6F3FA0"}
+                  />
+                </View>
+                <Text className="mt-4 text-center text-lg font-bold text-gray-900 dark:text-white">
+                  {isWeighMeasureProgressError
+                    ? "Hasil penimbangan gagal dimuat"
+                    : "Hasil penimbangan belum tersedia"}
+                </Text>
+                <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+                  {isWeighMeasureProgressError
+                    ? "Periksa koneksi lalu coba kembali."
+                    : "Member belum memiliki data yang dapat ditampilkan dalam resume."}
+                </Text>
+                {isWeighMeasureProgressError ? (
+                  <Pressable
+                    onPress={() => loadWeighMeasureProgress(member.user_id)}
+                    className="mt-5 rounded-2xl bg-[#6F3FA0] px-6 py-3"
+                  >
+                    <Text className="font-bold text-white">Coba Lagi</Text>
+                  </Pressable>
+                ) : null}
+              </View>
+            ) : (
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{ paddingBottom: 24 }}
+              >
+                <RankOneCard
+                  data={rankCardData}
+                  member={{ name: memberName, photo: memberPhoto }}
+                  detailLabel="Lihat Hasil Penimbangan"
+                  onPressDetail={openMeasurementResult}
+                />
+              </ScrollView>
+            )}
+          </View>
+        </View>
+      </Modal>
+    </>
   );
 }
 
@@ -284,18 +449,11 @@ export default function ListMemberWOScreen() {
     if (!keyword) return workoutMembers;
 
     return workoutMembers.filter((member) =>
-      [member.user.name, member.user.email, member.key_tag_id].some((value) =>
+      [member.user.name, member.key_tag_id].some((value) =>
         value?.toLowerCase().includes(keyword),
       ),
     );
   }, [search, workoutMembers]);
-
-  const openDetail = (member: WorkoutMember) => {
-    router.push({
-      pathname: "/list-member/info/[id]",
-      params: { id: member.user_id },
-    });
-  };
 
   const openMeasurement = (member: WorkoutMember) => {
     router.push({
@@ -331,7 +489,7 @@ export default function ListMemberWOScreen() {
         <View className="flex-row items-center rounded-2xl border border-gray-100 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
           <Ionicons name="search-outline" size={22} color="#9CA3AF" />
           <TextInput
-            placeholder="Cari nama, email, atau key tag..."
+            placeholder="Cari nama atau key tag..."
             placeholderTextColor="#9CA3AF"
             value={search}
             onChangeText={setSearch}
@@ -357,7 +515,6 @@ export default function ListMemberWOScreen() {
         renderItem={({ item }) => (
           <WorkoutMemberCard
             member={item}
-            onDetail={() => openDetail(item)}
             onMeasurement={() => openMeasurement(item)}
           />
         )}

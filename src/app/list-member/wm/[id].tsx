@@ -6,17 +6,38 @@ import { useUserClub } from "@/hooks/useClubs";
 import { useDetailMemberByUserId } from "@/hooks/useMember";
 import { useWeighMeasureProgressByUserId } from "@/hooks/useWeighMeasure";
 import { imageProfileURL } from "@/services/image";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
+import { buildWeighMeasurePdfHtml } from "@/utils/weigh-measure-pdf";
+import { Ionicons } from "@expo/vector-icons";
+import * as Print from "expo-print";
 import { useLocalSearchParams } from "expo-router";
+import * as Sharing from "expo-sharing";
 import moment from "moment";
-import React, { useEffect } from "react";
-import { Image, ScrollView, View } from "react-native";
+import React, { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Pressable,
+  ScrollView,
+  View,
+} from "react-native";
 
 interface MemberIdentity {
   photo?: string | null;
   user?: {
     name?: string | null;
   };
+}
+
+type MeasurementValue = string | number | null | undefined;
+
+interface WeighMeasureRecord {
+  wm_date?: string | null;
+  weight?: MeasurementValue;
+  body_fat?: MeasurementValue;
+  bmi?: MeasurementValue;
+  total_measurement?: MeasurementValue;
+  [key: string]: unknown;
 }
 
 const getInitials = (name: string): string =>
@@ -84,86 +105,165 @@ const MeasurementRow = ({ title, previous, current, unit = " cm" }: any) => {
   );
 };
 
-const ResultCompareWM = ({ current }: any) => {
-  const formatNumber = (
-    value: string | number | null | undefined,
-    decimal: number = 1,
-  ): string => {
-    const parsedValue = Number(value);
+const parseNumber = (value: MeasurementValue): number | undefined => {
+  if (value === null || value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : undefined;
+};
 
-    if (Number.isNaN(parsedValue)) {
-      return "0";
-    }
+const formatMeasurement = (value: MeasurementValue, unit: string) => {
+  const parsed = parseNumber(value);
+  return parsed === undefined ? "—" : `${parsed.toFixed(1)}${unit}`;
+};
 
-    return Math.abs(parsedValue).toFixed(decimal);
-  };
-  const isReduction = (value: string | number | null | undefined): boolean => {
-    return Number(value) < 0;
-  };
+function ResumeMetric({
+  label,
+  icon,
+  previous,
+  current,
+  unit,
+}: {
+  label: string;
+  icon: React.ComponentProps<typeof Ionicons>["name"];
+  previous: MeasurementValue;
+  current: MeasurementValue;
+  unit: string;
+}) {
+  const previousNumber = parseNumber(previous);
+  const currentNumber = parseNumber(current);
+  const difference =
+    previousNumber !== undefined && currentNumber !== undefined
+      ? currentNumber - previousNumber
+      : undefined;
+  const isIncrease = difference !== undefined && difference > 0;
+  const isDecrease = difference !== undefined && difference < 0;
+  const differenceColor = isDecrease
+    ? "text-green-600 dark:text-green-400"
+    : isIncrease
+      ? "text-orange-600 dark:text-orange-400"
+      : "text-gray-500 dark:text-gray-400";
 
   return (
-    <View className="px-5 py-5">
-      <Text className="text-base font-bold text-slate-800">
-        Detail Pencapaian
+    <View className="mb-3 w-[48%] rounded-2xl border border-gray-100 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+      <View className="flex-row items-center">
+        <View className="h-9 w-9 items-center justify-center rounded-xl bg-violet-50 dark:bg-violet-950">
+          <Ionicons name={icon} size={19} color="#6F3FA0" />
+        </View>
+        <Text
+          numberOfLines={2}
+          className="ml-2 flex-1 text-xs font-semibold text-gray-600 dark:text-gray-300"
+        >
+          {label}
+        </Text>
+      </View>
+      <Text className="mt-3 text-xl font-bold text-gray-900 dark:text-white">
+        {formatMeasurement(current, unit)}
       </Text>
-
-      <View className="mt-4 flex-row gap-3">
-        <View className="flex-1 items-center rounded-2xl bg-purple-50 px-2 py-4">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-            <MaterialCommunityIcons
-              name="weight-lifter"
-              size={22}
-              color="#7C3AED"
-            />
-          </View>
-
-          <Text className="mt-2 text-lg font-bold text-slate-800">
-            {isReduction(current.weigh_diff) ? "-" : "+"}
-            {formatNumber(current.weigh_diff)}
-          </Text>
-
-          <Text className="text-center text-xs text-slate-500">
-            Berat Badan
-          </Text>
-        </View>
-
-        <View className="flex-1 items-center rounded-2xl bg-purple-50 px-2 py-4">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-            <MaterialCommunityIcons
-              name="tape-measure"
-              size={22}
-              color="#7C3AED"
-            />
-          </View>
-
-          <Text className="mt-2 text-lg font-bold text-slate-800">
-            {isReduction(current.size_diff) ? "-" : "+"}
-            {formatNumber(current.size_diff)}
-          </Text>
-
-          <Text className="text-center text-xs text-slate-500">
-            Ukuran Tubuh
-          </Text>
-        </View>
-
-        <View className="flex-1 items-center rounded-2xl bg-purple-50 px-2 py-4">
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-purple-100">
-            <MaterialCommunityIcons name="percent" size={22} color="#7C3AED" />
-          </View>
-
-          <Text className="mt-2 text-lg font-bold text-slate-800">
-            {isReduction(current.body_fat_diff) ? "-" : "+"}
-            {formatNumber(current.body_fat_diff)}
-          </Text>
-
-          <Text className="text-center text-xs text-slate-500">
-            Lemak Tubuh
-          </Text>
-        </View>
+      <Text className="mt-1 text-[11px] text-gray-400">
+        Sebelumnya {formatMeasurement(previous, unit)}
+      </Text>
+      <View className="mt-3 flex-row items-center">
+        <Ionicons
+          name={
+            isIncrease
+              ? "trending-up-outline"
+              : isDecrease
+                ? "trending-down-outline"
+                : "remove-outline"
+          }
+          size={16}
+          color={isDecrease ? "#16A34A" : isIncrease ? "#EA580C" : "#9CA3AF"}
+        />
+        <Text className={`ml-1 text-xs font-bold ${differenceColor}`}>
+          {difference === undefined
+            ? "Belum dapat dibandingkan"
+            : difference === 0
+              ? "Tidak berubah"
+              : `${difference > 0 ? "+" : ""}${difference.toFixed(1)}${unit}`}
+        </Text>
       </View>
     </View>
   );
-};
+}
+
+function WeighMeasureResume({
+  current,
+  previous,
+}: {
+  current: WeighMeasureRecord;
+  previous: WeighMeasureRecord;
+}) {
+  const metrics = [
+    {
+      label: "Berat Badan",
+      icon: "scale-outline" as const,
+      previous: previous.weight,
+      current: current.weight,
+      unit: " kg",
+    },
+    {
+      label: "Lemak Tubuh",
+      icon: "water-outline" as const,
+      previous: previous.body_fat,
+      current: current.body_fat,
+      unit: "%",
+    },
+    {
+      label: "Total Ukuran",
+      icon: "resize-outline" as const,
+      previous: previous.total_measurement,
+      current: current.total_measurement,
+      unit: " cm",
+    },
+    {
+      label: "BMI",
+      icon: "speedometer-outline" as const,
+      previous: previous.bmi,
+      current: current.bmi,
+      unit: "",
+    },
+  ];
+
+  return (
+    <View className="mt-4 rounded-3xl bg-violet-50 p-5 dark:bg-violet-950">
+      <View className="flex-row items-start justify-between">
+        <View className="mr-3 flex-1">
+          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+            Resume Hasil WM
+          </Text>
+          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            Perbandingan dua penimbangan terakhir
+          </Text>
+        </View>
+        <View className="h-11 w-11 items-center justify-center rounded-2xl bg-[#6F3FA0]">
+          <Ionicons name="analytics-outline" size={23} color="white" />
+        </View>
+      </View>
+
+      <View className="mt-4 flex-row items-center rounded-xl bg-white px-3 py-3 dark:bg-zinc-900">
+        <Ionicons name="calendar-outline" size={18} color="#6F3FA0" />
+        <Text className="ml-2 flex-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
+          {previous.wm_date ? formatDate(previous.wm_date) : "—"} →{" "}
+          {current.wm_date ? formatDate(current.wm_date) : "—"}
+        </Text>
+      </View>
+
+      <View className="mt-4 flex-row flex-wrap justify-between">
+        {metrics.map((metric) => (
+          <ResumeMetric key={metric.label} {...metric} />
+        ))}
+      </View>
+
+      <View className="mt-1 flex-row items-start rounded-xl bg-white/70 p-3 dark:bg-zinc-900">
+        <Ionicons name="information-circle-outline" size={18} color="#6F3FA0" />
+        <Text className="ml-2 flex-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+          Warna hijau menunjukkan nilai menurun, sedangkan oranye menunjukkan
+          nilai meningkat dari penimbangan sebelumnya.
+        </Text>
+      </View>
+    </View>
+  );
+}
 
 const SummaryRow = ({
   title,
@@ -263,16 +363,22 @@ const BodyRowItem = ({
 export default function DetailInformasiWMScreen() {
   const params = useLocalSearchParams<{ id: string }>();
   const { id } = params;
+  const [hasPhotoError, setHasPhotoError] = useState(false);
+  const [pdfAction, setPdfAction] = useState<"preview" | "download" | null>(
+    null,
+  );
 
   const {
     mutate: weighMeasureProgressFn,
     data: weighMeasureProgress,
     isPending: isPendingProgress,
+    isError: isProgressError,
   } = useWeighMeasureProgressByUserId();
   const {
     mutate: loadMemberDetail,
     data: memberDetailData,
     isPending: isPendingMemberDetail,
+    isError: isMemberDetailError,
   } = useDetailMemberByUserId();
   const { data: userClubs, isLoading: isLoadingUserClub } = useUserClub();
   const clubName = userClubs?.[0]?.club_name ?? "Club belum tersedia";
@@ -284,19 +390,124 @@ export default function DetailInformasiWMScreen() {
     }
   }, [id, loadMemberDetail, weighMeasureProgressFn]);
 
-  if (
-    isPendingProgress ||
-    isPendingMemberDetail ||
-    isLoadingUserClub ||
-    !weighMeasureProgress ||
-    !memberDetailData
-  ) {
+  if (isPendingProgress || isPendingMemberDetail || isLoadingUserClub) {
     return <LoadingView />;
   }
 
-  const { current, previous } = weighMeasureProgress;
+  const progress = weighMeasureProgress as
+    | {
+        current?: WeighMeasureRecord | null;
+        previous?: WeighMeasureRecord | null;
+      }
+    | null
+    | undefined;
+  const current = progress?.current;
+  const previous = progress?.previous;
   const member = memberDetailData as MemberIdentity;
-  const memberName = member.user?.name?.trim() || "Member";
+  const memberName = member?.user?.name?.trim() || "Member";
+
+  if (
+    isProgressError ||
+    isMemberDetailError ||
+    !memberDetailData ||
+    !current ||
+    !previous
+  ) {
+    return (
+      <ContainerPage
+        titleHeader="Ringkasan Perubahan"
+        titleContent="Hasil Weigh & Measure member"
+      >
+        <View className="flex-1 items-center justify-center px-8 pb-20">
+          <View className="rounded-full bg-violet-50 p-5 dark:bg-violet-950">
+            <Ionicons
+              name={
+                isProgressError || isMemberDetailError
+                  ? "alert-circle-outline"
+                  : "analytics-outline"
+              }
+              size={42}
+              color={
+                isProgressError || isMemberDetailError ? "#DC2626" : "#6F3FA0"
+              }
+            />
+          </View>
+          <Text className="mt-4 text-center text-lg font-bold text-gray-900 dark:text-white">
+            {isProgressError || isMemberDetailError
+              ? "Informasi WM gagal dimuat"
+              : "Data perbandingan belum tersedia"}
+          </Text>
+          <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+            {isProgressError || isMemberDetailError
+              ? "Periksa koneksi lalu coba memuat data kembali."
+              : "Resume WM dapat ditampilkan setelah member memiliki dua hasil penimbangan."}
+          </Text>
+          {id && (isProgressError || isMemberDetailError) ? (
+            <Pressable
+              onPress={() => {
+                weighMeasureProgressFn(id);
+                loadMemberDetail(id);
+              }}
+              className="mt-5 rounded-2xl bg-[#6F3FA0] px-6 py-3"
+            >
+              <Text className="font-bold text-white">Coba Lagi</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </ContainerPage>
+    );
+  }
+
+  const createPdfHtml = () =>
+    buildWeighMeasurePdfHtml({
+      memberName,
+      clubName,
+      photoUrl: member.photo ? imageProfileURL(member.photo) : undefined,
+      current,
+      previous,
+    });
+
+  const previewPdf = async () => {
+    if (pdfAction) return;
+    setPdfAction("preview");
+    try {
+      await Print.printAsync({ html: createPdfHtml() });
+    } catch {
+      Alert.alert(
+        "PDF Tidak Dapat Ditampilkan",
+        "Terjadi kendala saat membuat preview PDF. Silakan coba kembali.",
+      );
+    } finally {
+      setPdfAction(null);
+    }
+  };
+
+  const downloadPdf = async () => {
+    if (pdfAction) return;
+    setPdfAction("download");
+    try {
+      const { uri } = await Print.printToFileAsync({ html: createPdfHtml() });
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert(
+          "PDF Berhasil Dibuat",
+          "Fitur penyimpanan tidak tersedia pada perangkat ini.",
+        );
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: "application/pdf",
+        UTI: "com.adobe.pdf",
+        dialogTitle: `Simpan Resume WM ${memberName}`,
+      });
+    } catch {
+      Alert.alert(
+        "PDF Tidak Dapat Disimpan",
+        "Terjadi kendala saat membuat file PDF. Silakan coba kembali.",
+      );
+    } finally {
+      setPdfAction(null);
+    }
+  };
 
   return (
     <>
@@ -312,69 +523,88 @@ export default function DetailInformasiWMScreen() {
           contentContainerClassName="px-2 pt-5 pb-32"
           showsVerticalScrollIndicator={false}
         >
-          {/* Detail */}
-          <View className="bg-white rounded-3xl p-5 shadow">
+          <View className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
             <View className="items-center">
-              {member.photo ? (
+              {member.photo && !hasPhotoError ? (
                 <Image
                   source={{ uri: imageProfileURL(member.photo) }}
-                  className="h-[85px] w-[85px] rounded-full"
+                  onError={() => setHasPhotoError(true)}
+                  className="h-[88px] w-[88px] rounded-3xl bg-violet-50"
                 />
               ) : (
-                <View className="h-[85px] w-[85px] items-center justify-center rounded-full bg-violet-100">
+                <View className="h-[88px] w-[88px] items-center justify-center rounded-3xl bg-violet-100 dark:bg-violet-950">
                   <Text className="text-2xl font-bold text-[#6F3FA0]">
                     {getInitials(memberName)}
                   </Text>
                 </View>
               )}
 
-              <Text className="text-2xl font-bold text-gray-800 mt-3">
+              <Text className="mt-3 text-2xl font-bold text-gray-800 dark:text-white">
                 {memberName}
               </Text>
 
-              <Text className="text-gray-500">
-                {formatDate(current.wm_date)} - {formatDate(previous.wm_date)}
-              </Text>
-
-              <Text className="text-[#6F3FA0] font-semibold mt-1">
-                {clubName}
-              </Text>
+              <View className="mt-2 flex-row items-center">
+                <Ionicons name="business-outline" size={16} color="#6F3FA0" />
+                <Text className="ml-1.5 font-semibold text-[#6F3FA0] dark:text-violet-300">
+                  {clubName}
+                </Text>
+              </View>
             </View>
           </View>
 
-          {/* improvement */}
-          <ResultCompareWM current={current} />
-          {/* improvement */}
+          <WeighMeasureResume current={current} previous={previous} />
 
-          <View className="flex-row justify-between mt-4">
-            <View className="flex-1 bg-[#BB86FC] rounded-2xl p-4 mr-1">
-              <Text className="text-white/80 text-xs">Body Fat</Text>
-
-              <Text className="text-white text-2xl font-bold mt-1">
-                {current.body_fat}
-              </Text>
-
-              <Text className="text-white/80 text-xs">%</Text>
+          <View className="mt-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <View className="flex-row items-start">
+              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950">
+                <Ionicons
+                  name="document-text-outline"
+                  size={23}
+                  color="#DC2626"
+                />
+              </View>
+              <View className="ml-3 flex-1">
+                <Text className="text-lg font-bold text-gray-900 dark:text-white">
+                  Resume WM dalam PDF
+                </Text>
+                <Text className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                  Lihat dokumen terlebih dahulu atau simpan untuk dibagikan
+                  kepada member.
+                </Text>
+              </View>
             </View>
 
-            <View className="flex-1 bg-[#6F3FA0] rounded-2xl p-4 mx-1">
-              <Text className="text-white/80 text-xs">BMI</Text>
-
-              <Text className="text-white text-2xl font-bold mt-1">
-                {current.bmi}
-              </Text>
-
-              <Text className="text-white/80 text-xs">Status</Text>
-            </View>
-
-            <View className="flex-1 bg-[#8E5CD9] rounded-2xl p-4 ml-1">
-              <Text className="text-white/80 text-xs">Berat Badan</Text>
-
-              <Text className="text-white text-2xl font-bold mt-1">
-                {current.weight}
-              </Text>
-
-              <Text className="text-white/80 text-xs">kg</Text>
+            <View className="mt-4 flex-row gap-3">
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Lihat resume WM dalam PDF"
+                disabled={pdfAction !== null}
+                onPress={() => void previewPdf()}
+                className="flex-1 flex-row items-center justify-center rounded-2xl border border-violet-200 py-3.5 dark:border-violet-800"
+              >
+                {pdfAction === "preview" ? (
+                  <ActivityIndicator size="small" color="#6F3FA0" />
+                ) : (
+                  <Ionicons name="eye-outline" size={19} color="#6F3FA0" />
+                )}
+                <Text className="ml-2 font-bold text-[#6F3FA0] dark:text-violet-300">
+                  Lihat PDF
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Simpan resume WM sebagai PDF"
+                disabled={pdfAction !== null}
+                onPress={() => void downloadPdf()}
+                className="flex-1 flex-row items-center justify-center rounded-2xl bg-[#6F3FA0] py-3.5"
+              >
+                {pdfAction === "download" ? (
+                  <ActivityIndicator size="small" color="white" />
+                ) : (
+                  <Ionicons name="download-outline" size={19} color="white" />
+                )}
+                <Text className="ml-2 font-bold text-white">Simpan PDF</Text>
+              </Pressable>
             </View>
           </View>
 
@@ -410,46 +640,6 @@ export default function DetailInformasiWMScreen() {
             </View>
           </View>
 
-          {/* Ringkasan Perubahan */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-5">
-              Ringkasan Perubahan
-            </Text>
-
-            <Text className="text-gray-500 dark:text-gray-400 mb-4">
-              Dibanding penimbangan diawal
-            </Text>
-
-            <SummaryRow
-              title="Berat Tubuh"
-              previous={previous.weight}
-              current={current.weight}
-              unit=" kg"
-            />
-
-            <SummaryRow
-              title="Total Pengukuran"
-              previous={previous.total_measurement}
-              current={current.total_measurement}
-              unit=" cm"
-            />
-
-            <SummaryRow
-              title="Lemak Tubuh"
-              previous={previous.body_fat}
-              current={current.body_fat}
-              unit="%"
-            />
-
-            <SummaryRow
-              title="Air Tubuh"
-              previous={previous.body_water}
-              current={current.body_water}
-              unit="%"
-              reverse
-            />
-          </View>
-          {/* Ringkasan Perubahan */}
           {/* Ringkasan Perubahan Komposisi Tubuh */}
           <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
             <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-2">
