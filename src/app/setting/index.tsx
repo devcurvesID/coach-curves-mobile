@@ -3,7 +3,7 @@ import {
   EmailAndUsernameInput,
   PasswordInput,
 } from "@/components/ui/text-input";
-import * as Notifications from "expo-notifications";
+import { scheduleLocalNotificationAsync } from "@/services/push-notification";
 import React from "react";
 import {
   Image,
@@ -20,15 +20,16 @@ export default function SettingScreen() {
   const [password, setPassword] = React.useState("");
   const [email, setEmail] = React.useState("");
 
-  const verifNotif = () => {
-    Notifications.scheduleNotificationAsync({
-      content: {
+  const verifNotif = async () => {
+    try {
+      await scheduleLocalNotificationAsync({
         title: "Verification",
-        body: "Terimakasih sudah melakukan verifikasi",
-        data: {},
-      },
-      trigger: null,
-    });
+        body: "Terima kasih sudah melakukan verifikasi.",
+        data: { type: "verification" },
+      });
+    } catch {
+      // Fitur utama tetap dapat digunakan jika notifikasi tidak tersedia.
+    }
   };
   return (
     <KeyboardAvoidingView
@@ -90,8 +91,8 @@ export default function SettingScreen() {
 
             {/* Login Button */}
             <TouchableOpacity
-              className="bg-[#5E2E91] dark:bg-[#9A67EA] py-4 rounded-xl items-center mb-6"
-              onPress={verifNotif}
+              className="bg-[#5E2E91]  py-4 rounded-xl items-center mb-6"
+              onPress={() => void verifNotif()}
             >
               <Text className="text-white font-semibold text-lg">Login</Text>
             </TouchableOpacity>

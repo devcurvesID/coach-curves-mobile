@@ -69,11 +69,11 @@ const MeasurementRow = ({ title, previous, current, unit = " cm" }: any) => {
   const diff = curr - prev;
 
   return (
-    <View className="py-3 border-b border-gray-200 dark:border-zinc-800">
+    <View className="py-3 border-b border-gray-200 ">
       <View className="flex-row justify-between items-center">
-        <Text className="text-gray-600 dark:text-gray-300">{title}</Text>
+        <Text className="text-gray-600 ">{title}</Text>
 
-        <Text className="font-bold text-gray-900 dark:text-white">
+        <Text className="font-bold text-gray-900 ">
           {current}
           {unit}
         </Text>
@@ -90,7 +90,7 @@ const MeasurementRow = ({ title, previous, current, unit = " cm" }: any) => {
             diff === 0
               ? "text-gray-400"
               : diff > 0
-                ? "text-violet-600 dark:text-violet-400"
+                ? "text-violet-600 "
                 : "text-green-500"
           }`}
         >
@@ -138,25 +138,25 @@ function ResumeMetric({
   const isIncrease = difference !== undefined && difference > 0;
   const isDecrease = difference !== undefined && difference < 0;
   const differenceColor = isDecrease
-    ? "text-green-600 dark:text-green-400"
+    ? "text-green-600 "
     : isIncrease
-      ? "text-orange-600 dark:text-orange-400"
-      : "text-gray-500 dark:text-gray-400";
+      ? "text-orange-600 "
+      : "text-gray-500 ";
 
   return (
-    <View className="mb-3 w-[48%] rounded-2xl border border-gray-100 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mb-3 w-[48%] rounded-2xl border border-gray-100 bg-white p-4  ">
       <View className="flex-row items-center">
-        <View className="h-9 w-9 items-center justify-center rounded-xl bg-violet-50 dark:bg-violet-950">
+        <View className="h-9 w-9 items-center justify-center rounded-xl bg-violet-50 ">
           <Ionicons name={icon} size={19} color="#6F3FA0" />
         </View>
         <Text
           numberOfLines={2}
-          className="ml-2 flex-1 text-xs font-semibold text-gray-600 dark:text-gray-300"
+          className="ml-2 flex-1 text-xs font-semibold text-gray-600 "
         >
           {label}
         </Text>
       </View>
-      <Text className="mt-3 text-xl font-bold text-gray-900 dark:text-white">
+      <Text className="mt-3 text-xl font-bold text-gray-900 ">
         {formatMeasurement(current, unit)}
       </Text>
       <Text className="mt-1 text-[11px] text-gray-400">
@@ -225,13 +225,13 @@ function WeighMeasureResume({
   ];
 
   return (
-    <View className="mt-4 rounded-3xl bg-violet-50 p-5 dark:bg-violet-950">
+    <View className="mt-4 rounded-3xl bg-violet-50 p-5 ">
       <View className="flex-row items-start justify-between">
         <View className="mr-3 flex-1">
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+          <Text className="text-lg font-bold text-gray-900 ">
             Resume Hasil WM
           </Text>
-          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-sm text-gray-500 ">
             Perbandingan dua penimbangan terakhir
           </Text>
         </View>
@@ -240,9 +240,9 @@ function WeighMeasureResume({
         </View>
       </View>
 
-      <View className="mt-4 flex-row items-center rounded-xl bg-white px-3 py-3 dark:bg-zinc-900">
+      <View className="mt-4 flex-row items-center rounded-xl bg-white px-3 py-3 ">
         <Ionicons name="calendar-outline" size={18} color="#6F3FA0" />
-        <Text className="ml-2 flex-1 text-xs font-semibold text-violet-700 dark:text-violet-300">
+        <Text className="ml-2 flex-1 text-xs font-semibold text-violet-700 ">
           {previous.wm_date ? formatDate(previous.wm_date) : "—"} →{" "}
           {current.wm_date ? formatDate(current.wm_date) : "—"}
         </Text>
@@ -254,9 +254,9 @@ function WeighMeasureResume({
         ))}
       </View>
 
-      <View className="mt-1 flex-row items-start rounded-xl bg-white/70 p-3 dark:bg-zinc-900">
+      <View className="mt-1 flex-row items-start rounded-xl bg-white/70 p-3 ">
         <Ionicons name="information-circle-outline" size={18} color="#6F3FA0" />
-        <Text className="ml-2 flex-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+        <Text className="ml-2 flex-1 text-xs leading-5 text-gray-500 ">
           Warna hijau menunjukkan nilai menurun, sedangkan oranye menunjukkan
           nilai meningkat dari penimbangan sebelumnya.
         </Text>
@@ -285,9 +285,9 @@ const SummaryRow = ({
   const icon = diff === 0 ? "●" : diff > 0 ? "▲" : "▼";
 
   return (
-    <View className="py-4 border-b border-gray-200 dark:border-zinc-800">
+    <View className="py-4 border-b border-gray-200 ">
       <View className="flex-row justify-between">
-        <Text className="text-gray-600 dark:text-gray-300">{title}</Text>
+        <Text className="text-gray-600 ">{title}</Text>
 
         <Text className={`font-bold ${color}`}>
           {icon} {diff > 0 ? "+" : ""}
@@ -302,7 +302,7 @@ const SummaryRow = ({
           {unit}
         </Text>
 
-        <Text className="font-semibold text-gray-900 dark:text-white">
+        <Text className="font-semibold text-gray-900 ">
           {current}
           {unit}
         </Text>
@@ -332,11 +332,11 @@ const BodyRowItem = ({
   const good = reverse ? positive : negative;
 
   return (
-    <View className="flex-row justify-between items-center py-3 border-b border-gray-200 dark:border-zinc-800">
-      <Text className="text-gray-600 dark:text-gray-300">{label}</Text>
+    <View className="flex-row justify-between items-center py-3 border-b border-gray-200 ">
+      <Text className="text-gray-600 ">{label}</Text>
 
       <View className="items-end">
-        <Text className="font-bold text-gray-800 dark:text-white">
+        <Text className="font-bold text-gray-800 ">
           {value}
           {unit}
         </Text>
@@ -419,7 +419,7 @@ export default function DetailInformasiWMScreen() {
         titleContent="Hasil Weigh & Measure member"
       >
         <View className="flex-1 items-center justify-center px-8 pb-20">
-          <View className="rounded-full bg-violet-50 p-5 dark:bg-violet-950">
+          <View className="rounded-full bg-violet-50 p-5 ">
             <Ionicons
               name={
                 isProgressError || isMemberDetailError
@@ -432,12 +432,12 @@ export default function DetailInformasiWMScreen() {
               }
             />
           </View>
-          <Text className="mt-4 text-center text-lg font-bold text-gray-900 dark:text-white">
+          <Text className="mt-4 text-center text-lg font-bold text-gray-900 ">
             {isProgressError || isMemberDetailError
               ? "Informasi WM gagal dimuat"
               : "Data perbandingan belum tersedia"}
           </Text>
-          <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+          <Text className="mt-2 text-center text-sm leading-5 text-gray-500 ">
             {isProgressError || isMemberDetailError
               ? "Periksa koneksi lalu coba memuat data kembali."
               : "Resume WM dapat ditampilkan setelah member memiliki dua hasil penimbangan."}
@@ -523,7 +523,7 @@ export default function DetailInformasiWMScreen() {
           contentContainerClassName="px-2 pt-5 pb-32"
           showsVerticalScrollIndicator={false}
         >
-          <View className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <View className="rounded-3xl border border-gray-100 bg-white p-5 shadow-sm  ">
             <View className="items-center">
               {member.photo && !hasPhotoError ? (
                 <Image
@@ -532,20 +532,20 @@ export default function DetailInformasiWMScreen() {
                   className="h-[88px] w-[88px] rounded-3xl bg-violet-50"
                 />
               ) : (
-                <View className="h-[88px] w-[88px] items-center justify-center rounded-3xl bg-violet-100 dark:bg-violet-950">
+                <View className="h-[88px] w-[88px] items-center justify-center rounded-3xl bg-violet-100 ">
                   <Text className="text-2xl font-bold text-[#6F3FA0]">
                     {getInitials(memberName)}
                   </Text>
                 </View>
               )}
 
-              <Text className="mt-3 text-2xl font-bold text-gray-800 dark:text-white">
+              <Text className="mt-3 text-2xl font-bold text-gray-800 ">
                 {memberName}
               </Text>
 
               <View className="mt-2 flex-row items-center">
                 <Ionicons name="business-outline" size={16} color="#6F3FA0" />
-                <Text className="ml-1.5 font-semibold text-[#6F3FA0] dark:text-violet-300">
+                <Text className="ml-1.5 font-semibold text-[#6F3FA0] ">
                   {clubName}
                 </Text>
               </View>
@@ -554,9 +554,9 @@ export default function DetailInformasiWMScreen() {
 
           <WeighMeasureResume current={current} previous={previous} />
 
-          <View className="mt-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+          <View className="mt-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm  ">
             <View className="flex-row items-start">
-              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-red-50 dark:bg-red-950">
+              <View className="h-11 w-11 items-center justify-center rounded-2xl bg-red-50 ">
                 <Ionicons
                   name="document-text-outline"
                   size={23}
@@ -564,10 +564,10 @@ export default function DetailInformasiWMScreen() {
                 />
               </View>
               <View className="ml-3 flex-1">
-                <Text className="text-lg font-bold text-gray-900 dark:text-white">
+                <Text className="text-lg font-bold text-gray-900 ">
                   Resume WM dalam PDF
                 </Text>
-                <Text className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-xs leading-5 text-gray-500 ">
                   Lihat dokumen terlebih dahulu atau simpan untuk dibagikan
                   kepada member.
                 </Text>
@@ -580,14 +580,14 @@ export default function DetailInformasiWMScreen() {
                 accessibilityLabel="Lihat resume WM dalam PDF"
                 disabled={pdfAction !== null}
                 onPress={() => void previewPdf()}
-                className="flex-1 flex-row items-center justify-center rounded-2xl border border-violet-200 py-3.5 dark:border-violet-800"
+                className="flex-1 flex-row items-center justify-center rounded-2xl border border-violet-200 py-3.5 "
               >
                 {pdfAction === "preview" ? (
                   <ActivityIndicator size="small" color="#6F3FA0" />
                 ) : (
                   <Ionicons name="eye-outline" size={19} color="#6F3FA0" />
                 )}
-                <Text className="ml-2 font-bold text-[#6F3FA0] dark:text-violet-300">
+                <Text className="ml-2 font-bold text-[#6F3FA0] ">
                   Lihat PDF
                 </Text>
               </Pressable>
@@ -641,12 +641,12 @@ export default function DetailInformasiWMScreen() {
           </View>
 
           {/* Ringkasan Perubahan Komposisi Tubuh */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-2">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-2">
               Ringkasan Perubahan Komposisi Tubuh
             </Text>
 
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <Text className="text-sm text-gray-500  mb-4">
               Dibandingkan dengan pengukuran sebelumnya
             </Text>
 
@@ -717,12 +717,12 @@ export default function DetailInformasiWMScreen() {
           </View>
           {/* Ringkasan Perubahan Komposisi Tubuh */}
           {/* Ukuran Tubuh */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-2">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-2">
               Ukuran Tubuh
             </Text>
 
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <Text className="text-sm text-gray-500  mb-4">
               Perbandingan dengan pengukuran sebelumnya
             </Text>
 
@@ -763,12 +763,12 @@ export default function DetailInformasiWMScreen() {
             />
 
             {/* Total */}
-            <View className="bg-violet-50 dark:bg-violet-950 rounded-2xl p-4 mt-5">
-              <Text className="text-violet-700 dark:text-violet-300 font-semibold">
+            <View className="bg-violet-50  rounded-2xl p-4 mt-5">
+              <Text className="text-violet-700  font-semibold">
                 Total Ukuran Tubuh
               </Text>
 
-              <Text className="text-3xl font-bold text-violet-700 dark:text-violet-300 mt-1">
+              <Text className="text-3xl font-bold text-violet-700  mt-1">
                 {current.total_measurement} cm
               </Text>
 
@@ -779,7 +779,7 @@ export default function DetailInformasiWMScreen() {
                     ? "text-gray-400"
                     : Number(current.total_measurement) >
                         Number(previous.total_measurement)
-                      ? "text-violet-600 dark:text-violet-400"
+                      ? "text-violet-600 "
                       : "text-green-500"
                 }`}
               >
@@ -802,7 +802,7 @@ export default function DetailInformasiWMScreen() {
                     ).toFixed(1)} cm`}
               </Text>
 
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <Text className="text-xs text-gray-500  mt-1">
                 Sebelumnya {previous.total_measurement} cm
               </Text>
             </View>
@@ -810,8 +810,8 @@ export default function DetailInformasiWMScreen() {
           {/* Ukuran Tubuh */}
 
           {/* Aktivitas Latihan */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Aktivitas Latihan
             </Text>
 
@@ -830,8 +830,8 @@ export default function DetailInformasiWMScreen() {
           </View>
           {/* Aktivitas Latihan */}
           {/* Ringkasan Pengukuran */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Ringkasan Pengukuran
             </Text>
 

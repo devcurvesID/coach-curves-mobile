@@ -165,7 +165,7 @@ export default function ProfileScreen() {
           />
         </Section>
         <Pressable
-          className="bg-[#5E2E91] dark:bg-[#9A67EA] py-4 rounded-xl items-center mb-6"
+          className="bg-[#5E2E91]  py-4 rounded-xl items-center mb-6"
           onPress={() => router.push("/user/edit-profile")}
         >
           <Text className="text-white font-semibold text-lg">Edit Profil</Text>

@@ -73,29 +73,29 @@ function KeyTagSearchModal({
         />
         <View
           accessibilityViewIsModal
-          className="rounded-3xl bg-white p-6 dark:bg-zinc-900"
+          className="rounded-3xl bg-white p-6 "
         >
           <View className="flex-row items-start justify-between">
-            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
+            <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 ">
               <Ionicons name="key-outline" size={28} color="#6F3FA0" />
             </View>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Tutup pencarian"
               onPress={onClose}
-              className="h-11 w-11 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+              className="h-11 w-11 items-center justify-center rounded-full bg-gray-100 "
             >
               <Ionicons name="close" size={22} color="#9CA3AF" />
             </Pressable>
           </View>
-          <Text className="mt-5 text-2xl font-bold text-gray-900 dark:text-white">
+          <Text className="mt-5 text-2xl font-bold text-gray-900 ">
             Cari Jadwal Member
           </Text>
-          <Text className="mt-2 text-sm leading-5 text-gray-500 dark:text-gray-400">
+          <Text className="mt-2 text-sm leading-5 text-gray-500 ">
             Masukkan Key Tag ID member untuk menemukan jadwal penimbangannya.
           </Text>
           <View
-            className={`mt-5 flex-row items-center rounded-2xl border px-4 ${error ? "border-red-400" : "border-gray-200 dark:border-zinc-700"}`}
+            className={`mt-5 flex-row items-center rounded-2xl border px-4 ${error ? "border-red-400" : "border-gray-200 "}`}
           >
             <Ionicons name="key-outline" size={20} color="#6F3FA0" />
             <TextInput
@@ -111,7 +111,7 @@ function KeyTagSearchModal({
               autoCorrect={false}
               placeholder="Contoh: 990226314"
               placeholderTextColor="#9CA3AF"
-              className="ml-3 flex-1 py-4 text-gray-900 dark:text-white"
+              className="ml-3 flex-1 py-4 text-gray-900 "
             />
           </View>
           {error ? (
@@ -129,9 +129,9 @@ function KeyTagSearchModal({
           <TouchableOpacity
             accessibilityRole="button"
             onPress={onClose}
-            className="mt-3 items-center rounded-2xl border border-gray-200 py-4 dark:border-zinc-700"
+            className="mt-3 items-center rounded-2xl border border-gray-200 py-4 "
           >
-            <Text className="font-semibold text-gray-600 dark:text-gray-300">
+            <Text className="font-semibold text-gray-600 ">
               Batal
             </Text>
           </TouchableOpacity>
@@ -195,8 +195,8 @@ const getScheduleStatus = (appointmentDate: string) => {
       text: "Tanggal jadwal tidak valid",
       icon: "alert-circle-outline" as const,
       color: "#DC2626",
-      textClass: "text-red-600 dark:text-red-300",
-      containerClass: "bg-red-50 dark:bg-red-950",
+      textClass: "text-red-600 ",
+      containerClass: "bg-red-50 ",
     };
   }
 
@@ -207,8 +207,8 @@ const getScheduleStatus = (appointmentDate: string) => {
       text: `Terlambat ${dayDifference} hari`,
       icon: "alert-circle-outline" as const,
       color: "#DC2626",
-      textClass: "text-red-600 dark:text-red-300",
-      containerClass: "bg-red-50 dark:bg-red-950",
+      textClass: "text-red-600 ",
+      containerClass: "bg-red-50 ",
     };
   }
 
@@ -217,8 +217,8 @@ const getScheduleStatus = (appointmentDate: string) => {
       text: `${Math.abs(dayDifference)} hari lagi`,
       icon: "calendar-outline" as const,
       color: "#2563EB",
-      textClass: "text-blue-600 dark:text-blue-300",
-      containerClass: "bg-blue-50 dark:bg-blue-950",
+      textClass: "text-blue-600 ",
+      containerClass: "bg-blue-50 ",
     };
   }
 
@@ -226,8 +226,8 @@ const getScheduleStatus = (appointmentDate: string) => {
     text: "Sesuai jadwal hari ini",
     icon: "checkmark-circle-outline" as const,
     color: "#16A34A",
-    textClass: "text-green-600 dark:text-green-300",
-    containerClass: "bg-green-50 dark:bg-green-950",
+    textClass: "text-green-600 ",
+    containerClass: "bg-green-50 ",
   };
 };
 
@@ -242,7 +242,7 @@ function MemberAvatar({ appointment }: { appointment: MemberAppointment }) {
   }
 
   return (
-    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
+    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 ">
       <Text className="text-xl font-bold text-[#6F3FA0]">
         {getInitials(appointment.user.name)}
       </Text>
@@ -283,7 +283,7 @@ function AppointmentCard({
 
   return (
     <>
-      <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm  ">
         <View className="p-5">
           <View className="flex-row items-start">
             <MemberAvatar appointment={appointment} />
@@ -293,13 +293,13 @@ function AppointmentCard({
                 <View className="mr-2 flex-1">
                   <Text
                     numberOfLines={1}
-                    className="text-lg font-bold text-gray-900 dark:text-white"
+                    className="text-lg font-bold text-gray-900 "
                   >
                     {appointment.user.name}
                   </Text>
                   <Text
                     numberOfLines={1}
-                    className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                    className="mt-1 text-sm text-gray-500 "
                   >
                     {appointment.user.email || "Email belum tersedia"}
                   </Text>
@@ -308,15 +308,15 @@ function AppointmentCard({
                 <View
                   className={`rounded-full px-2.5 py-1 ${
                     completed
-                      ? "bg-green-50 dark:bg-green-950"
-                      : "bg-amber-50 dark:bg-amber-950"
+                      ? "bg-green-50 "
+                      : "bg-amber-50 "
                   }`}
                 >
                   <Text
                     className={`text-[10px] font-bold ${
                       completed
-                        ? "text-green-700 dark:text-green-300"
-                        : "text-amber-700 dark:text-amber-300"
+                        ? "text-green-700 "
+                        : "text-amber-700 "
                     }`}
                   >
                     {completed ? "SELESAI" : "MENUNGGU WM"}
@@ -326,25 +326,25 @@ function AppointmentCard({
             </View>
           </View>
 
-          <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-            <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 ">
+            <View className="flex-1 border-r border-violet-200 pr-3 ">
+              <Text className="text-xs text-gray-500 ">
                 TANGGAL
               </Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
-                <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                <Text className="ml-1.5 font-bold text-gray-900 ">
                   {formatAppointmentDate(appointment.app_date)}
                 </Text>
               </View>
             </View>
             <View className="flex-1 pl-4">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-gray-500 ">
                 JAM
               </Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="time-outline" size={17} color="#6F3FA0" />
-                <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                <Text className="ml-1.5 font-bold text-gray-900 ">
                   {formatAppointmentTime(appointment.app_hour)}
                 </Text>
               </View>
@@ -371,7 +371,7 @@ function AppointmentCard({
               {appointment.key_tag_id && (
                 <View className="flex-row items-center">
                   <Ionicons name="key-outline" size={18} color="#6F3FA0" />
-                  <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
+                  <Text className="ml-3 text-sm text-gray-600 ">
                     Key Tag: {appointment.key_tag_id}
                   </Text>
                 </View>
@@ -379,7 +379,7 @@ function AppointmentCard({
               {appointment.phone && (
                 <View className="flex-row items-center">
                   <Ionicons name="call-outline" size={18} color="#6F3FA0" />
-                  <Text className="ml-3 text-sm text-gray-600 dark:text-gray-300">
+                  <Text className="ml-3 text-sm text-gray-600 ">
                     {String(appointment.phone)}
                   </Text>
                 </View>
@@ -401,7 +401,7 @@ function AppointmentCard({
           accessibilityState={{ disabled: !completed && !hasValidDate }}
           activeOpacity={0.85}
           className={`flex-row items-center justify-center py-4 ${
-            completed ? "bg-green-50 dark:bg-green-950" : "bg-[#6F3FA0]"
+            completed ? "bg-green-50 " : "bg-[#6F3FA0]"
           }`}
         >
           <Ionicons
@@ -411,7 +411,7 @@ function AppointmentCard({
           />
           <Text
             className={`ml-2 font-bold ${
-              completed ? "text-green-700 dark:text-green-300" : "text-white"
+              completed ? "text-green-700 " : "text-white"
             }`}
           >
             {completed
@@ -570,7 +570,7 @@ export default function ListMemberWMToday() {
             </View>
 
             <View className="mx-5 mb-5">
-              <View className="mb-3 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 dark:border-zinc-700 dark:bg-zinc-900">
+              <View className="mb-3 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4  ">
                 <Ionicons name="search-outline" size={20} color="#6F3FA0" />
                 <TextInput
                   value={nameSearch}
@@ -582,7 +582,7 @@ export default function ListMemberWMToday() {
                   placeholderTextColor="#9CA3AF"
                   returnKeyType="search"
                   autoCorrect={false}
-                  className="ml-3 flex-1 py-4 text-gray-900 dark:text-white"
+                  className="ml-3 flex-1 py-4 text-gray-900 "
                   accessibilityLabel="Cari berdasarkan nama member"
                 />
                 {nameSearch ? (
@@ -590,7 +590,7 @@ export default function ListMemberWMToday() {
                     onPress={() => setNameSearch("")}
                     accessibilityRole="button"
                     accessibilityLabel="Hapus pencarian nama"
-                    className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+                    className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 "
                   >
                     <Ionicons name="close" size={18} color="#6B7280" />
                   </TouchableOpacity>
@@ -600,21 +600,21 @@ export default function ListMemberWMToday() {
               {isSearchingName ? (
                 <View className="mb-3 flex-row items-center px-1">
                   <ActivityIndicator size="small" color="#6F3FA0" />
-                  <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+                  <Text className="ml-2 text-xs text-gray-500 ">
                     Mencari member...
                   </Text>
                 </View>
               ) : null}
 
               {keyTagId ? (
-                <View className="rounded-2xl border border-violet-200 bg-violet-50 p-4 dark:border-violet-800 dark:bg-violet-950">
+                <View className="rounded-2xl border border-violet-200 bg-violet-50 p-4  ">
                   <View className="flex-row items-center">
                     <Ionicons name="search-outline" size={20} color="#6F3FA0" />
                     <View className="ml-3 flex-1">
-                      <Text className="text-xs text-gray-500 dark:text-gray-400">
+                      <Text className="text-xs text-gray-500 ">
                         Hasil pencarian Key Tag
                       </Text>
-                      <Text className="mt-1 font-bold text-[#6F3FA0] dark:text-violet-300">
+                      <Text className="mt-1 font-bold text-[#6F3FA0] ">
                         {keyTagId}
                       </Text>
                     </View>
@@ -622,7 +622,7 @@ export default function ListMemberWMToday() {
                       accessibilityRole="button"
                       accessibilityLabel="Ubah pencarian"
                       onPress={() => setIsSearchModalVisible(true)}
-                      className="h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-zinc-900"
+                      className="h-10 w-10 items-center justify-center rounded-full bg-white "
                     >
                       <Ionicons
                         name="pencil-outline"
@@ -636,7 +636,7 @@ export default function ListMemberWMToday() {
                     onPress={() => setKeyTagId("")}
                     className="mt-3 self-start"
                   >
-                    <Text className="text-xs font-semibold text-violet-700 dark:text-violet-300">
+                    <Text className="text-xs font-semibold text-violet-700 ">
                       Hapus filter dan tampilkan semua
                     </Text>
                   </TouchableOpacity>
@@ -650,10 +650,10 @@ export default function ListMemberWMToday() {
                     setIsSearchModalVisible(true);
                   }}
                   activeOpacity={0.85}
-                  className="flex-row items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 py-4 dark:border-violet-800 dark:bg-violet-950"
+                  className="flex-row items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 py-4  "
                 >
                   <Ionicons name="search-outline" size={20} color="#6F3FA0" />
-                  <Text className="ml-2 font-bold text-[#6F3FA0] dark:text-violet-300">
+                  <Text className="ml-2 font-bold text-[#6F3FA0] ">
                     Cari Berdasarkan Key Tag
                   </Text>
                 </TouchableOpacity>
@@ -662,10 +662,10 @@ export default function ListMemberWMToday() {
 
             {appointments.length > 0 && (
               <View className="mx-5 mb-4">
-                <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                <Text className="text-xl font-bold text-gray-900 ">
                   Daftar Member
                 </Text>
-                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-sm text-gray-500 ">
                   {appointments.length} dari {totalAppointments} jadwal
                   ditampilkan
                 </Text>
@@ -677,7 +677,7 @@ export default function ListMemberWMToday() {
           isFetchingNextPage ? (
             <View className="items-center py-5">
               <ActivityIndicator color="#6F3FA0" />
-              <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              <Text className="mt-2 text-xs text-gray-500 ">
                 Memuat jadwal berikutnya...
               </Text>
             </View>
@@ -687,7 +687,7 @@ export default function ListMemberWMToday() {
           <View className="flex-1 items-center justify-center px-8 pb-20">
             <View
               className={`mb-4 rounded-full p-5 ${
-                error ? "bg-red-50" : "bg-violet-50 dark:bg-violet-950"
+                error ? "bg-red-50" : "bg-violet-50 "
               }`}
             >
               <Ionicons
@@ -696,14 +696,14 @@ export default function ListMemberWMToday() {
                 color={error ? "#DC2626" : "#6F3FA0"}
               />
             </View>
-            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-800 ">
               {error
                 ? "Jadwal WM gagal dimuat"
                 : keyTagId || debouncedNameSearch
                   ? "Member tidak ditemukan"
                   : "Tidak ada jadwal WM hari ini"}
             </Text>
-            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 ">
               {error
                 ? "Tarik layar ke bawah untuk mencoba kembali."
                 : keyTagId

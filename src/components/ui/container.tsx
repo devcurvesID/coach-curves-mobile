@@ -37,7 +37,7 @@ const Container = ({
         <View className="flex-row items-center justify-between px-6 pt-14 pb-10">
           <Pressable
             onPress={() => router.back()}
-            className="w-12 h-12 rounded-full bg-[#6F3FA0] dark:bg-[#BB86FC] border border-[#BB86FC] dark:border-[#5E2E91] items-center justify-center"
+            className="w-12 h-12 rounded-full bg-[#6F3FA0]  border border-[#BB86FC]  items-center justify-center"
           >
             <Ionicons name="chevron-back" size={22} color="white" />
           </Pressable>

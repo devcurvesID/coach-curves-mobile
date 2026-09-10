@@ -77,7 +77,7 @@ function SummaryCard({
       accessibilityRole={onPress ? "button" : undefined}
       accessibilityLabel={`${title}: ${isLoading ? "Memuat" : isError ? "Gagal dimuat" : isUnavailable ? "Total belum tersedia" : value}`}
       activeOpacity={onPress ? 0.8 : 1}
-      className="mb-3 w-[48%] rounded-3xl border border-gray-100 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+      className="mb-3 w-[48%] rounded-3xl border border-gray-100 bg-white p-4"
     >
       <View
         className="h-11 w-11 items-center justify-center rounded-2xl"
@@ -95,11 +95,9 @@ function SummaryCard({
           </Text>
         )}
       </View>
-      <Text className="mt-1 font-semibold text-gray-800 dark:text-gray-100">
-        {title}
-      </Text>
+      <Text className="mt-1 font-semibold text-gray-800 ">{title}</Text>
       <View className="mt-2 flex-row items-center">
-        <Text className="mr-1 flex-1 text-xs text-gray-500 dark:text-gray-400">
+        <Text className="mr-1 flex-1 text-xs text-gray-500 ">
           {isError ? "Gagal dimuat • tarik untuk mencoba lagi" : subtitle}
         </Text>
         {onPress && (
@@ -124,7 +122,7 @@ function PromoCarouselCard({
       activeOpacity={0.9}
       accessibilityRole="button"
       accessibilityLabel={`Lihat promo ${item.headline}`}
-      className="overflow-hidden rounded-3xl border border-gray-100 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+      className="overflow-hidden rounded-3xl border border-gray-100 bg-white  "
       style={{ width: Math.min(width - 64, 420) }}
     >
       {item.photo ? (
@@ -134,7 +132,7 @@ function PromoCarouselCard({
           className="h-[180px] w-full"
         />
       ) : (
-        <View className="h-[180px] items-center justify-center bg-violet-100 dark:bg-violet-950">
+        <View className="h-[180px] items-center justify-center bg-violet-100 ">
           <Ionicons name="megaphone-outline" size={44} color="#6F3FA0" />
         </View>
       )}
@@ -144,7 +142,7 @@ function PromoCarouselCard({
         </View>
         <Text
           numberOfLines={2}
-          className="mt-3 text-lg font-bold text-gray-800 dark:text-white"
+          className="mt-3 text-lg font-bold text-gray-800 "
         >
           {item.headline}
         </Text>
@@ -172,16 +170,14 @@ function QuickAction({
       onPress={onPress}
       accessibilityRole="button"
       activeOpacity={0.8}
-      className="mb-3 flex-row items-center rounded-2xl border border-gray-100 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900"
+      className="mb-3 flex-row items-center rounded-2xl border border-gray-100 bg-white p-4  "
     >
-      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-950">
+      <View className="h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 ">
         <Ionicons name={icon} size={24} color="#8B5CF6" />
       </View>
       <View className="mx-3 flex-1">
-        <Text className="font-bold text-gray-900 dark:text-white">{title}</Text>
-        <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-          {description}
-        </Text>
+        <Text className="font-bold text-gray-900 ">{title}</Text>
+        <Text className="mt-1 text-xs text-gray-500 ">{description}</Text>
       </View>
       <Ionicons name="chevron-forward" size={18} color="#9CA3AF" />
     </TouchableOpacity>
@@ -242,7 +238,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-[#F8F7FC] dark:bg-[#121212]">
+    <SafeAreaView className="flex-1 bg-[#F8F7FC]">
       <ScrollView
         className="flex-1"
         contentContainerClassName="px-5 pb-32 pt-4"
@@ -279,10 +275,10 @@ export default function DashboardScreen() {
         </View>
 
         <View>
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">
+          <Text className="text-xl font-bold text-gray-900 ">
             Ringkasan Aktivitas
           </Text>
-          <Text className="mb-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mb-4 mt-1 text-sm text-gray-500 ">
             Ketuk kartu untuk melihat daftar member.
           </Text>
 
@@ -339,10 +335,8 @@ export default function DashboardScreen() {
         </View>
 
         <View className="mt-5">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">
-            Menu Cepat
-          </Text>
-          <Text className="mb-4 mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="text-xl font-bold text-gray-900 ">Menu Cepat</Text>
+          <Text className="mb-4 mt-1 text-sm text-gray-500 ">
             Akses informasi yang Anda butuhkan.
           </Text>
           <QuickAction
@@ -375,12 +369,12 @@ export default function DashboardScreen() {
             icon="trophy-outline"
             onPress={() => router.push("/user/rank-history")}
           />
-          <QuickAction
+          {/* <QuickAction
             title="Kalender"
             description="Lihat tanggal dan daily challenge"
             icon="calendar-outline"
             onPress={() => router.push("/calendar")}
-          />
+          /> */}
           <QuickAction
             title="Promo"
             description="Lihat promo bulanan dan promo mitra"
@@ -395,10 +389,10 @@ export default function DashboardScreen() {
             accessibilityRole="button"
             onPress={() => router.push("/publicities")}
           >
-            <Text className="text-xl font-bold text-gray-900 dark:text-white">
+            <Text className="text-xl font-bold text-gray-900 ">
               Promo Terbaru
             </Text>
-            <Text className="font-semibold text-violet-600 dark:text-violet-300">
+            <Text className="font-semibold text-violet-600 ">
               Lihat Semua →
             </Text>
           </TouchableOpacity>
@@ -407,7 +401,7 @@ export default function DashboardScreen() {
             horizontal
             data={promos}
             ListEmptyComponent={
-              <View className="rounded-2xl bg-white p-5 dark:bg-zinc-900">
+              <View className="rounded-2xl bg-white p-5 ">
                 {isLoadingPromos ? (
                   <ActivityIndicator color="#6F3FA0" />
                 ) : (
@@ -417,14 +411,14 @@ export default function DashboardScreen() {
                     color="#8B5CF6"
                   />
                 )}
-                <Text className="mt-3 font-semibold text-gray-800 dark:text-white">
+                <Text className="mt-3 font-semibold text-gray-800 ">
                   {isLoadingPromos
                     ? "Memuat promo..."
                     : isPromosError
                       ? "Promo belum berhasil dimuat"
                       : "Belum ada promo tersedia"}
                 </Text>
-                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-sm text-gray-500 ">
                   {isPromosError
                     ? "Tarik layar ke bawah untuk mencoba kembali."
                     : "Informasi penawaran club akan tampil di sini."}
@@ -443,7 +437,7 @@ export default function DashboardScreen() {
           />
         </View>
         <View className="mt-7">
-          <Text className="mb-4 text-xl font-bold text-gray-900 dark:text-white">
+          <Text className="mb-4 text-xl font-bold text-gray-900 ">
             Informasi Akun
           </Text>
           <InfoMemberCard />

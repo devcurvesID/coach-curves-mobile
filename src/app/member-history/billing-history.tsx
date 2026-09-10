@@ -73,7 +73,7 @@ function SummaryCard({
   backgroundColor: string;
 }) {
   return (
-    <View className="flex-1 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="flex-1 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm  ">
       <View
         className="h-10 w-10 items-center justify-center rounded-xl"
         style={{ backgroundColor }}
@@ -83,11 +83,11 @@ function SummaryCard({
       <Text
         numberOfLines={1}
         adjustsFontSizeToFit
-        className="mt-3 text-lg font-bold text-gray-900 dark:text-white"
+        className="mt-3 text-lg font-bold text-gray-900 "
       >
         {value}
       </Text>
-      <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      <Text className="mt-1 text-xs text-gray-500 ">
         {label}
       </Text>
     </View>
@@ -109,7 +109,7 @@ function BillingCard({ record }: { record: BillingRecord }) {
     <Pressable
       onPress={openDetail}
       disabled={!record.payment_number}
-      className="mx-5 mb-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      className="mx-5 mb-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm  "
     >
       <View className="flex-row items-start">
         <View
@@ -126,10 +126,10 @@ function BillingCard({ record }: { record: BillingRecord }) {
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <View className="mr-2 flex-1">
-              <Text className="font-bold text-gray-900 dark:text-white">
+              <Text className="font-bold text-gray-900 ">
                 {record.payment_category?.trim() || "Pembayaran Member"}
               </Text>
-              <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <Text className="mt-1 text-xs text-gray-500 ">
                 {record.payment_number || "Nomor pembayaran belum tersedia"}
               </Text>
             </View>
@@ -146,24 +146,24 @@ function BillingCard({ record }: { record: BillingRecord }) {
         </View>
       </View>
 
-      <View className="mt-4 rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+      <View className="mt-4 rounded-2xl bg-violet-50 p-4 ">
+        <Text className="text-xs text-gray-500 ">
           Total Dibayar
         </Text>
-        <Text className="mt-1 text-2xl font-bold text-[#6F3FA0] dark:text-violet-300">
+        <Text className="mt-1 text-2xl font-bold text-[#6F3FA0] ">
           {formatCurrency(toNumber(record.amount_paid))}
         </Text>
         <View className="mt-4 flex-row gap-3">
           <View className="flex-1">
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
+            <Text className="text-xs text-gray-500 ">
               Total Tagihan
             </Text>
-            <Text className="mt-1 font-semibold text-gray-800 dark:text-white">
+            <Text className="mt-1 font-semibold text-gray-800 ">
               {formatCurrency(toNumber(record.amount_due))}
             </Text>
           </View>
           <View className="flex-1">
-            <Text className="text-xs text-gray-500 dark:text-gray-400">
+            <Text className="text-xs text-gray-500 ">
               Sisa Tagihan
             </Text>
             <Text
@@ -175,10 +175,10 @@ function BillingCard({ record }: { record: BillingRecord }) {
         </View>
       </View>
 
-      <View className="mt-4 flex-row items-center justify-between border-t border-gray-100 pt-4 dark:border-zinc-800">
+      <View className="mt-4 flex-row items-center justify-between border-t border-gray-100 pt-4 ">
         <View className="mr-2 flex-row items-center">
           <Ionicons name="calendar-outline" size={16} color="#6B7280" />
-          <Text className="ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <Text className="ml-1.5 text-xs text-gray-500 ">
             {record.payment_date
               ? getDateTime(new Date(record.payment_date))
               : "Tanggal belum tersedia"}
@@ -186,7 +186,7 @@ function BillingCard({ record }: { record: BillingRecord }) {
         </View>
         <View className="flex-row items-center">
           <Ionicons name="card-outline" size={16} color="#6B7280" />
-          <Text className="ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+          <Text className="ml-1.5 text-xs text-gray-500 ">
             {record.payment_method?.payment_method?.trim() || "Tunai"}
           </Text>
         </View>
@@ -349,10 +349,10 @@ export default function BillingHistoryScreen() {
             </View>
 
             <View className="mx-5 mb-4 mt-6">
-              <Text className="text-xl font-bold text-gray-900 dark:text-white">
+              <Text className="text-xl font-bold text-gray-900 ">
                 Daftar Pembayaran
               </Text>
-              <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mt-1 text-sm text-gray-500 ">
                 {records.length} transaksi ditemukan
               </Text>
             </View>
@@ -361,7 +361,7 @@ export default function BillingHistoryScreen() {
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center px-8 pb-20">
             <View
-              className={`mb-4 rounded-full p-5 ${hasError ? "bg-red-50" : "bg-violet-50 dark:bg-violet-950"}`}
+              className={`mb-4 rounded-full p-5 ${hasError ? "bg-red-50" : "bg-violet-50 "}`}
             >
               <Ionicons
                 name={hasError ? "alert-circle-outline" : "receipt-outline"}
@@ -369,12 +369,12 @@ export default function BillingHistoryScreen() {
                 color={hasError ? "#DC2626" : "#6F3FA0"}
               />
             </View>
-            <Text className="text-center text-lg font-bold text-gray-900 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-900 ">
               {hasError
                 ? "Riwayat pembayaran gagal dimuat"
                 : "Belum ada riwayat pembayaran"}
             </Text>
-            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 ">
               {hasError
                 ? "Periksa koneksi Anda, lalu coba muat kembali data pembayaran."
                 : "Transaksi dan informasi tagihan member akan ditampilkan di sini setelah tersedia."}

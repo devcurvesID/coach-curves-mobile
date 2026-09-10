@@ -1,11 +1,6 @@
 import ContainerPage from "@/components/ui/container-page";
-import { useAuth } from "@/context/auth";
 import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import * as Notifications from "expo-notifications";
-import { useRouter } from "expo-router";
-import React, { useEffect, useState } from "react";
-
-import { registerForPushNotificationsAsync } from "@/services/push-notification";
+import React from "react";
 import {
   ScrollView,
   Text,
@@ -41,65 +36,6 @@ const notifications = [
   },
 ];
 export default function NotificationScreen() {
-  const router = useRouter();
-  const { user, signOut } = useAuth();
-  const [selectedNotification, setSelectedNotification] = useState<any>(null);
-  const [expoPushToken, setExpoPushToken] = useState("");
-  const [notification, setNotification] = useState<
-    Notifications.Notification | undefined
-  >(undefined);
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    registerForPushNotificationsAsync()
-      .then((token) => setExpoPushToken(token ?? ""))
-      .catch((error: any) => setExpoPushToken(`${error}`));
-
-    const notificationListener = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        setNotification(notification);
-      },
-    );
-
-    const responseListener =
-      Notifications.addNotificationResponseReceivedListener((response) => {
-        console.log(response);
-      });
-
-    return () => {
-      notificationListener.remove();
-      responseListener.remove();
-    };
-  }, []);
-  const openNotification = (item: any) => {
-    setSelectedNotification(item);
-    setVisible(true);
-  };
-  async function sendPushNotification(expoPushToken: string) {
-    const message = {
-      to: expoPushToken,
-      sound: "default",
-      title: "Original Title",
-      body: "And here is the body!",
-      data: { someData: "goes here" },
-    };
-
-    //   await fetch('https://exp.host/--/api/v2/push/send', {
-    //     method: 'POST',
-    //     headers: {
-    //       Accept: 'application/json',
-    //       'Accept-encoding': 'gzip, deflate',
-    //       'Content-Type': 'application/json',
-    //     },
-    //     body: JSON.stringify(message),
-    //   });
-  }
-  const closeNotification = () => {
-    setVisible(false);
-  };
-  const user_personal = user.user_personal;
-
-  // 🔥 generate bulan (dinamis)
-
   return (
     <>
       <ContainerPage titleHeader="Notification" titleContent="Notification">
@@ -122,9 +58,6 @@ export default function NotificationScreen() {
 
         <View className="flex-row mt-4 mb-4">
           <TouchableOpacity
-            onPress={async () => {
-              await sendPushNotification(expoPushToken);
-            }}
             className="bg-[#6F3FA0] px-4 py-2 rounded-full mr-2"
           >
             <Text className="text-white font-semibold">All</Text>

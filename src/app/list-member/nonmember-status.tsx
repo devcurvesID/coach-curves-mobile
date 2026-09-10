@@ -73,8 +73,8 @@ function MemberAvatar({ member }: { member: NonMember }) {
   }
 
   return (
-    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
-      <Text className="text-xl font-bold text-violet-700 dark:text-violet-300">
+    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 ">
+      <Text className="text-xl font-bold text-violet-700 ">
         {getInitials(name)}
       </Text>
     </View>
@@ -87,7 +87,7 @@ function MemberCard({ member }: { member: NonMember }) {
   const hasPhone = Boolean(String(member.phone ?? "").trim());
 
   return (
-    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm  ">
       <View className="p-5">
         <View className="flex-row items-start">
           <MemberAvatar
@@ -97,22 +97,22 @@ function MemberCard({ member }: { member: NonMember }) {
           <View className="ml-4 flex-1">
             <Text
               numberOfLines={2}
-              className="text-lg font-bold text-gray-900 dark:text-white"
+              className="text-lg font-bold text-gray-900 "
             >
               {name}
             </Text>
             <View
               className={`mt-2 self-start rounded-full px-3 py-1 ${
                 isStopped
-                  ? "bg-red-50 dark:bg-red-950"
-                  : "bg-amber-50 dark:bg-amber-950"
+                  ? "bg-red-50 "
+                  : "bg-amber-50 "
               }`}
             >
               <Text
                 className={`text-[11px] font-bold ${
                   isStopped
-                    ? "text-red-700 dark:text-red-300"
-                    : "text-amber-700 dark:text-amber-300"
+                    ? "text-red-700 "
+                    : "text-amber-700 "
                 }`}
               >
                 {isStopped ? "STOP" : "INACTIVE"}
@@ -121,25 +121,25 @@ function MemberCard({ member }: { member: NonMember }) {
           </View>
         </View>
 
-        <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-          <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
-            <Text className="text-[11px] text-gray-500 dark:text-gray-400">
+        <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 ">
+          <View className="flex-1 border-r border-violet-200 pr-3 ">
+            <Text className="text-[11px] text-gray-500 ">
               MULAI STATUS
             </Text>
             <View className="mt-1.5 flex-row items-center">
               <Ionicons name="calendar-outline" size={16} color="#6F3FA0" />
-              <Text className="ml-2 text-sm font-bold text-gray-800 dark:text-white">
+              <Text className="ml-2 text-sm font-bold text-gray-800 ">
                 {formatDate(member.from_date)}
               </Text>
             </View>
           </View>
           <View className="flex-1 pl-4">
-            <Text className="text-[11px] text-gray-500 dark:text-gray-400">
+            <Text className="text-[11px] text-gray-500 ">
               SAMPAI
             </Text>
             <View className="mt-1.5 flex-row items-center">
               <Ionicons name="calendar-outline" size={16} color="#6F3FA0" />
-              <Text className="ml-2 text-sm font-bold text-gray-800 dark:text-white">
+              <Text className="ml-2 text-sm font-bold text-gray-800 ">
                 {formatDate(member.thru_date)}
               </Text>
             </View>
@@ -164,8 +164,8 @@ function MemberCard({ member }: { member: NonMember }) {
         }
         className={`flex-row items-center justify-center py-4 ${
           hasPhone
-            ? "bg-green-50 dark:bg-green-950"
-            : "bg-gray-50 dark:bg-zinc-800"
+            ? "bg-green-50 "
+            : "bg-gray-50 "
         }`}
       >
         <Ionicons
@@ -175,7 +175,7 @@ function MemberCard({ member }: { member: NonMember }) {
         />
         <Text
           className={`ml-2 font-bold ${
-            hasPhone ? "text-green-700 dark:text-green-300" : "text-gray-400"
+            hasPhone ? "text-green-700 " : "text-gray-400"
           }`}
         >
           {hasPhone ? "Hubungi via WhatsApp" : "Nomor belum tersedia"}
@@ -248,7 +248,7 @@ export default function NonMemberStatusScreen() {
               className={`flex-1 flex-row items-center justify-center rounded-2xl border py-3.5 ${
                 selected
                   ? "border-[#6F3FA0] bg-[#6F3FA0]"
-                  : "border-violet-100 bg-violet-50 dark:border-violet-900 dark:bg-violet-950"
+                  : "border-violet-100 bg-violet-50  "
               }`}
             >
               <Ionicons
@@ -257,7 +257,7 @@ export default function NonMemberStatusScreen() {
                 color={selected ? "white" : "#6F3FA0"}
               />
               <Text
-                className={`ml-2 font-bold ${selected ? "text-white" : "text-violet-700 dark:text-violet-300"}`}
+                className={`ml-2 font-bold ${selected ? "text-white" : "text-violet-700 "}`}
               >
                 {STATUS_CONFIG[option].label}
               </Text>
@@ -285,11 +285,11 @@ export default function NonMemberStatusScreen() {
         </View>
       </View>
 
-      <View className="mb-4 flex-row items-center justify-between rounded-2xl bg-gray-50 p-3 dark:bg-zinc-900">
+      <View className="mb-4 flex-row items-center justify-between rounded-2xl bg-gray-50 p-3 ">
         <Pressable
           accessibilityLabel="Tahun sebelumnya"
           onPress={() => updateFilter({ year: year - 1 })}
-          className="h-11 w-11 items-center justify-center rounded-xl bg-white dark:bg-zinc-800"
+          className="h-11 w-11 items-center justify-center rounded-xl bg-white "
         >
           <Ionicons name="chevron-back" size={22} color="#6F3FA0" />
         </Pressable>
@@ -300,7 +300,7 @@ export default function NonMemberStatusScreen() {
           className="flex-row items-center px-5 py-2"
         >
           <Ionicons name="calendar-outline" size={18} color="#6F3FA0" />
-          <Text className="mx-2 font-bold text-gray-800 dark:text-white">
+          <Text className="mx-2 font-bold text-gray-800 ">
             Tahun {year}
           </Text>
           <Ionicons name="chevron-down" size={17} color="#6F3FA0" />
@@ -309,7 +309,7 @@ export default function NonMemberStatusScreen() {
           accessibilityLabel="Tahun berikutnya"
           disabled={year >= currentYear}
           onPress={() => updateFilter({ year: year + 1 })}
-          className="h-11 w-11 items-center justify-center rounded-xl bg-white dark:bg-zinc-800"
+          className="h-11 w-11 items-center justify-center rounded-xl bg-white "
         >
           <Ionicons
             name="chevron-forward"
@@ -319,7 +319,7 @@ export default function NonMemberStatusScreen() {
         </Pressable>
       </View>
 
-      <View className="mb-2 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 dark:border-zinc-700 dark:bg-zinc-900">
+      <View className="mb-2 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4  ">
         <Ionicons name="search-outline" size={20} color="#6F3FA0" />
         <TextInput
           accessibilityLabel="Cari nama member"
@@ -327,13 +327,13 @@ export default function NonMemberStatusScreen() {
           placeholderTextColor="#9CA3AF"
           value={search}
           onChangeText={(value) => updateFilter({ search: value })}
-          className="ml-3 flex-1 py-4 text-gray-900 dark:text-white"
+          className="ml-3 flex-1 py-4 text-gray-900 "
         />
         {search ? (
           <Pressable
             accessibilityLabel="Hapus pencarian"
             onPress={() => updateFilter({ search: "" })}
-            className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+            className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 "
           >
             <Ionicons name="close" size={18} color="#6B7280" />
           </Pressable>
@@ -353,10 +353,10 @@ export default function NonMemberStatusScreen() {
 
       {members.length ? (
         <View className="mb-4">
-          <Text className="text-xl font-bold text-gray-900 dark:text-white">
+          <Text className="text-xl font-bold text-gray-900 ">
             Daftar Member
           </Text>
-          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-sm text-gray-500 ">
             Member {statusConfig.label.toLowerCase()} tahun {year}
           </Text>
         </View>
@@ -392,7 +392,7 @@ export default function NonMemberStatusScreen() {
         ListEmptyComponent={
           <View className="items-center px-8 py-10">
             <View
-              className={`mb-4 rounded-full p-5 ${query.isError ? "bg-red-50" : "bg-violet-50 dark:bg-violet-950"}`}
+              className={`mb-4 rounded-full p-5 ${query.isError ? "bg-red-50" : "bg-violet-50 "}`}
             >
               {query.isLoading ? (
                 <ActivityIndicator color="#6F3FA0" />
@@ -406,7 +406,7 @@ export default function NonMemberStatusScreen() {
                 />
               )}
             </View>
-            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-800 ">
               {!clubId
                 ? "Club belum tersedia"
                 : query.isLoading
@@ -417,7 +417,7 @@ export default function NonMemberStatusScreen() {
                       ? "Member tidak ditemukan"
                       : `Belum ada member ${statusConfig.label}`}
             </Text>
-            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 ">
               {!clubId
                 ? "Pastikan akun coach sudah terhubung dengan club."
                 : query.isError
@@ -476,12 +476,12 @@ export default function NonMemberStatusScreen() {
           />
           <View
             accessibilityViewIsModal
-            className="rounded-3xl bg-white p-5 dark:bg-zinc-900"
+            className="rounded-3xl bg-white p-5 "
             style={{ maxHeight: 520 }}
           >
             <View className="mb-4 flex-row items-center justify-between">
               <View>
-                <Text className="text-lg font-bold text-gray-900 dark:text-white">
+                <Text className="text-lg font-bold text-gray-900 ">
                   Pilih Tahun
                 </Text>
                 <Text className="mt-1 text-xs text-gray-500">
@@ -491,7 +491,7 @@ export default function NonMemberStatusScreen() {
               <Pressable
                 accessibilityLabel="Tutup pilihan tahun"
                 onPress={() => setYearPickerOpen(false)}
-                className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+                className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 "
               >
                 <Ionicons name="close" size={21} color="#6F3FA0" />
               </Pressable>
@@ -509,15 +509,15 @@ export default function NonMemberStatusScreen() {
                   }}
                   className={`h-[52px] flex-row items-center justify-between rounded-xl px-4 ${
                     item === year
-                      ? "bg-violet-50 dark:bg-violet-950"
-                      : "bg-white dark:bg-zinc-900"
+                      ? "bg-violet-50 "
+                      : "bg-white "
                   }`}
                 >
                   <Text
                     className={
                       item === year
-                        ? "font-bold text-violet-700 dark:text-violet-300"
-                        : "text-gray-700 dark:text-gray-300"
+                        ? "font-bold text-violet-700 "
+                        : "text-gray-700 "
                     }
                   >
                     {item}

@@ -7,11 +7,13 @@ import { useAuth } from "@/context/auth";
 import { getDateTime } from "@/helpers/dates";
 import { useLastWorkout, useLastWorkoutSocket } from "@/hooks/useWorkout";
 import { socket } from "@/services/socket";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useColorScheme } from "nativewind";
+import { router } from "expo-router";
 import React from "react";
 import {
   ImageBackground,
+  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -20,6 +22,102 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+const DAY_LABELS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
+
+const getCurrentWeek = (today: Date): Date[] => {
+  const mondayOffset = (today.getDay() + 6) % 7;
+  const monday = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate() - mondayOffset,
+  );
+
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + index);
+    return date;
+  });
+};
+
+const TodayCalendar = () => {
+  const today = React.useMemo(() => new Date(), []);
+  const currentWeek = React.useMemo(() => getCurrentWeek(today), [today]);
+  const formattedDate = React.useMemo(
+    () =>
+      new Intl.DateTimeFormat("id-ID", {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      }).format(today),
+    [today],
+  );
+
+  return (
+    <View className="mt-5 overflow-hidden rounded-3xl border border-purple-100 bg-white shadow-sm">
+      <View className="flex-row items-center justify-between px-5 pb-4 pt-5">
+        <View className="flex-1 pr-3">
+          <Text className="text-xs font-bold uppercase tracking-wider text-purple-600">
+            Kalender Hari Ini
+          </Text>
+          <Text className="mt-1 capitalize text-base font-bold text-slate-900">
+            {formattedDate}
+          </Text>
+        </View>
+        <View className="h-11 w-11 items-center justify-center rounded-2xl bg-purple-100">
+          <Ionicons name="today-outline" size={23} color="#6F3FA0" />
+        </View>
+      </View>
+
+      <View className="mx-3 flex-row rounded-2xl bg-slate-50 px-1 py-3">
+        {currentWeek.map((date, index) => {
+          const isToday = date.getDate() === today.getDate();
+
+          return (
+            <View key={date.toISOString()} className="flex-1 items-center">
+              <Text
+                className={`text-[10px] font-semibold ${
+                  isToday ? "text-purple-700" : "text-slate-400"
+                }`}
+              >
+                {DAY_LABELS[index]}
+              </Text>
+              <View
+                className={`mt-1.5 h-9 w-9 items-center justify-center rounded-full ${
+                  isToday ? "bg-purple-600" : "bg-transparent"
+                }`}
+              >
+                <Text
+                  className={`text-sm font-bold ${
+                    isToday ? "text-white" : "text-slate-700"
+                  }`}
+                >
+                  {date.getDate()}
+                </Text>
+              </View>
+            </View>
+          );
+        })}
+      </View>
+
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel="Buka kalender lengkap"
+        onPress={() => router.push("/calendar")}
+        className="mt-3 flex-row items-center justify-center border-t border-purple-100 px-5 py-4"
+      >
+        <Text className="font-bold text-purple-700">Lihat Kalender</Text>
+        <Ionicons
+          name="chevron-forward"
+          size={18}
+          color="#6F3FA0"
+          style={styles.calendarActionIcon}
+        />
+      </Pressable>
+    </View>
+  );
+};
 
 const MemberQrCode = ({
   memberName,
@@ -90,8 +188,6 @@ const WorkOutScreen = () => {
     //   socket.off("notification");
     // };
   }, []);
-  const { colorScheme } = useColorScheme(); // "light" | "dark"
-
   if (isLoadingLastWorkout) {
     return <LoadingView />;
   }
@@ -108,17 +204,12 @@ const WorkOutScreen = () => {
     }
     return false;
   };
-  const colors = React.useMemo<[string, string]>(() => {
-    if (colorScheme == "dark") {
-      return ["#6F3FA0", "#BB86FC"];
-    }
-    return ["#BB86FC", "#6F3FA0"];
-  }, [colorScheme]);
+  const colors: [string, string] = ["#BB86FC", "#6F3FA0"];
   if (isLoading) {
     return <LoadingView />;
   }
   return (
-    <SafeAreaView className="flex-1 bg-[#FFFFFF] dark:bg-[#121212]">
+    <SafeAreaView className="flex-1 bg-[#FFFFFF] ">
       <ImageBackground
         source={require("@/assets/images/bgcurveslightnew.png")}
         resizeMode="cover"
@@ -145,6 +236,7 @@ const WorkOutScreen = () => {
         showsVerticalScrollIndicator={false}
       >
         <ProfileCardView />
+        <TodayCalendar />
         {checkIsWorkOutToday() ? (
           <InformationWorkOutView />
         ) : (
@@ -172,6 +264,7 @@ export default WorkOutScreen;
 
 const styles = StyleSheet.create({
   qrSection: { alignItems: "center", justifyContent: "center" },
+  calendarActionIcon: { marginLeft: 4 },
   qrCard: {
     padding: 20,
     borderRadius: 28,

@@ -32,6 +32,10 @@ export interface WeighMeasureRecord {
   body_fat?: MeasurementValue;
   bmi?: MeasurementValue;
   total_measurement?: MeasurementValue;
+  weigh_diff?: MeasurementValue;
+  size_diff?: MeasurementValue;
+  body_fat_diff?: MeasurementValue;
+  wo_count?: number | null;
 }
 
 export interface WeighMeasureProgress {

@@ -31,11 +31,11 @@ const MeasurementRow = ({ title, previous, current, unit = " cm" }: any) => {
   const diff = curr - prev;
 
   return (
-    <View className="py-3 border-b border-gray-200 dark:border-zinc-800">
+    <View className="py-3 border-b border-gray-200 ">
       <View className="flex-row justify-between items-center">
-        <Text className="text-gray-600 dark:text-gray-300">{title}</Text>
+        <Text className="text-gray-600 ">{title}</Text>
 
-        <Text className="font-bold text-gray-900 dark:text-white">
+        <Text className="font-bold text-gray-900 ">
           {current}
           {unit}
         </Text>
@@ -52,7 +52,7 @@ const MeasurementRow = ({ title, previous, current, unit = " cm" }: any) => {
             diff === 0
               ? "text-gray-400"
               : diff > 0
-                ? "text-violet-600 dark:text-violet-400"
+                ? "text-violet-600 "
                 : "text-green-500"
           }`}
         >
@@ -87,9 +87,9 @@ const SummaryRow = ({
   const icon = diff === 0 ? "●" : diff > 0 ? "▲" : "▼";
 
   return (
-    <View className="py-4 border-b border-gray-200 dark:border-zinc-800">
+    <View className="py-4 border-b border-gray-200 ">
       <View className="flex-row justify-between">
-        <Text className="text-gray-600 dark:text-gray-300">{title}</Text>
+        <Text className="text-gray-600 ">{title}</Text>
 
         <Text className={`font-bold ${color}`}>
           {icon} {diff > 0 ? "+" : ""}
@@ -104,7 +104,7 @@ const SummaryRow = ({
           {unit}
         </Text>
 
-        <Text className="font-semibold text-gray-900 dark:text-white">
+        <Text className="font-semibold text-gray-900 ">
           {current}
           {unit}
         </Text>
@@ -134,11 +134,11 @@ const BodyRowItem = ({
   const good = reverse ? positive : negative;
 
   return (
-    <View className="flex-row justify-between items-center py-3 border-b border-gray-200 dark:border-zinc-800">
-      <Text className="text-gray-600 dark:text-gray-300">{label}</Text>
+    <View className="flex-row justify-between items-center py-3 border-b border-gray-200 ">
+      <Text className="text-gray-600 ">{label}</Text>
 
       <View className="items-end">
-        <Text className="font-bold text-gray-800 dark:text-white">
+        <Text className="font-bold text-gray-800 ">
           {value}
           {unit}
         </Text>
@@ -282,12 +282,12 @@ export default function WeighMeasureProgressScreen() {
           </View>
 
           {/* Ringkasan Perubahan */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-5">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-5">
               Ringkasan Perubahan
             </Text>
 
-            <Text className="text-gray-500 dark:text-gray-400 mb-4">
+            <Text className="text-gray-500  mb-4">
               Dibanding penimbangan diawal
             </Text>
 
@@ -322,12 +322,12 @@ export default function WeighMeasureProgressScreen() {
           </View>
           {/* Ringkasan Perubahan */}
           {/* Ringkasan Perubahan Komposisi Tubuh */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-2">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-2">
               Ringkasan Perubahan Komposisi Tubuh
             </Text>
 
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <Text className="text-sm text-gray-500  mb-4">
               Dibandingkan dengan pengukuran sebelumnya
             </Text>
 
@@ -398,12 +398,12 @@ export default function WeighMeasureProgressScreen() {
           </View>
           {/* Ringkasan Perubahan Komposisi Tubuh */}
           {/* Ukuran Tubuh */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-2">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-2">
               Ukuran Tubuh
             </Text>
 
-            <Text className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            <Text className="text-sm text-gray-500  mb-4">
               Perbandingan dengan pengukuran sebelumnya
             </Text>
 
@@ -444,12 +444,12 @@ export default function WeighMeasureProgressScreen() {
             />
 
             {/* Total */}
-            <View className="bg-violet-50 dark:bg-violet-950 rounded-2xl p-4 mt-5">
-              <Text className="text-violet-700 dark:text-violet-300 font-semibold">
+            <View className="bg-violet-50  rounded-2xl p-4 mt-5">
+              <Text className="text-violet-700  font-semibold">
                 Total Ukuran Tubuh
               </Text>
 
-              <Text className="text-3xl font-bold text-violet-700 dark:text-violet-300 mt-1">
+              <Text className="text-3xl font-bold text-violet-700  mt-1">
                 {current.total_measurement} cm
               </Text>
 
@@ -460,7 +460,7 @@ export default function WeighMeasureProgressScreen() {
                     ? "text-gray-400"
                     : Number(current.total_measurement) >
                         Number(previous.total_measurement)
-                      ? "text-violet-600 dark:text-violet-400"
+                      ? "text-violet-600 "
                       : "text-green-500"
                 }`}
               >
@@ -483,7 +483,7 @@ export default function WeighMeasureProgressScreen() {
                     ).toFixed(1)} cm`}
               </Text>
 
-              <Text className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <Text className="text-xs text-gray-500  mt-1">
                 Sebelumnya {previous.total_measurement} cm
               </Text>
             </View>
@@ -491,8 +491,8 @@ export default function WeighMeasureProgressScreen() {
           {/* Ukuran Tubuh */}
 
           {/* Aktivitas Latihan */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Aktivitas Latihan
             </Text>
 
@@ -511,8 +511,8 @@ export default function WeighMeasureProgressScreen() {
           </View>
           {/* Aktivitas Latihan */}
           {/* Ringkasan Pengukuran */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Ringkasan Pengukuran
             </Text>
 

@@ -1,23 +1,23 @@
 import { AuthProvider } from "@/context/auth";
 import {
-  pushNotification,
+  configureNotificationHandler,
   registerForPushNotificationsAsync,
 } from "@/services/push-notification";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import * as Notifications from "expo-notifications";
-import { Stack, useRouter } from "expo-router";
+import { Stack, useRouter, type Href } from "expo-router";
 import { useEffect } from "react";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import "../global.css";
 import "../i18next/i18next";
 
-pushNotification();
+configureNotificationHandler();
 const queryClient = new QueryClient();
 
 export default function RootLayout() {
   useEffect(() => {
-    registerForPushNotificationsAsync().then((token) => {
-      console.log("notif =>", token);
+    void registerForPushNotificationsAsync().catch(() => {
+      // Push token dapat dicoba kembali saat aplikasi dibuka berikutnya.
     });
   }, []);
   return (
@@ -44,35 +44,18 @@ function NotificationHandler() {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         const data = response.notification.request.content.data;
-        console.log("daaaa", data);
-
-        // switch (data.type) {
-        //   case "membership":
-        //     router.push("/membership");
-        //     break;
-
-        //   case "workout":
-        //     router.push(`/workout/${data.workoutId}`);
-        //     break;
-
-        //   case "club":
-        //     router.push(`/club/${data.clubCode}`);
-        //     break;
-        // }
-
-        // if (data.screen) {
-        //   router.push({
-        //     pathname: data.screen as any,
-        //     params: {
-        //       memberId: data.memberId,
-        //     },
-        //   });
-        // }
+        const targetScreen = data?.screen;
+        if (
+          typeof targetScreen === "string" &&
+          targetScreen.startsWith("/")
+        ) {
+          router.push(targetScreen as Href);
+        }
       },
     );
 
     return () => subscription.remove();
-  }, []);
+  }, [router]);
 
   return null;
 }

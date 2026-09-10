@@ -7,12 +7,12 @@ import type { MemberDetail } from "./types";
 export function MemberPersonalInfo({ member }: { member: MemberDetail }) {
   return (
     <>
-      <View className="mt-5 rounded-3xl border border-gray-100 bg-white px-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
-        <View className="border-b border-gray-100 py-5 dark:border-zinc-800">
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+      <View className="mt-5 rounded-3xl border border-gray-100 bg-white px-5 shadow-sm  ">
+        <View className="border-b border-gray-100 py-5 ">
+          <Text className="text-lg font-bold text-gray-900 ">
             Informasi Pribadi
           </Text>
-          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-xs text-gray-500 ">
             Data identitas dan kontak member
           </Text>
         </View>
@@ -44,15 +44,15 @@ export function MemberPersonalInfo({ member }: { member: MemberDetail }) {
         />
       </View>
 
-      <View className="mt-5 flex-row items-center rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-        <View className="h-11 w-11 items-center justify-center rounded-xl bg-white dark:bg-zinc-900">
+      <View className="mt-5 flex-row items-center rounded-2xl bg-violet-50 p-4 ">
+        <View className="h-11 w-11 items-center justify-center rounded-xl bg-white ">
           <Ionicons name="calendar" size={22} color="#6F3FA0" />
         </View>
         <View className="ml-3 flex-1">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-gray-500 ">
             Bergabung sejak
           </Text>
-          <Text className="mt-1 font-bold text-[#6F3FA0] dark:text-violet-300">
+          <Text className="mt-1 font-bold text-[#6F3FA0] ">
             {member.joined ? formatDate(member.joined) : "Belum tersedia"}
           </Text>
         </View>

@@ -95,17 +95,17 @@ function StatCard({
   backgroundColor: string;
 }) {
   return (
-    <View className="flex-1 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+    <View className="flex-1 rounded-2xl bg-white p-4 shadow-sm ">
       <View
         className="h-10 w-10 items-center justify-center rounded-xl"
         style={{ backgroundColor }}
       >
         <Ionicons name={icon} size={21} color={color} />
       </View>
-      <Text className="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
+      <Text className="mt-3 text-2xl font-bold text-gray-900 ">
         {value}
       </Text>
-      <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      <Text className="mt-1 text-xs text-gray-500 ">
         {label}
       </Text>
     </View>
@@ -120,42 +120,42 @@ function WorkoutHistoryCard({
   sequence: number;
 }) {
   return (
-    <View className="mx-5 mb-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mx-5 mb-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm  ">
       <View className="flex-row items-start">
-        <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-950">
+        <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-50 ">
           <MaterialCommunityIcons name="dumbbell" size={27} color="#6F3FA0" />
         </View>
 
         <View className="ml-4 flex-1">
           <View className="flex-row items-start justify-between">
             <View className="mr-2 flex-1">
-              <Text className="font-bold text-gray-900 dark:text-white">
+              <Text className="font-bold text-gray-900 ">
                 Sesi Workout
               </Text>
               <Text
                 numberOfLines={1}
-                className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                className="mt-1 text-sm text-gray-500 "
               >
                 {workout.club?.club_name || "Club tidak tersedia"}
               </Text>
             </View>
-            <View className="rounded-full bg-violet-50 px-2.5 py-1 dark:bg-violet-950">
-              <Text className="text-[10px] font-bold text-[#6F3FA0] dark:text-violet-300">
+            <View className="rounded-full bg-violet-50 px-2.5 py-1 ">
+              <Text className="text-[10px] font-bold text-[#6F3FA0] ">
                 #{sequence}
               </Text>
             </View>
           </View>
 
-          <View className="mt-4 gap-2.5 border-t border-gray-100 pt-3 dark:border-zinc-800">
+          <View className="mt-4 gap-2.5 border-t border-gray-100 pt-3 ">
             <View className="flex-row items-center">
               <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
-              <Text className="ml-2 flex-1 text-sm text-gray-700 dark:text-gray-300">
+              <Text className="ml-2 flex-1 text-sm text-gray-700 ">
                 {formatWorkoutDate(workout.workout_date)}
               </Text>
             </View>
             <View className="flex-row items-center">
               <Ionicons name="time-outline" size={17} color="#6F3FA0" />
-              <Text className="ml-2 text-sm font-semibold text-gray-700 dark:text-gray-300">
+              <Text className="ml-2 text-sm font-semibold text-gray-700 ">
                 {formatWorkoutTime(workout.workout_date)} WIB
               </Text>
             </View>
@@ -306,33 +306,33 @@ export default function WorkoutHistoryScreen() {
             <View className="mx-5 mb-4 mt-6">
               <View className="flex-row items-end justify-between">
                 <View>
-                  <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                  <Text className="text-xl font-bold text-gray-900 ">
                     Daftar Workout
                   </Text>
-                  <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <Text className="mt-1 text-sm text-gray-500 ">
                     {visibleWorkouts.length} sesi ditampilkan
                   </Text>
                 </View>
-                <View className="flex-row rounded-xl bg-gray-100 p-1 dark:bg-zinc-800">
+                <View className="flex-row rounded-xl bg-gray-100 p-1 ">
                   <TouchableOpacity
                     onPress={() => setFilter("current-month")}
                     className={`rounded-lg px-3 py-2 ${
                       filter === "current-month"
-                        ? "bg-white dark:bg-zinc-700"
+                        ? "bg-white "
                         : ""
                     }`}
                   >
-                    <Text className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                    <Text className="text-xs font-semibold text-gray-700 ">
                       Bulan Ini
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setFilter("all")}
                     className={`rounded-lg px-3 py-2 ${
-                      filter === "all" ? "bg-white dark:bg-zinc-700" : ""
+                      filter === "all" ? "bg-white " : ""
                     }`}
                   >
-                    <Text className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                    <Text className="text-xs font-semibold text-gray-700 ">
                       Semua
                     </Text>
                   </TouchableOpacity>
@@ -345,7 +345,7 @@ export default function WorkoutHistoryScreen() {
           <View className="flex-1 items-center justify-center px-8 pb-20">
             <View
               className={`mb-4 rounded-full p-5 ${
-                hasError ? "bg-red-50" : "bg-violet-50 dark:bg-violet-950"
+                hasError ? "bg-red-50" : "bg-violet-50 "
               }`}
             >
               <Ionicons
@@ -354,14 +354,14 @@ export default function WorkoutHistoryScreen() {
                 color={hasError ? "#DC2626" : "#6F3FA0"}
               />
             </View>
-            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-800 ">
               {hasError
                 ? "Riwayat workout gagal dimuat"
                 : filter === "current-month"
                   ? "Belum ada workout bulan ini"
                   : "Belum ada riwayat workout"}
             </Text>
-            <Text className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-sm text-gray-500 ">
               {hasError
                 ? "Tarik layar ke bawah untuk mencoba kembali."
                 : "Sesi workout yang telah dilakukan akan muncul di sini."}

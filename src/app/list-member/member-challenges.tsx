@@ -43,7 +43,7 @@ function ChallengeCard({
   const completed = workoutCount >= target;
 
   return (
-    <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm  ">
       <Image
         source={{ uri: getChallengeImageUrl(challenge.picture) }}
         resizeMode="cover"
@@ -52,25 +52,25 @@ function ChallengeCard({
       <View className="p-5">
         <View className="flex-row items-start justify-between">
           <View className="mr-3 flex-1">
-            <Text className="text-lg font-bold text-gray-900 dark:text-white">
+            <Text className="text-lg font-bold text-gray-900 ">
               {challenge.challenge}
             </Text>
-            <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mt-1 text-sm text-gray-500 ">
               {challenge.type || "Workout Challenge"}
             </Text>
           </View>
           <View
             className={`rounded-full px-2.5 py-1 ${
               completed
-                ? "bg-green-50 dark:bg-green-950"
-                : "bg-amber-50 dark:bg-amber-950"
+                ? "bg-green-50 "
+                : "bg-amber-50 "
             }`}
           >
             <Text
               className={`text-[10px] font-bold ${
                 completed
-                  ? "text-green-700 dark:text-green-300"
-                  : "text-amber-700 dark:text-amber-300"
+                  ? "text-green-700 "
+                  : "text-amber-700 "
               }`}
             >
               {completed ? "SELESAI" : "BERJALAN"}
@@ -79,14 +79,14 @@ function ChallengeCard({
         </View>
 
         <View className="mt-5 flex-row items-center justify-between">
-          <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <Text className="text-xs text-gray-500 ">
             Progres workout
           </Text>
-          <Text className="text-xs font-bold text-[#6F3FA0] dark:text-violet-300">
+          <Text className="text-xs font-bold text-[#6F3FA0] ">
             {progress}/{target} sesi
           </Text>
         </View>
-        <View className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100 dark:bg-zinc-800">
+        <View className="mt-2 h-2 overflow-hidden rounded-full bg-gray-100 ">
           <View
             className={
               completed ? "h-full bg-green-500" : "h-full bg-[#6F3FA0]"
@@ -94,7 +94,7 @@ function ChallengeCard({
             style={{ width: `${percentage}%` }}
           />
         </View>
-        <Text className="mt-3 text-xs text-gray-500 dark:text-gray-400">
+        <Text className="mt-3 text-xs text-gray-500 ">
           {completed
             ? "Target challenge telah tercapai."
             : `${Math.max(target - workoutCount, 0)} workout lagi untuk menyelesaikan challenge.`}
@@ -190,24 +190,24 @@ export default function MemberChallengesScreen() {
               </View>
             </View>
 
-            <View className="mx-5 mb-5 mt-4 flex-row rounded-2xl bg-gray-100 p-1 dark:bg-zinc-800">
+            <View className="mx-5 mb-5 mt-4 flex-row rounded-2xl bg-gray-100 p-1 ">
               <TouchableOpacity
                 onPress={() => setFilter("incomplete")}
                 className={`flex-1 items-center rounded-xl py-3 ${
-                  filter === "incomplete" ? "bg-white dark:bg-zinc-700" : ""
+                  filter === "incomplete" ? "bg-white " : ""
                 }`}
               >
-                <Text className="font-semibold text-gray-700 dark:text-gray-200">
+                <Text className="font-semibold text-gray-700 ">
                   Belum Selesai
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 onPress={() => setFilter("completed")}
                 className={`flex-1 items-center rounded-xl py-3 ${
-                  filter === "completed" ? "bg-white dark:bg-zinc-700" : ""
+                  filter === "completed" ? "bg-white " : ""
                 }`}
               >
-                <Text className="font-semibold text-gray-700 dark:text-gray-200">
+                <Text className="font-semibold text-gray-700 ">
                   Selesai
                 </Text>
               </TouchableOpacity>
@@ -218,7 +218,7 @@ export default function MemberChallengesScreen() {
           <View className="flex-1 items-center justify-center px-8 pb-20">
             <View
               className={`mb-4 rounded-full p-5 ${
-                hasError ? "bg-red-50" : "bg-amber-50 dark:bg-amber-950"
+                hasError ? "bg-red-50" : "bg-amber-50 "
               }`}
             >
               <Ionicons
@@ -227,7 +227,7 @@ export default function MemberChallengesScreen() {
                 color={hasError ? "#DC2626" : "#F59E0B"}
               />
             </View>
-            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-800 ">
               {hasError
                 ? "Challenge gagal dimuat"
                 : filter === "completed"

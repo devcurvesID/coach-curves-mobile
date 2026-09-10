@@ -105,7 +105,7 @@ function MemberAvatar({
   }
 
   return (
-    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
+    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 ">
       <Text className="text-xl font-bold text-[#6F3FA0]">
         {getInitials(name)}
       </Text>
@@ -198,7 +198,7 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
 
   return (
     <>
-      <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+      <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm  ">
         <View className="p-5">
           <View className="flex-row items-start">
             <MemberAvatar
@@ -212,21 +212,21 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
                 <View className="mr-2 flex-1">
                   <Text
                     numberOfLines={1}
-                    className="text-lg font-bold text-gray-900 dark:text-white"
+                    className="text-lg font-bold text-gray-900 "
                   >
                     {memberName}
                   </Text>
                   <Text
                     numberOfLines={1}
-                    className="mt-1 text-sm text-gray-500 dark:text-gray-400"
+                    className="mt-1 text-sm text-gray-500 "
                   >
                     {member.club?.club_name || "Club tidak tersedia"}
                   </Text>
                 </View>
 
-                <View className="flex-row items-center rounded-full bg-green-50 px-2.5 py-1 dark:bg-green-950">
+                <View className="flex-row items-center rounded-full bg-green-50 px-2.5 py-1 ">
                   <View className="mr-1.5 h-2 w-2 rounded-full bg-green-500" />
-                  <Text className="text-[10px] font-bold text-green-700 dark:text-green-300">
+                  <Text className="text-[10px] font-bold text-green-700 ">
                     WORKOUT
                   </Text>
                 </View>
@@ -234,14 +234,14 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
             </View>
           </View>
 
-          <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-            <View className="flex-1 border-r border-violet-200 pr-3 dark:border-violet-800">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+          <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 ">
+            <View className="flex-1 border-r border-violet-200 pr-3 ">
+              <Text className="text-xs text-gray-500 ">
                 CHECK-IN
               </Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="time-outline" size={17} color="#6F3FA0" />
-                <Text className="ml-1.5 font-bold text-gray-900 dark:text-white">
+                <Text className="ml-1.5 font-bold text-gray-900 ">
                   {checkInTime.isValid() ? checkInTime.format("HH:mm") : "-"}{" "}
                   WIB
                 </Text>
@@ -249,12 +249,12 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
             </View>
 
             <View className="flex-1 pl-4">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-gray-500 ">
                 ESTIMASI SESI
               </Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="fitness-outline" size={17} color="#6F3FA0" />
-                <Text className="ml-1.5 font-bold text-[#6F3FA0] dark:text-violet-300">
+                <Text className="ml-1.5 font-bold text-[#6F3FA0] ">
                   30–45 menit
                 </Text>
               </View>
@@ -290,15 +290,15 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
             </View>
           </View>
 
-          <View className="mt-4 flex-row items-center rounded-xl bg-gray-50 px-3 py-3 dark:bg-zinc-800">
-            <View className="h-9 w-9 items-center justify-center rounded-xl bg-violet-100 dark:bg-violet-950">
+          <View className="mt-4 flex-row items-center rounded-xl bg-gray-50 px-3 py-3 ">
+            <View className="h-9 w-9 items-center justify-center rounded-xl bg-violet-100 ">
               <Ionicons name="key-outline" size={18} color="#6F3FA0" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-[11px] text-gray-500 dark:text-gray-400">
+              <Text className="text-[11px] text-gray-500 ">
                 KEY TAG MEMBER
               </Text>
-              <Text className="mt-0.5 font-bold text-gray-800 dark:text-white">
+              <Text className="mt-0.5 font-bold text-gray-800 ">
                 {isLoadingMemberDetail
                   ? "Memuat Key Tag..."
                   : String(keyTagId ?? "").trim() || "Belum tersedia"}
@@ -310,15 +310,15 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
           </View>
         </View>
 
-        <View className="border-t border-gray-100 dark:border-zinc-800">
+        <View className="border-t border-gray-100 ">
           <TouchableOpacity
             onPress={openResultModal}
             accessibilityRole="button"
             accessibilityLabel={`Lihat informasi penimbangan ${memberName}`}
-            className="flex-row items-center justify-center bg-violet-50 py-4 dark:bg-violet-950"
+            className="flex-row items-center justify-center bg-violet-50 py-4 "
           >
             <Ionicons name="scale-outline" size={19} color="#6F3FA0" />
-            <Text className="ml-2 font-bold text-[#6F3FA0] dark:text-violet-300">
+            <Text className="ml-2 font-bold text-[#6F3FA0] ">
               Lihat Hasil Penimbangan
             </Text>
           </TouchableOpacity>
@@ -338,13 +338,13 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
             className="absolute inset-0"
             onPress={closeResultModal}
           />
-          <View className="mt-auto max-h-[92%] rounded-t-[32px] bg-[#F8F7FC] pb-6 dark:bg-zinc-950">
+          <View className="mt-auto max-h-[92%] rounded-t-[32px] bg-[#F8F7FC] pb-6 ">
             <View className="flex-row items-center justify-between px-6 pb-2 pt-5">
               <View className="mr-4 flex-1">
-                <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                <Text className="text-xl font-bold text-gray-900 ">
                   Hasil Penimbangan
                 </Text>
-                <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-xs text-gray-500 ">
                   Resume hasil latihan {memberName}
                 </Text>
               </View>
@@ -353,7 +353,7 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
                 accessibilityLabel="Tutup modal"
                 disabled={isLoadingWeighMeasureProgress}
                 onPress={closeResultModal}
-                className="h-10 w-10 items-center justify-center rounded-full bg-white dark:bg-zinc-800"
+                className="h-10 w-10 items-center justify-center rounded-full bg-white "
               >
                 <Ionicons name="close" size={21} color="#6F3FA0" />
               </Pressable>
@@ -368,7 +368,7 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
               </View>
             ) : isWeighMeasureProgressError || !currentWeighMeasure ? (
               <View className="items-center px-8 py-16">
-                <View className="rounded-full bg-violet-100 p-5 dark:bg-violet-950">
+                <View className="rounded-full bg-violet-100 p-5 ">
                   <Ionicons
                     name={
                       isWeighMeasureProgressError
@@ -379,12 +379,12 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
                     color={isWeighMeasureProgressError ? "#DC2626" : "#6F3FA0"}
                   />
                 </View>
-                <Text className="mt-4 text-center text-lg font-bold text-gray-900 dark:text-white">
+                <Text className="mt-4 text-center text-lg font-bold text-gray-900 ">
                   {isWeighMeasureProgressError
                     ? "Hasil penimbangan gagal dimuat"
                     : "Hasil penimbangan belum tersedia"}
                 </Text>
-                <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+                <Text className="mt-2 text-center text-sm leading-5 text-gray-500 ">
                   {isWeighMeasureProgressError
                     ? "Periksa koneksi lalu coba kembali."
                     : "Member belum memiliki data yang dapat ditampilkan dalam resume."}
@@ -486,7 +486,7 @@ export default function ListMemberWOScreen() {
       </View>
 
       <View className="mx-5 mb-4">
-        <View className="flex-row items-center rounded-2xl border border-gray-100 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="flex-row items-center rounded-2xl border border-gray-100 bg-white px-4 py-3  ">
           <Ionicons name="search-outline" size={22} color="#9CA3AF" />
           <TextInput
             placeholder="Cari nama atau key tag..."
@@ -494,7 +494,7 @@ export default function ListMemberWOScreen() {
             value={search}
             onChangeText={setSearch}
             autoCapitalize="none"
-            className="ml-3 flex-1 text-base text-gray-800 dark:text-white"
+            className="ml-3 flex-1 text-base text-gray-800 "
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch("")}>
@@ -502,7 +502,7 @@ export default function ListMemberWOScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+        <Text className="mt-2 text-xs text-gray-500 ">
           {workoutTotal !== undefined
             ? `${filteredMembers.length} dari ${workoutTotal} member ditampilkan`
             : `${filteredMembers.length} member ditampilkan`}
@@ -539,21 +539,21 @@ export default function ListMemberWOScreen() {
         }}
         ListEmptyComponent={
           <View className="flex-1 items-center justify-center px-8 pb-20">
-            <View className="mb-4 rounded-full bg-violet-50 p-5 dark:bg-violet-950">
+            <View className="mb-4 rounded-full bg-violet-50 p-5 ">
               <MaterialCommunityIcons
                 name="dumbbell"
                 size={40}
                 color="#6F3FA0"
               />
             </View>
-            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-800 ">
               {isError
                 ? "Data workout gagal dimuat"
                 : search
                   ? "Member tidak ditemukan"
                   : "Belum ada member workout"}
             </Text>
-            <Text className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-sm text-gray-500 ">
               {isError
                 ? "Tarik layar ke bawah untuk mencoba kembali."
                 : search

@@ -111,7 +111,7 @@ function StatCard({
   backgroundColor: string;
 }) {
   return (
-    <View className="flex-1 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+    <View className="flex-1 rounded-2xl bg-white p-4 shadow-sm ">
       <View
         className="h-10 w-10 items-center justify-center rounded-xl"
         style={{ backgroundColor }}
@@ -120,11 +120,11 @@ function StatCard({
       </View>
       <Text
         numberOfLines={1}
-        className="mt-3 text-xl font-bold text-gray-900 dark:text-white"
+        className="mt-3 text-xl font-bold text-gray-900 "
       >
         {value}
       </Text>
-      <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      <Text className="mt-1 text-xs text-gray-500 ">
         {label}
       </Text>
     </View>
@@ -141,12 +141,12 @@ function MeasurementItem({
   icon: React.ComponentProps<typeof Ionicons>["name"];
 }) {
   return (
-    <View className="flex-1 items-center rounded-2xl bg-gray-50 px-2 py-3 dark:bg-zinc-800">
+    <View className="flex-1 items-center rounded-2xl bg-gray-50 px-2 py-3 ">
       <Ionicons name={icon} size={18} color="#6F3FA0" />
-      <Text className="mt-2 font-bold text-gray-900 dark:text-white">
+      <Text className="mt-2 font-bold text-gray-900 ">
         {value}
       </Text>
-      <Text className="mt-1 text-center text-[10px] text-gray-500 dark:text-gray-400">
+      <Text className="mt-1 text-center text-[10px] text-gray-500 ">
         {label}
       </Text>
     </View>
@@ -161,9 +161,9 @@ function WMHistoryCard({
   sequence: number;
 }) {
   return (
-    <View className="mx-5 mb-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mx-5 mb-4 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm  ">
       <View className="flex-row items-start">
-        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 dark:bg-sky-950">
+        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 ">
           <MaterialCommunityIcons
             name="scale-bathroom"
             size={25}
@@ -173,22 +173,22 @@ function WMHistoryCard({
         <View className="ml-3 flex-1">
           <View className="flex-row items-start justify-between">
             <View className="mr-2 flex-1">
-              <Text className="font-bold text-gray-900 dark:text-white">
+              <Text className="font-bold text-gray-900 ">
                 Weigh & Measure
               </Text>
-              <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mt-1 text-sm text-gray-500 ">
                 {formatWMDate(record.wm_date)}
               </Text>
             </View>
-            <View className="rounded-full bg-sky-50 px-2.5 py-1 dark:bg-sky-950">
-              <Text className="text-[10px] font-bold text-sky-600 dark:text-sky-300">
+            <View className="rounded-full bg-sky-50 px-2.5 py-1 ">
+              <Text className="text-[10px] font-bold text-sky-600 ">
                 #{sequence}
               </Text>
             </View>
           </View>
           <View className="mt-2 flex-row items-center">
             <Ionicons name="time-outline" size={16} color="#6F3FA0" />
-            <Text className="ml-1.5 text-xs text-gray-500 dark:text-gray-400">
+            <Text className="ml-1.5 text-xs text-gray-500 ">
               {formatWMTime(record.wm_date)} WIB
             </Text>
           </View>
@@ -215,16 +215,16 @@ function WMHistoryCard({
 
       {record.total_measurement !== null &&
         record.total_measurement !== undefined && (
-          <View className="mt-3 flex-row items-center rounded-xl bg-violet-50 px-3 py-2.5 dark:bg-violet-950">
+          <View className="mt-3 flex-row items-center rounded-xl bg-violet-50 px-3 py-2.5 ">
             <MaterialCommunityIcons
               name="tape-measure"
               size={18}
               color="#6F3FA0"
             />
-            <Text className="ml-2 flex-1 text-xs text-gray-600 dark:text-gray-300">
+            <Text className="ml-2 flex-1 text-xs text-gray-600 ">
               Total ukuran tubuh
             </Text>
-            <Text className="font-bold text-[#6F3FA0] dark:text-violet-300">
+            <Text className="font-bold text-[#6F3FA0] ">
               {formatMeasurement(record.total_measurement, " cm")}
             </Text>
           </View>
@@ -377,33 +377,33 @@ export default function WMHistoryScreen() {
             <View className="mx-5 mb-4 mt-6">
               <View className="flex-row items-end justify-between">
                 <View>
-                  <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                  <Text className="text-xl font-bold text-gray-900 ">
                     Daftar Pengukuran
                   </Text>
-                  <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                  <Text className="mt-1 text-sm text-gray-500 ">
                     {visibleRecords.length} pengukuran ditampilkan
                   </Text>
                 </View>
-                <View className="flex-row rounded-xl bg-gray-100 p-1 dark:bg-zinc-800">
+                <View className="flex-row rounded-xl bg-gray-100 p-1 ">
                   <TouchableOpacity
                     onPress={() => setFilter("current-year")}
                     className={`rounded-lg px-3 py-2 ${
                       filter === "current-year"
-                        ? "bg-white dark:bg-zinc-700"
+                        ? "bg-white "
                         : ""
                     }`}
                   >
-                    <Text className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                    <Text className="text-xs font-semibold text-gray-700 ">
                       Tahun Ini
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     onPress={() => setFilter("all")}
                     className={`rounded-lg px-3 py-2 ${
-                      filter === "all" ? "bg-white dark:bg-zinc-700" : ""
+                      filter === "all" ? "bg-white " : ""
                     }`}
                   >
-                    <Text className="text-xs font-semibold text-gray-700 dark:text-gray-200">
+                    <Text className="text-xs font-semibold text-gray-700 ">
                       Semua
                     </Text>
                   </TouchableOpacity>
@@ -416,7 +416,7 @@ export default function WMHistoryScreen() {
           <View className="flex-1 items-center justify-center px-8 pb-20">
             <View
               className={`mb-4 rounded-full p-5 ${
-                hasError ? "bg-red-50" : "bg-sky-50 dark:bg-sky-950"
+                hasError ? "bg-red-50" : "bg-sky-50 "
               }`}
             >
               <Ionicons
@@ -425,14 +425,14 @@ export default function WMHistoryScreen() {
                 color={hasError ? "#DC2626" : "#0EA5E9"}
               />
             </View>
-            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-800 ">
               {hasError
                 ? "Riwayat WM gagal dimuat"
                 : filter === "current-year"
                   ? "Belum ada pengukuran tahun ini"
                   : "Belum ada riwayat pengukuran"}
             </Text>
-            <Text className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-sm text-gray-500 ">
               {hasError
                 ? "Tarik layar ke bawah untuk mencoba kembali."
                 : "Hasil Weigh & Measure akan muncul di sini."}

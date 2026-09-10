@@ -24,7 +24,7 @@ const MenuItem = ({
   return (
     <Pressable
       {...props}
-      className="flex-row items-center justify-between px-5 py-4 bg-[#6F3FA0] dark:bg-[#BB86FC] border border-[#D1D1D1] dark:border-[#2C2C2C] rounded-2xl mb-3"
+      className="flex-row items-center justify-between px-5 py-4 bg-[#6F3FA0]  border border-[#D1D1D1]  rounded-2xl mb-3"
     >
       <View className="flex-row items-center gap-3">
         <View className="w-10 h-10 rounded-xl bg-black/30 items-center justify-center">

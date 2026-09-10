@@ -183,10 +183,10 @@ export default function ProfileScreen() {
         <View className="h-[1px] bg-white/10 my-8" />
 
         <View className="mb-3">
-          <Text className="text-lg font-bold text-gray-900 dark:text-white">
+          <Text className="text-lg font-bold text-gray-900">
             Aktivitas Saya
           </Text>
-          <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-sm text-gray-500 ">
             Lihat hasil pengukuran dan aktivitas workout akun Anda.
           </Text>
         </View>
@@ -200,7 +200,7 @@ export default function ProfileScreen() {
           title="Riwayat Workout"
           onPress={() => router.push("/user/attendance")}
         />
-        <View className="my-5 h-px bg-gray-100 dark:bg-zinc-800" />
+        <View className="my-5 h-px bg-gray-100 " />
 
         {/* Menu */}
         <MenuItem

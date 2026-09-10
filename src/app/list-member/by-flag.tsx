@@ -4,18 +4,25 @@ import {
   MEMBER_FLAG_OPTIONS,
   type MemberFlag,
 } from "@/helpers/member-flag-options";
+import { useUserClub } from "@/hooks/useClubs";
 import {
+  fetchAllMembersGroupedByFlag,
+  fetchMemberFlagResume,
   getMemberFlagClubId,
   type MemberByFlag,
   useMemberFlagResume,
   useMembersByFlag,
 } from "@/hooks/useMembersByFlag";
 import { imageProfileURL } from "@/services/image";
+import { buildMemberFlagPdfHtml } from "@/utils/member-flag-pdf";
 import { Ionicons } from "@expo/vector-icons";
+import * as Print from "expo-print";
 import { router } from "expo-router";
-import React, { useMemo, useState } from "react";
+import * as Sharing from "expo-sharing";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Modal,
@@ -81,6 +88,10 @@ export default function MemberFlagsScreen() {
   const [flag, setFlag] = useState<MemberFlag["flag"]>("A");
   const [search, setSearch] = useState("");
   const [isResumeVisible, setIsResumeVisible] = useState(false);
+  const [pdfAction, setPdfAction] = useState<"preview" | "download" | null>(
+    null,
+  );
+  const { data: userClubs } = useUserClub();
   const resumeQuery = useMemberFlagResume(clubId, isResumeVisible);
   const {
     data,
@@ -108,6 +119,64 @@ export default function MemberFlagsScreen() {
     );
   }, [loadedMembers, search]);
   const hasClub = clubId !== undefined && clubId !== null && clubId !== "";
+
+  const createPdfHtml = async () => {
+    if (!clubId) throw new Error("Club pengguna belum tersedia.");
+    const resume = await fetchMemberFlagResume(clubId);
+    const groups = await fetchAllMembersGroupedByFlag(clubId, resume);
+    return buildMemberFlagPdfHtml({
+      clubName: userClubs?.[0]?.club_name || "Curves",
+      groups,
+    });
+  };
+
+  const previewPdf = async () => {
+    if (pdfAction) return;
+    setPdfAction("preview");
+    try {
+      await Print.printAsync({ html: await createPdfHtml() });
+    } catch (pdfError) {
+      Alert.alert(
+        "PDF Tidak Dapat Ditampilkan",
+        pdfError instanceof Error
+          ? pdfError.message
+          : "Terjadi kendala saat membuat printout member.",
+      );
+    } finally {
+      setPdfAction(null);
+    }
+  };
+
+  const downloadPdf = async () => {
+    if (pdfAction) return;
+    setPdfAction("download");
+    try {
+      const { uri } = await Print.printToFileAsync({
+        html: await createPdfHtml(),
+      });
+      if (!(await Sharing.isAvailableAsync())) {
+        Alert.alert(
+          "PDF Berhasil Dibuat",
+          "Fitur penyimpanan tidak tersedia pada perangkat ini.",
+        );
+        return;
+      }
+      await Sharing.shareAsync(uri, {
+        mimeType: "application/pdf",
+        UTI: "com.adobe.pdf",
+        dialogTitle: "Simpan Printout Member Berdasarkan Flag",
+      });
+    } catch (pdfError) {
+      Alert.alert(
+        "PDF Tidak Dapat Disimpan",
+        pdfError instanceof Error
+          ? pdfError.message
+          : "Terjadi kendala saat membuat printout member.",
+      );
+    } finally {
+      setPdfAction(null);
+    }
+  };
 
   return (
     <ContainerPage
@@ -148,6 +217,69 @@ export default function MemberFlagsScreen() {
               </View>
               <Ionicons name="chevron-forward" size={20} color="white" />
             </Pressable>
+
+            <View className="mb-5 rounded-3xl border border-violet-100 bg-violet-50 p-4">
+              <View className="flex-row items-start">
+                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-white ">
+                  <Ionicons
+                    name="document-text-outline"
+                    size={23}
+                    color="#6F3FA0"
+                  />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="font-bold text-gray-900 ">
+                    Printout Semua Member
+                  </Text>
+                  <Text className="mt-1 text-xs leading-5 text-gray-500 ">
+                    Berisi seluruh member Flag A sampai E, termasuk data yang
+                    belum dimuat pada layar.
+                  </Text>
+                </View>
+              </View>
+
+              <View className="mt-4 flex-row gap-3">
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Lihat printout semua member berdasarkan flag"
+                  disabled={pdfAction !== null || !hasClub}
+                  onPress={() => void previewPdf()}
+                  className={`flex-1 flex-row items-center justify-center rounded-2xl border border-violet-200 bg-white py-3.5   ${
+                    pdfAction || !hasClub ? "opacity-60" : ""
+                  }`}
+                >
+                  {pdfAction === "preview" ? (
+                    <ActivityIndicator size="small" color="#6F3FA0" />
+                  ) : (
+                    <Ionicons name="eye-outline" size={19} color="#6F3FA0" />
+                  )}
+                  <Text className="ml-2 font-bold text-[#6F3FA0] ">
+                    Lihat PDF
+                  </Text>
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Simpan printout semua member berdasarkan flag"
+                  disabled={pdfAction !== null || !hasClub}
+                  onPress={() => void downloadPdf()}
+                  className={`flex-1 flex-row items-center justify-center rounded-2xl bg-[#6F3FA0] py-3.5 ${
+                    pdfAction || !hasClub ? "opacity-60" : ""
+                  }`}
+                >
+                  {pdfAction === "download" ? (
+                    <ActivityIndicator size="small" color="white" />
+                  ) : (
+                    <Ionicons name="download-outline" size={19} color="white" />
+                  )}
+                  <Text className="ml-2 font-bold text-white">Simpan PDF</Text>
+                </Pressable>
+              </View>
+              {pdfAction ? (
+                <Text className="mt-3 text-center text-xs text-violet-700 ">
+                  Mengambil seluruh data member dan menyiapkan PDF...
+                </Text>
+              ) : null}
+            </View>
             <View className="mb-5 flex-row gap-2">
               {MEMBER_FLAG_OPTIONS.map((option) => (
                 <Pressable
@@ -266,6 +398,12 @@ export default function MemberFlagsScreen() {
                   Key Tag: {String(item.key_tag_id ?? "").trim() || "-"}
                 </Text>
               </View>
+              <View className="mt-2 flex-row items-center">
+                <Ionicons name="fitness-outline" size={14} color="#6F3FA0" />
+                <Text className="ml-1.5 text-xs font-semibold text-slate-600">
+                  {item.total_wo ?? 0} workout bulan ini
+                </Text>
+              </View>
               <Text className="mt-2 text-xs text-purple-700">
                 {getMemberUserId(item)
                   ? "Lihat detail member"
@@ -362,16 +500,13 @@ export default function MemberFlagsScreen() {
             className="absolute inset-0"
             onPress={() => setIsResumeVisible(false)}
           />
-          <View
-            accessibilityViewIsModal
-            className="rounded-3xl bg-white p-5 dark:bg-zinc-900"
-          >
+          <View accessibilityViewIsModal className="rounded-3xl bg-white p-5 ">
             <View className="flex-row items-start justify-between">
               <View className="mr-4 flex-1">
-                <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                <Text className="text-xl font-bold text-gray-900 ">
                   Resume Status Flag
                 </Text>
-                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-sm text-gray-500 ">
                   Ringkasan seluruh member berdasarkan flag
                 </Text>
               </View>
@@ -379,7 +514,7 @@ export default function MemberFlagsScreen() {
                 accessibilityRole="button"
                 accessibilityLabel="Tutup"
                 onPress={() => setIsResumeVisible(false)}
-                className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+                className="h-10 w-10 items-center justify-center rounded-full bg-gray-100 "
               >
                 <Ionicons name="close" size={21} color="#6F3FA0" />
               </Pressable>
@@ -401,7 +536,7 @@ export default function MemberFlagsScreen() {
                     color="#DC2626"
                   />
                 </View>
-                <Text className="mt-3 text-center font-bold text-gray-800 dark:text-white">
+                <Text className="mt-3 text-center font-bold text-gray-800 ">
                   Resume flag gagal dimuat
                 </Text>
                 <Text className="mt-1 text-center text-sm text-gray-500">
@@ -420,11 +555,9 @@ export default function MemberFlagsScreen() {
               </View>
             ) : (
               <>
-                <View className="mt-5 rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-                  <Text className="text-xs text-gray-500 dark:text-gray-400">
-                    TOTAL MEMBER
-                  </Text>
-                  <Text className="mt-1 text-3xl font-bold text-[#6F3FA0] dark:text-violet-300">
+                <View className="mt-5 rounded-2xl bg-violet-50 p-4 ">
+                  <Text className="text-xs text-gray-500 ">TOTAL MEMBER</Text>
+                  <Text className="mt-1 text-3xl font-bold text-[#6F3FA0] ">
                     {resumeQuery.data?.reduce(
                       (sum, item) => sum + item.total,
                       0,
@@ -447,7 +580,7 @@ export default function MemberFlagsScreen() {
                           setSearch("");
                           setIsResumeVisible(false);
                         }}
-                        className="flex-row items-center rounded-2xl border border-gray-100 p-3 dark:border-zinc-800"
+                        className="flex-row items-center rounded-2xl border border-gray-100 p-3 "
                       >
                         <View
                           className="h-11 w-11 items-center justify-center rounded-xl"
@@ -461,7 +594,7 @@ export default function MemberFlagsScreen() {
                           </Text>
                         </View>
                         <View className="ml-3 flex-1">
-                          <Text className="font-semibold text-gray-800 dark:text-white">
+                          <Text className="font-semibold text-gray-800 ">
                             Member Flag {option.flag}
                           </Text>
                           <Text className="mt-0.5 text-xs text-gray-500">

@@ -25,7 +25,7 @@ const ContainerWithKeyBoard = ({
     <KeyboardAvoidingView
       {...props}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
-      className={["flex-1  bg-[#6F3FA0] dark:bg-[#BB86FC]", className]
+      className={["flex-1  bg-[#6F3FA0] ", className]
         .filter(Boolean)
         .join(" ")}
     >

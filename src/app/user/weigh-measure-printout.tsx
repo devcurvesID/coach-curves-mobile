@@ -52,11 +52,11 @@ const BodyRowItem = ({
   const good = reverse ? positive : negative;
 
   return (
-    <View className="flex-row justify-between items-center py-3 border-b border-gray-200 dark:border-zinc-800">
-      <Text className="text-gray-600 dark:text-gray-300">{label}</Text>
+    <View className="flex-row justify-between items-center py-3 border-b border-gray-200 ">
+      <Text className="text-gray-600 ">{label}</Text>
 
       <View className="items-end">
-        <Text className="font-bold text-gray-800 dark:text-white">
+        <Text className="font-bold text-gray-800 ">
           {value}
           {unit}
         </Text>
@@ -220,8 +220,8 @@ export default function WeighMeasurePrintOutScreen() {
             </View>
           </View>
           {/* Komposisi Tubuh */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Komposisi Tubuh
             </Text>
 
@@ -292,8 +292,8 @@ export default function WeighMeasurePrintOutScreen() {
 
           {/* Komposisi Tubuh */}
           {/* Ukuran Tubuh */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Ukuran Tubuh
             </Text>
 
@@ -338,12 +338,12 @@ export default function WeighMeasurePrintOutScreen() {
               previous={previous.arm}
               unit=" cm"
             />
-            <View className="bg-purple-50 dark:bg-violet-950 rounded-2xl p-4 mt-5">
-              <Text className="text-[#6F3FA0] dark:text-violet-300 font-semibold">
+            <View className="bg-purple-50  rounded-2xl p-4 mt-5">
+              <Text className="text-[#6F3FA0]  font-semibold">
                 Total Ukuran Tubuh
               </Text>
 
-              <Text className="text-2xl font-bold text-[#6F3FA0] dark:text-violet-300">
+              <Text className="text-2xl font-bold text-[#6F3FA0] ">
                 {current.total_measurement} cm
               </Text>
 
@@ -377,8 +377,8 @@ export default function WeighMeasurePrintOutScreen() {
           {/* Ukuran Tubuh */}
 
           {/* Aktivitas Latihan */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Aktivitas Latihan
             </Text>
 
@@ -397,8 +397,8 @@ export default function WeighMeasurePrintOutScreen() {
           </View>
           {/* Aktivitas Latihan */}
           {/* Ringkasan Pengukuran */}
-          <View className="bg-white dark:bg-zinc-900 rounded-3xl p-5 shadow mt-4">
-            <Text className="text-lg font-bold text-[#6F3FA0] dark:text-violet-400 mb-4">
+          <View className="bg-white  rounded-3xl p-5 shadow mt-4">
+            <Text className="text-lg font-bold text-[#6F3FA0]  mb-4">
               Ringkasan Pengukuran
             </Text>
 

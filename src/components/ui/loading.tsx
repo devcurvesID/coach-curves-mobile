@@ -47,7 +47,7 @@ function Dot({ delay = 0 }: { delay?: number }) {
 
 export const LoadingView = () => {
   return (
-    <SafeAreaView className="flex-1 bg-[#FFFFFF] dark:bg-[#121212]">
+    <SafeAreaView className="flex-1 bg-[#FFFFFF] ">
       <ImageBackground
         source={require("@/assets/images/logocurves.png")}
         resizeMode="cover"

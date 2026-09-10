@@ -10,7 +10,7 @@ const ListItem = ({ label, value, ...props }: ListItemProps) => {
   return (
     <View
       {...props}
-      className="border border-width-[2px] border-[#6F3FA0] dark:border-[#BB86FC] rounded-2xl p-4 mb-5"
+      className="border border-width-[2px] border-[#6F3FA0]  rounded-2xl p-4 mb-5"
     >
       <Text
         variant="caption"

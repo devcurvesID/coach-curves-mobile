@@ -24,7 +24,7 @@ function FlatListItemComponent<T>({
       renderItem={renderItem}
       ListEmptyComponent={() => (
         <View className="items-center mt-10">
-          <Text className="text-gray-800 dark:text-white">
+          <Text className="text-gray-800 ">
             {emptyMessage ? emptyMessage : "Data tidak ditemukan"}
           </Text>
         </View>

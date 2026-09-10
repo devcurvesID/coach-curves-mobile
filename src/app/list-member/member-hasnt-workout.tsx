@@ -81,8 +81,8 @@ function MemberAvatar({ member }: { member: MemberHasntWorkout }) {
   }
 
   return (
-    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
-      <Text className="text-xl font-bold text-violet-700 dark:text-violet-300">
+    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 ">
+      <Text className="text-xl font-bold text-violet-700 ">
         {getInitials(name)}
       </Text>
     </View>
@@ -95,7 +95,7 @@ function MemberCard({ member }: { member: MemberHasntWorkout }) {
   const joined = getJoinedInformation(member.joined);
 
   return (
-    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm  ">
       <View className="p-5">
         <View className="flex-row items-start">
           <MemberAvatar
@@ -105,33 +105,33 @@ function MemberCard({ member }: { member: MemberHasntWorkout }) {
           <View className="ml-4 flex-1">
             <Text
               numberOfLines={2}
-              className="text-lg font-bold text-gray-900 dark:text-white"
+              className="text-lg font-bold text-gray-900 "
             >
               {name}
             </Text>
-            <View className="mt-2 self-start rounded-full bg-orange-50 px-3 py-1 dark:bg-orange-950">
-              <Text className="text-[11px] font-bold text-orange-700 dark:text-orange-300">
+            <View className="mt-2 self-start rounded-full bg-orange-50 px-3 py-1 ">
+              <Text className="text-[11px] font-bold text-orange-700 ">
                 BELUM PERNAH WORKOUT
               </Text>
             </View>
           </View>
         </View>
 
-        <View className="mt-5 rounded-2xl bg-violet-50 p-4 dark:bg-violet-950">
-          <Text className="text-[11px] text-gray-500 dark:text-gray-400">
+        <View className="mt-5 rounded-2xl bg-violet-50 p-4 ">
+          <Text className="text-[11px] text-gray-500 ">
             TANGGAL BERGABUNG
           </Text>
           <View className="mt-1.5 flex-row items-center">
             <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
-            <Text className="ml-2 font-bold text-gray-900 dark:text-white">
+            <Text className="ml-2 font-bold text-gray-900 ">
               {joined.date}
             </Text>
           </View>
         </View>
 
-        <View className="mt-3 flex-row items-center rounded-xl bg-orange-50 px-3 py-2.5 dark:bg-orange-950">
+        <View className="mt-3 flex-row items-center rounded-xl bg-orange-50 px-3 py-2.5 ">
           <Ionicons name="time-outline" size={18} color="#EA580C" />
-          <Text className="ml-2 text-sm font-semibold text-orange-700 dark:text-orange-300">
+          <Text className="ml-2 text-sm font-semibold text-orange-700 ">
             {joined.duration}
           </Text>
         </View>
@@ -154,8 +154,8 @@ function MemberCard({ member }: { member: MemberHasntWorkout }) {
         }
         className={`flex-row items-center justify-center py-4 ${
           hasPhone
-            ? "bg-green-50 dark:bg-green-950"
-            : "bg-gray-50 dark:bg-zinc-800"
+            ? "bg-green-50 "
+            : "bg-gray-50 "
         }`}
       >
         <Ionicons
@@ -165,7 +165,7 @@ function MemberCard({ member }: { member: MemberHasntWorkout }) {
         />
         <Text
           className={`ml-2 font-bold ${
-            hasPhone ? "text-green-700 dark:text-green-300" : "text-gray-400"
+            hasPhone ? "text-green-700 " : "text-gray-400"
           }`}
         >
           {hasPhone ? "Ajak Mulai Workout" : "Nomor belum tersedia"}
@@ -252,7 +252,7 @@ export default function MemberHasntWorkoutScreen() {
               </View>
             </View>
 
-            <View className="mb-2 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4 dark:border-zinc-700 dark:bg-zinc-900">
+            <View className="mb-2 flex-row items-center rounded-2xl border border-gray-200 bg-white px-4  ">
               <Ionicons name="search-outline" size={20} color="#6F3FA0" />
               <TextInput
                 value={search}
@@ -262,13 +262,13 @@ export default function MemberHasntWorkoutScreen() {
                 placeholderTextColor="#9CA3AF"
                 returnKeyType="search"
                 autoCorrect={false}
-                className="ml-3 flex-1 py-4 text-gray-900 dark:text-white"
+                className="ml-3 flex-1 py-4 text-gray-900 "
               />
               {search ? (
                 <Pressable
                   accessibilityLabel="Hapus pencarian"
                   onPress={() => setSearch("")}
-                  className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 dark:bg-zinc-800"
+                  className="h-9 w-9 items-center justify-center rounded-full bg-gray-100 "
                 >
                   <Ionicons name="close" size={18} color="#6B7280" />
                 </Pressable>
@@ -288,10 +288,10 @@ export default function MemberHasntWorkoutScreen() {
 
             {members.length ? (
               <View className="mb-4">
-                <Text className="text-xl font-bold text-gray-900 dark:text-white">
+                <Text className="text-xl font-bold text-gray-900 ">
                   Daftar Member
                 </Text>
-                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-sm text-gray-500 ">
                   Hubungi member untuk membantu memulai workout.
                 </Text>
               </View>
@@ -301,7 +301,7 @@ export default function MemberHasntWorkoutScreen() {
         ListEmptyComponent={
           <View className="items-center px-8 py-10">
             <View
-              className={`mb-4 rounded-full p-5 ${query.isError ? "bg-red-50" : "bg-violet-50 dark:bg-violet-950"}`}
+              className={`mb-4 rounded-full p-5 ${query.isError ? "bg-red-50" : "bg-violet-50 "}`}
             >
               {query.isLoading ? (
                 <ActivityIndicator color="#6F3FA0" />
@@ -315,7 +315,7 @@ export default function MemberHasntWorkoutScreen() {
                 />
               )}
             </View>
-            <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+            <Text className="text-center text-lg font-bold text-gray-800 ">
               {!clubId
                 ? "Club belum tersedia"
                 : query.isLoading
@@ -326,7 +326,7 @@ export default function MemberHasntWorkoutScreen() {
                       ? "Member tidak ditemukan"
                       : "Semua member sudah pernah workout"}
             </Text>
-            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 dark:text-gray-400">
+            <Text className="mt-2 text-center text-sm leading-5 text-gray-500 ">
               {!clubId
                 ? "Pastikan akun coach sudah terhubung dengan club."
                 : query.isError

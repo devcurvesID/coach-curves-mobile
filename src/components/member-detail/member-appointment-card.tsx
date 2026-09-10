@@ -32,9 +32,9 @@ export function MemberAppointmentCard({
   return (
     <>
       {isLoadingAppointment ? (
-        <View className="mt-5 flex-row items-center justify-center rounded-3xl border border-gray-100 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="mt-5 flex-row items-center justify-center rounded-3xl border border-gray-100 bg-white p-5  ">
           <Ionicons name="sync-outline" size={20} color="#6F3FA0" />
-          <Text className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="ml-2 text-sm text-gray-500 ">
             Memuat jadwal WM...
           </Text>
         </View>
@@ -53,16 +53,16 @@ export function MemberAppointmentCard({
           onPress={handlePress}
           className={`mt-5 overflow-hidden rounded-3xl border ${
             canInputWM
-              ? "border-violet-200 bg-violet-50 dark:border-violet-800 dark:bg-violet-950"
-              : "border-gray-200 bg-gray-50 dark:border-zinc-700 dark:bg-zinc-800"
+              ? "border-violet-200 bg-violet-50  "
+              : "border-gray-200 bg-gray-50  "
           }`}
         >
           <View className="flex-row items-center p-5">
             <View
               className={`h-12 w-12 items-center justify-center rounded-2xl ${
                 canInputWM
-                  ? "bg-white dark:bg-zinc-900"
-                  : "bg-gray-200 dark:bg-zinc-700"
+                  ? "bg-white "
+                  : "bg-gray-200 "
               }`}
             >
               <Ionicons
@@ -72,10 +72,10 @@ export function MemberAppointmentCard({
               />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-xs text-gray-500 dark:text-gray-400">
+              <Text className="text-xs text-gray-500 ">
                 Jadwal WM Selanjutnya
               </Text>
-              <Text className="mt-1 font-bold text-gray-900 dark:text-white">
+              <Text className="mt-1 font-bold text-gray-900 ">
                 {appointmentDate?.isValid()
                   ? appointmentDate.format("DD MMM YYYY")
                   : "Tanggal tidak tersedia"}
@@ -86,7 +86,7 @@ export function MemberAppointmentCard({
               <Text
                 className={`mt-1 text-xs font-semibold ${
                   canInputWM
-                    ? "text-[#6F3FA0] dark:text-violet-300"
+                    ? "text-[#6F3FA0] "
                     : "text-red-500"
                 }`}
               >

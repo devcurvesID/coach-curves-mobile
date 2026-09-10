@@ -7,7 +7,6 @@ import type { Club } from "@/types/club";
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useColorScheme } from "nativewind";
 import React, {
   useCallback,
   useEffect,
@@ -41,16 +40,11 @@ const LIST_CONTENT_STYLE = {
 
 const CommunityScreen = () => {
   const { data: clubs = [], error, isLoading } = useClubs();
-  const { colorScheme } = useColorScheme();
   const [search, setSearch] = useState("");
   const fadeAnimation = useRef(new Animated.Value(0)).current;
   const slideAnimation = useRef(new Animated.Value(24)).current;
 
-  const gradientColors = useMemo<[string, string]>(
-    () =>
-      colorScheme === "dark" ? ["#6F3FA0", "#BB86FC"] : ["#BB86FC", "#6F3FA0"],
-    [colorScheme],
-  );
+  const gradientColors: [string, string] = ["#BB86FC", "#6F3FA0"];
 
   const filteredClubs = useMemo(() => {
     const keyword = search.trim().toLowerCase();

@@ -28,7 +28,7 @@ const LoginPhoneScreen = () => {
     }
   };
   return (
-    <ContainerAuth>
+    <ContainerAuth showBackButton>
       <View className="gap-2">
         <NumberPhoneInput
           label="Login Nomor Ponsel"
@@ -40,7 +40,7 @@ const LoginPhoneScreen = () => {
 
       {/* Login Button */}
       <Pressable
-        className="bg-[#5E2E91] dark:bg-[#9A67EA] py-4 rounded-xl items-center mb-6"
+        className="bg-[#5E2E91] py-4 rounded-xl items-center mb-6"
         onPress={checkNumberPhone}
       >
         <Text className="text-white font-semibold text-lg">Login</Text>

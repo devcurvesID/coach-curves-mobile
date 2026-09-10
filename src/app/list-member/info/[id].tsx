@@ -1,16 +1,18 @@
-import type {
-  MemberDetail,
-  MemberAppointment,
-  WeighMeasureProgress,
-} from "@/components/member-detail/types";
-import { MemberProfile } from "@/components/member-detail/member-profile";
-import { MemberPersonalInfo } from "@/components/member-detail/member-personal-info";
 import { MemberActivities } from "@/components/member-detail/member-activities";
 import { MemberAppointmentCard } from "@/components/member-detail/member-appointment-card";
+import { MemberPersonalInfo } from "@/components/member-detail/member-personal-info";
+import { MemberProfile } from "@/components/member-detail/member-profile";
 import { MemberProgressSummary } from "@/components/member-detail/member-progress-summary";
+import { MemberWorkoutResultModal } from "@/components/member-detail/member-workout-result-modal";
+import type {
+  MemberAppointment,
+  MemberDetail,
+  WeighMeasureProgress,
+} from "@/components/member-detail/types";
 import ContainerPage from "@/components/ui/container-page";
 import { LoadingView } from "@/components/ui/loading";
 import { useChallengeSummaryByUserId } from "@/hooks/useChallenges";
+import { useUserClub } from "@/hooks/useClubs";
 import { useDetailMemberByUserId } from "@/hooks/useMember";
 import {
   useMemberAppointmentByUserId,
@@ -19,12 +21,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollView, Text, TouchableOpacity, View } from "react-native";
 
 export default function DetailInformasiMemberScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const [isWorkoutResultVisible, setIsWorkoutResultVisible] = useState(false);
   const {
     mutate: loadMemberDetail,
     data,
@@ -35,6 +38,7 @@ export default function DetailInformasiMemberScreen() {
     useMemberAppointmentByUserId(id);
   const { data: challengeSummary, isLoading: isLoadingChallengeSummary } =
     useChallengeSummaryByUserId(id);
+  const { data: userClubs } = useUserClub();
   const {
     mutate: loadWeighMeasureProgress,
     data: weighMeasureProgressData,
@@ -59,10 +63,10 @@ export default function DetailInformasiMemberScreen() {
           <View className="mb-4 rounded-full bg-red-50 p-5">
             <Ionicons name="alert-circle-outline" size={40} color="#DC2626" />
           </View>
-          <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+          <Text className="text-center text-lg font-bold text-gray-800 ">
             Informasi member gagal dimuat
           </Text>
-          <Text className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+          <Text className="mt-2 text-center text-sm text-gray-500 ">
             Periksa koneksi Anda, lalu coba kembali.
           </Text>
           <TouchableOpacity
@@ -111,46 +115,63 @@ export default function DetailInformasiMemberScreen() {
     !appointmentDate.startOf("day").isAfter(today),
   );
 
+  const openWeighMeasureDetail = () => {
+    setIsWorkoutResultVisible(false);
+    router.push({
+      pathname: "/list-member/wm/[id]",
+      params: { id: memberId },
+    });
+  };
+
   return (
-    <ContainerPage titleHeader="Detail Member" titleContent={member.user.name}>
-      <ScrollView
-        contentContainerClassName="px-5 pb-32 pt-5"
-        showsVerticalScrollIndicator={false}
+    <>
+      <ContainerPage
+        titleHeader="Detail Member"
+        titleContent={member.user.name}
       >
-        <MemberProfile
-          member={member}
-          challengeSummary={challengeSummary}
-          isLoadingChallengeSummary={isLoadingChallengeSummary}
-        />
+        <ScrollView
+          contentContainerClassName="px-5 pb-32 pt-5"
+          showsVerticalScrollIndicator={false}
+        >
+          <MemberProfile
+            member={member}
+            challengeSummary={challengeSummary}
+            isLoadingChallengeSummary={isLoadingChallengeSummary}
+          />
 
-        <MemberPersonalInfo member={member} />
+          <MemberPersonalInfo member={member} />
 
-        <MemberAppointmentCard
-          appointment={appointment}
-          isLoadingAppointment={isLoadingAppointment}
-          canInputWM={canInputWM}
-          onPress={() =>
-            router.push({
-              pathname: "/user/input-wm",
-              params: { id: memberId },
-            })
-          }
-        />
+          <MemberAppointmentCard
+            appointment={appointment}
+            isLoadingAppointment={isLoadingAppointment}
+            canInputWM={canInputWM}
+            onPress={() =>
+              router.push({
+                pathname: "/user/input-wm",
+                params: { id: memberId },
+              })
+            }
+          />
 
-        <MemberProgressSummary
-          progress={weighMeasureProgress}
-          isPendingWeighMeasureProgress={isPendingWeighMeasureProgress}
-          isWeighMeasureProgressError={isWeighMeasureProgressError}
-          onPress={() =>
-            router.push({
-              pathname: "/list-member/wm/[id]",
-              params: { id: memberId },
-            })
-          }
-        />
+          <MemberProgressSummary
+            progress={weighMeasureProgress}
+            isPendingWeighMeasureProgress={isPendingWeighMeasureProgress}
+            isWeighMeasureProgressError={isWeighMeasureProgressError}
+            onPress={() => setIsWorkoutResultVisible(true)}
+          />
 
-        <MemberActivities memberId={memberId} memberName={member.user.name} />
-      </ScrollView>
-    </ContainerPage>
+          <MemberActivities memberId={memberId} memberName={member.user.name} />
+        </ScrollView>
+      </ContainerPage>
+
+      <MemberWorkoutResultModal
+        visible={isWorkoutResultVisible}
+        progress={weighMeasureProgress}
+        member={{ name: member.user.name, photo: member.photo }}
+        clubName={userClubs?.[0]?.club_name}
+        onClose={() => setIsWorkoutResultVisible(false)}
+        onPressDetail={openWeighMeasureDetail}
+      />
+    </>
   );
 }

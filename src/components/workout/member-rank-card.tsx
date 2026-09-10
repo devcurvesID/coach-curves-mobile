@@ -4,7 +4,7 @@ import React from "react";
 import { Pressable, Text, View } from "react-native";
 
 const PURPLE = "#9333EA";
-const DARK_PURPLE = "#6F3FA0";
+const DEEP_PURPLE = "#6F3FA0";
 interface MemberRankCardProps {
   item: MemberRank;
   rank: number;
@@ -164,7 +164,7 @@ const MemberRankCard = ({ item, rank, onPress }: MemberRankCardProps) => {
 
         <View className="mb-5 flex-row items-center rounded-2xl bg-slate-50 px-4 py-3">
           <View className="h-9 w-9 items-center justify-center rounded-xl bg-white">
-            <Ionicons name="calendar-outline" size={18} color={DARK_PURPLE} />
+            <Ionicons name="calendar-outline" size={18} color={DEEP_PURPLE} />
           </View>
           <View className="ml-3 flex-1">
             <Text className="text-xs text-slate-400">Periode penilaian</Text>

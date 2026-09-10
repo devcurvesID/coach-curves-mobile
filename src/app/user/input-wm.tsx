@@ -167,12 +167,12 @@ function NumericInput({
 }) {
   return (
     <View className={fullWidth ? "mb-4 w-full" : "mb-4 w-[48%]"}>
-      <Text className="mb-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
+      <Text className="mb-2 text-sm font-semibold text-gray-700 ">
         {field.label} <Text className="text-red-500">*</Text>
       </Text>
       <View
-        className={`flex-row overflow-hidden rounded-2xl border bg-gray-50 dark:bg-zinc-800 ${
-          error ? "border-red-400" : "border-gray-200 dark:border-zinc-700"
+        className={`flex-row overflow-hidden rounded-2xl border bg-gray-50  ${
+          error ? "border-red-400" : "border-gray-200 "
         }`}
       >
         <TextInput
@@ -182,11 +182,11 @@ function NumericInput({
           placeholderTextColor="#9CA3AF"
           keyboardType="decimal-pad"
           returnKeyType="next"
-          className="min-h-14 flex-1 px-4 text-base text-gray-900 dark:text-white"
+          className="min-h-14 flex-1 px-4 text-base text-gray-900 "
         />
         {field.unit && (
-          <View className="items-center justify-center border-l border-gray-200 bg-gray-100 px-3 dark:border-zinc-700 dark:bg-zinc-700">
-            <Text className="text-xs font-semibold text-gray-500 dark:text-gray-300">
+          <View className="items-center justify-center border-l border-gray-200 bg-gray-100 px-3  ">
+            <Text className="text-xs font-semibold text-gray-500 ">
               {field.unit}
             </Text>
           </View>
@@ -217,26 +217,26 @@ function FormSection({
   children: React.ReactNode;
 }) {
   return (
-    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm  ">
       <TouchableOpacity
         onPress={onToggle}
         activeOpacity={0.8}
         className="flex-row items-center p-5"
       >
-        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-950">
+        <View className="h-12 w-12 items-center justify-center rounded-2xl bg-violet-50 ">
           <Ionicons name={icon} size={24} color="#6F3FA0" />
         </View>
         <View className="ml-3 flex-1">
-          <Text className="font-bold text-gray-900 dark:text-white">
+          <Text className="font-bold text-gray-900 ">
             {title}
           </Text>
-          <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+          <Text className="mt-1 text-xs text-gray-500 ">
             {subtitle}
           </Text>
         </View>
         {total !== undefined && completed !== undefined && (
-          <View className="mr-3 rounded-full bg-violet-50 px-2.5 py-1 dark:bg-violet-950">
-            <Text className="text-xs font-bold text-[#6F3FA0] dark:text-violet-300">
+          <View className="mr-3 rounded-full bg-violet-50 px-2.5 py-1 ">
+            <Text className="text-xs font-bold text-[#6F3FA0] ">
               {completed}/{total}
             </Text>
           </View>
@@ -248,7 +248,7 @@ function FormSection({
         />
       </TouchableOpacity>
       {expanded && (
-        <View className="border-t border-gray-100 px-5 pb-2 pt-5 dark:border-zinc-800">
+        <View className="border-t border-gray-100 px-5 pb-2 pt-5 ">
           {children}
         </View>
       )}
@@ -268,12 +268,12 @@ function ToggleRow({
   onValueChange: (value: boolean) => void;
 }) {
   return (
-    <View className="flex-row items-center border-b border-gray-100 py-4 last:border-b-0 dark:border-zinc-800">
+    <View className="flex-row items-center border-b border-gray-100 py-4 last:border-b-0 ">
       <View className="flex-1 pr-4">
-        <Text className="font-semibold text-gray-800 dark:text-white">
+        <Text className="font-semibold text-gray-800 ">
           {title}
         </Text>
-        <Text className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+        <Text className="mt-1 text-xs leading-5 text-gray-500 ">
           {description}
         </Text>
       </View>
@@ -598,13 +598,13 @@ export default function InputWeighMeasureScreen() {
               </View>
             </View>
 
-            <View className="mb-4 flex-row items-start rounded-2xl bg-blue-50 p-4 dark:bg-blue-950">
+            <View className="mb-4 flex-row items-start rounded-2xl bg-blue-50 p-4 ">
               <Ionicons
                 name="information-circle-outline"
                 size={21}
                 color="#2563EB"
               />
-              <Text className="ml-3 flex-1 text-sm leading-5 text-blue-700 dark:text-blue-200">
+              <Text className="ml-3 flex-1 text-sm leading-5 text-blue-700 ">
                 Gunakan angka desimal bila diperlukan. Semua kolom bertanda *
                 wajib diisi.
               </Text>
@@ -692,30 +692,30 @@ export default function InputWeighMeasureScreen() {
                 placeholderTextColor="#9CA3AF"
                 textAlignVertical="top"
                 maxLength={500}
-                className="min-h-[140px] rounded-2xl border border-gray-200 bg-gray-50 p-4 text-base text-gray-900 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white"
+                className="min-h-[140px] rounded-2xl border border-gray-200 bg-gray-50 p-4 text-base text-gray-900   "
               />
               <Text className="mb-4 mt-2 text-right text-xs text-gray-400">
                 {notes.length}/500
               </Text>
             </FormSection>
 
-            <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+            <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white p-5 shadow-sm  ">
               <View className="flex-row items-center">
-                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-pink-50 dark:bg-pink-950">
+                <View className="h-12 w-12 items-center justify-center rounded-2xl bg-pink-50 ">
                   <Ionicons name="camera-outline" size={24} color="#DB2777" />
                 </View>
                 <View className="ml-3 flex-1">
-                  <Text className="font-bold text-gray-900 dark:text-white">
+                  <Text className="font-bold text-gray-900 ">
                     Foto Hasil Latihan
                   </Text>
-                  <Text className="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
+                  <Text className="mt-1 text-xs leading-5 text-gray-500 ">
                     Opsional • dokumentasikan kondisi atau progres member
                   </Text>
                 </View>
               </View>
 
               {resultPhoto ? (
-                <View className="mt-5 overflow-hidden rounded-3xl bg-slate-100 dark:bg-zinc-800">
+                <View className="mt-5 overflow-hidden rounded-3xl bg-slate-100 ">
                   <Image
                     source={{ uri: resultPhoto.uri }}
                     resizeMode="cover"
@@ -753,15 +753,15 @@ export default function InputWeighMeasureScreen() {
                   accessibilityRole="button"
                   onPress={selectPhotoSource}
                   activeOpacity={0.8}
-                  className="mt-5 items-center justify-center rounded-3xl border-2 border-dashed border-violet-200 bg-violet-50 px-5 py-9 dark:border-violet-800 dark:bg-violet-950"
+                  className="mt-5 items-center justify-center rounded-3xl border-2 border-dashed border-violet-200 bg-violet-50 px-5 py-9  "
                 >
-                  <View className="h-16 w-16 items-center justify-center rounded-full bg-white dark:bg-zinc-900">
+                  <View className="h-16 w-16 items-center justify-center rounded-full bg-white ">
                     <Ionicons name="images-outline" size={30} color="#6F3FA0" />
                   </View>
-                  <Text className="mt-4 font-bold text-[#6F3FA0] dark:text-violet-300">
+                  <Text className="mt-4 font-bold text-[#6F3FA0] ">
                     Tambahkan Foto Hasil
                   </Text>
-                  <Text className="mt-2 text-center text-xs leading-5 text-gray-500 dark:text-gray-400">
+                  <Text className="mt-2 text-center text-xs leading-5 text-gray-500 ">
                     Ambil langsung dari kamera atau pilih foto dari galeri
                   </Text>
                 </TouchableOpacity>
@@ -806,15 +806,15 @@ export default function InputWeighMeasureScreen() {
         onRequestClose={() => setSuccessVisible(false)}
       >
         <View className="flex-1 items-center justify-center bg-black/40 px-6">
-          <View className="w-full max-w-[380px] rounded-[30px] bg-white p-6 dark:bg-zinc-900">
+          <View className="w-full max-w-[380px] rounded-[30px] bg-white p-6 ">
             <View className="items-center">
-              <View className="h-20 w-20 items-center justify-center rounded-full bg-green-50 dark:bg-green-950">
+              <View className="h-20 w-20 items-center justify-center rounded-full bg-green-50 ">
                 <Ionicons name="checkmark-circle" size={56} color="#22C55E" />
               </View>
-              <Text className="mt-5 text-center text-xl font-bold text-gray-900 dark:text-white">
+              <Text className="mt-5 text-center text-xl font-bold text-gray-900 ">
                 Hasil WM Tersimpan
               </Text>
-              <Text className="mt-2 text-center text-sm leading-6 text-gray-500 dark:text-gray-400">
+              <Text className="mt-2 text-center text-sm leading-6 text-gray-500 ">
                 Data terbaru {member?.user.name ?? "member"} berhasil disimpan
                 dan siap dipantau.
               </Text>
@@ -837,10 +837,10 @@ export default function InputWeighMeasureScreen() {
                   params: { id },
                 });
               }}
-              className="mt-3 h-14 flex-row items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-950"
+              className="mt-3 h-14 flex-row items-center justify-center rounded-2xl bg-violet-50 "
             >
               <Ionicons name="time-outline" size={20} color="#6F3FA0" />
-              <Text className="ml-2 font-bold text-[#6F3FA0] dark:text-violet-300">
+              <Text className="ml-2 font-bold text-[#6F3FA0] ">
                 Lihat Riwayat WM
               </Text>
             </Pressable>

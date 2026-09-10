@@ -1,10 +1,40 @@
 import { validatePhoneNumber } from "@/helpers";
 import { api } from "@/lib/axios";
 import { socket } from "@/services/socket";
+import { scheduleLocalNotificationAsync } from "@/services/push-notification";
 import { tokenCache } from "@/utils/cache";
-import * as Notifications from "expo-notifications";
 import { router } from "expo-router";
 import React from "react";
+import { Alert } from "react-native";
+
+interface CreateNewUserPayload {
+  phone?: string;
+  [key: string]: unknown;
+}
+
+interface CreateNewUserResponse {
+  response?: {
+    source_id?: string | number;
+  };
+}
+
+const MEMBER_SYNC_ENDPOINTS = [
+  "/syncdata/member-status",
+  "/syncdata/member-payment",
+  "/syncdata/weigh-measure",
+  "/syncdata/coach-member",
+] as const;
+
+const getErrorMessage = (error: unknown): string =>
+  error instanceof Error && error.message.trim()
+    ? error.message
+    : "Proses verifikasi member belum berhasil.";
+
+const syncNewMemberData = async (sourceId: string | number): Promise<void> => {
+  for (const endpoint of MEMBER_SYNC_ENDPOINTS) {
+    await api.get(endpoint, { params: { user_id: sourceId } });
+  }
+};
 
 interface AuthContextType {
   user: any;
@@ -18,7 +48,7 @@ interface AuthContextType {
   checkNumberPhoneUser: (phone: string) => Promise<void>;
   signOut: () => Promise<void>;
   checkUserNumberPhoneSignIn: () => Promise<void>;
-  onCreateNewUser: (data: any) => Promise<void>;
+  onCreateNewUser: (data: CreateNewUserPayload) => Promise<void>;
   codeverification: any;
   onReloadUserMobile: () => Promise<void>;
 }
@@ -65,7 +95,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const sendCodeverificationWA = async (phone: any) => {
     try {
       const send_otp = await api.post("/whatsapp/verification-account", {
-        phone: "628979971180",
+        phone: phone,
         // phone_testing: "628979971180",
       });
       const {
@@ -191,41 +221,46 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setIsLoading(false);
     }
   };
-  const verifyNotification = () => {
-    Notifications.scheduleNotificationAsync({
-      content: {
-        title: "Verifikasi Member",
-        body: "Terimakasih sudah melakukan verifikasi member",
-        data: {},
-      },
-      trigger: null,
+  const verifyNotification = (): Promise<string | null> =>
+    scheduleLocalNotificationAsync({
+      title: "Verifikasi Member",
+      body: "Terima kasih sudah melakukan verifikasi member.",
+      data: { type: "member-verification" },
     });
-  };
-  const onCreateNewUser = async (data: any) => {
-    try {
-      setIsLoading(true);
-      let body_req = {
-        ...userPhone,
-        ...data,
-      };
-      const req_user_pengguna = await api.post("/user/verification", body_req);
-      const {
-        data: { response },
-      } = req_user_pengguna;
-      const { source_id } = response;
-      await api.get(`/syncdata/member-status?user_id=${source_id}`);
-      await api.get(`/syncdata/member-payment?user_id=${source_id}`);
-      await api.get(`/syncdata/weigh-measure?user_id=${source_id}`);
-      await api.get(`/syncdata/coach-member?user_id=${source_id}`);
+  const onCreateNewUser = async (
+    newUserData: CreateNewUserPayload,
+  ): Promise<void> => {
+    if (isLoading) return;
 
-      // await api.get(`/syncdata/workout?user_id=${source_id}`);
-      await signInWithNumberPhone(body_req.phone);
+    setIsLoading(true);
+    try {
+      const requestBody: CreateNewUserPayload = {
+        ...userPhone,
+        ...newUserData,
+      };
+
+      if (!requestBody.phone) {
+        throw new Error("Nomor ponsel member belum tersedia.");
+      }
+
+      const { data: verificationData } = await api.post<CreateNewUserResponse>(
+        "/user/verification",
+        requestBody,
+      );
+      const sourceId = verificationData.response?.source_id;
+
+      if (sourceId === undefined || sourceId === null) {
+        throw new Error("ID member tidak ditemukan pada response verifikasi.");
+      }
+
+      await syncNewMemberData(sourceId);
+      await signInWithNumberPhone(requestBody.phone);
       router.push("/(auth)");
-      verifyNotification();
-    } catch (error: any) {
-      console.log("error", error);
-      console.log("error :", error.error);
-      alert(error?.message);
+      void verifyNotification().catch(() => {
+        // Verifikasi tetap berhasil meskipun notifikasi lokal tidak tersedia.
+      });
+    } catch (error: unknown) {
+      Alert.alert("Verifikasi Member Gagal", getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

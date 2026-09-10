@@ -66,7 +66,7 @@ function MemberAvatar({ member }: { member: Member }) {
   }
 
   return (
-    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 dark:bg-violet-950">
+    <View className="h-16 w-16 items-center justify-center rounded-2xl bg-violet-100 ">
       <Text className="text-xl font-bold text-[#6F3FA0]">
         {getInitials(member.user.name)}
       </Text>
@@ -88,7 +88,7 @@ function InfoRow({
       <Ionicons name={icon} size={18} color="#6F3FA0" />
       <Text
         numberOfLines={lines}
-        className="ml-3 flex-1 text-sm text-gray-600 dark:text-gray-300"
+        className="ml-3 flex-1 text-sm text-gray-600 "
       >
         {displayValue(value)}
       </Text>
@@ -113,7 +113,7 @@ function MemberCard({ member, onDetail }: MemberCardProps) {
     daysSinceJoining !== null && daysSinceJoining >= 0 && daysSinceJoining < 30;
 
   return (
-    <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm ">
       <View className="p-5">
         <View className="flex-row items-start">
           <MemberAvatar member={member} />
@@ -122,36 +122,36 @@ function MemberCard({ member, onDetail }: MemberCardProps) {
               <View className="mr-2 flex-1">
                 <Text
                   numberOfLines={1}
-                  className="text-lg font-bold text-gray-900 dark:text-white"
+                  className="text-lg font-bold text-gray-900 "
                 >
                   {member.user.name}
                 </Text>
-                <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                <Text className="mt-1 text-sm text-gray-500 ">
                   {gender}
                   {member.flag ? ` • Member ${member.flag}` : ""}
                 </Text>
               </View>
-              <View className="rounded-full bg-green-50 px-2.5 py-1 dark:bg-green-950">
-                <Text className="text-[10px] font-bold text-green-700 dark:text-green-300">
+              <View className="rounded-full bg-green-50 px-2.5 py-1 ">
+                <Text className="text-[10px] font-bold text-green-700 ">
                   AKTIF
                 </Text>
               </View>
             </View>
-            <View className="mt-3 self-start rounded-lg bg-violet-50 px-2.5 py-1 dark:bg-violet-950">
-              <Text className="text-xs font-semibold text-[#6F3FA0] dark:text-violet-300">
+            <View className="mt-3 self-start rounded-lg bg-violet-50 px-2.5 py-1 ">
+              <Text className="text-xs font-semibold text-[#6F3FA0] ">
                 Key Tag: {displayValue(member.key_tag_id)}
               </Text>
             </View>
           </View>
         </View>
 
-        <View className="mt-5 gap-3 border-t border-gray-100 pt-4 dark:border-zinc-800">
+        <View className="mt-5 gap-3 border-t border-gray-100 pt-4 ">
           <InfoRow icon="mail-outline" value={member.user.email} />
           <InfoRow icon="call-outline" value={member.phone} />
           <InfoRow icon="location-outline" value={member.address} lines={2} />
           <View className="flex-row items-center">
             <Ionicons name="calendar-outline" size={18} color="#6F3FA0" />
-            <Text className="ml-3 flex-1 text-sm text-gray-600 dark:text-gray-300">
+            <Text className="ml-3 flex-1 text-sm text-gray-600 ">
               {member.joined
                 ? `Bergabung ${moment(member.joined).format("DD MMM YYYY")}`
                 : "-"}
@@ -159,10 +159,10 @@ function MemberCard({ member, onDetail }: MemberCardProps) {
             {isNewMember && (
               <View
                 accessibilityLabel={`Member baru, bergabung ${daysSinceJoining === 0 ? "hari ini" : `${daysSinceJoining} hari lalu`}`}
-                className="ml-2 flex-row items-center rounded-full bg-pink-50 px-2.5 py-1 dark:bg-pink-950"
+                className="ml-2 flex-row items-center rounded-full bg-pink-50 px-2.5 py-1 "
               >
                 <Ionicons name="sparkles" size={12} color="#DB2777" />
-                <Text className="ml-1 text-[10px] font-bold text-pink-600 dark:text-pink-300">
+                <Text className="ml-1 text-[10px] font-bold text-pink-600 ">
                   MEMBER BARU
                 </Text>
               </View>
@@ -171,7 +171,7 @@ function MemberCard({ member, onDetail }: MemberCardProps) {
         </View>
       </View>
 
-      <View className="border-t border-gray-100 dark:border-zinc-800">
+      <View className="border-t border-gray-100 ">
         <TouchableOpacity onPress={onDetail} className="items-center py-4">
           <Text className="font-bold text-[#6F3FA0]">Lihat Detail</Text>
         </TouchableOpacity>
@@ -230,7 +230,7 @@ export default function ListMemberScreen() {
   return (
     <ContainerPage titleHeader="List Member" titleContent="Member">
       <View className="mx-5 mb-3 mt-4">
-        <View className="flex-row items-center rounded-2xl border border-gray-100 bg-white px-4 py-3 dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="flex-row items-center rounded-2xl border border-gray-100 bg-white px-4 py-3  ">
           <Ionicons name="search-outline" size={22} color="#9CA3AF" />
           <TextInput
             placeholder="Cari nama member..."
@@ -239,7 +239,7 @@ export default function ListMemberScreen() {
             onChangeText={setSearch}
             autoCapitalize="none"
             returnKeyType="search"
-            className="ml-3 flex-1 text-base text-gray-800 dark:text-white"
+            className="ml-3 flex-1 text-base text-gray-800 "
           />
           {search.length > 0 && (
             <TouchableOpacity onPress={() => setSearch("")}>
@@ -250,12 +250,12 @@ export default function ListMemberScreen() {
         {isSearching ? (
           <View className="mt-3 flex-row items-center">
             <ActivityIndicator size="small" color="#6F3FA0" />
-            <Text className="ml-2 text-xs text-gray-500 dark:text-gray-400">
+            <Text className="ml-2 text-xs text-gray-500 ">
               Mencari member...
             </Text>
           </View>
         ) : (
-          <Text className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          <Text className="mt-2 text-xs text-gray-500 ">
             {members.length} member ditampilkan
           </Text>
         )}
@@ -287,13 +287,13 @@ export default function ListMemberScreen() {
         ListEmptyComponent={
           isSearching ? null : (
             <View className="flex-1 items-center justify-center px-8 pb-20">
-              <View className="mb-4 rounded-full bg-violet-50 p-5 dark:bg-violet-950">
+              <View className="mb-4 rounded-full bg-violet-50 p-5 ">
                 <Ionicons name="people-outline" size={40} color="#6F3FA0" />
               </View>
-              <Text className="text-center text-lg font-bold text-gray-800 dark:text-white">
+              <Text className="text-center text-lg font-bold text-gray-800 ">
                 {error ? "Member gagal dimuat" : "Member tidak ditemukan"}
               </Text>
-              <Text className="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
+              <Text className="mt-2 text-center text-sm text-gray-500 ">
                 {error
                   ? "Tarik layar ke bawah untuk mencoba kembali."
                   : debouncedSearch

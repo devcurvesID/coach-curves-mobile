@@ -73,6 +73,9 @@ const SettingPasswordScreen = () => {
     <ContainerPage
       titleHeader="Buat Password"
       titleContent="Masukkan password baru"
+      showBackButton
+      backFallbackHref="/(auth)"
+      backLabel="Batal"
     >
       {/* FORM */}
       <ScrollView

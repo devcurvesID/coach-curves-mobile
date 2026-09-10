@@ -21,7 +21,6 @@ export function PublicityCard({
   return (
     <TouchableOpacity
       activeOpacity={0.9}
-      onPress={onPress}
       className="bg-white rounded-3xl mb-5 overflow-hidden"
       style={{
         shadowColor: "#000",
@@ -100,7 +99,10 @@ export function PublicityCard({
         </View>
 
         {/* Button */}
-        <TouchableOpacity className="bg-purple-600 py-3 rounded-2xl mt-5">
+        <TouchableOpacity
+          className="bg-purple-600 py-3 rounded-2xl mt-5"
+          onPress={onPress}
+        >
           <Text className="text-center text-white font-semibold">
             Lihat Promo
           </Text>

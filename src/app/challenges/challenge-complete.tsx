@@ -20,7 +20,7 @@ function RewardCard({ item }: { item: CompletedUserChallenge }) {
       });
 
   return (
-    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <View className="mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white ">
       <View className="bg-[#6F3FA0] p-5">
         <View className="flex-row items-start justify-between">
           <View className="h-14 w-14 items-center justify-center rounded-2xl bg-white/20">
@@ -44,13 +44,11 @@ function RewardCard({ item }: { item: CompletedUserChallenge }) {
       </View>
       <View className="p-5">
         <View className="flex-row gap-3">
-          <View className="flex-1 rounded-2xl bg-gray-50 p-4 dark:bg-zinc-800">
+          <View className="flex-1 rounded-2xl bg-gray-50 p-4 ">
             <Text className="text-xs text-gray-500">Diselesaikan</Text>
-            <Text className="mt-2 font-bold text-gray-900 dark:text-white">
-              {dateLabel}
-            </Text>
+            <Text className="mt-2 font-bold text-gray-900 ">{dateLabel}</Text>
           </View>
-          <View className="flex-1 rounded-2xl bg-gray-50 p-4 dark:bg-zinc-800">
+          <View className="flex-1 rounded-2xl bg-gray-50 p-4 ">
             <Text className="text-xs text-gray-500">Status hadiah</Text>
             <Text
               className={`mt-2 font-bold ${
@@ -112,7 +110,7 @@ export default function CompletedChallengesScreen() {
                 color={isError ? "#DC2626" : "#9333EA"}
               />
             </View>
-            <Text className="mt-5 text-center text-xl font-bold text-gray-900 dark:text-white">
+            <Text className="mt-5 text-center text-xl font-bold text-gray-900 ">
               {isError ? "Rewards gagal dimuat" : "Belum ada challenge selesai"}
             </Text>
             <Text className="mt-2 text-center text-sm text-gray-500">

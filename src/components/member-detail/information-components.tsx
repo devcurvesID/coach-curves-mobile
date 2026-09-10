@@ -27,17 +27,17 @@ export function InformationRow({
   lines = 1,
 }: InformationRowProps) {
   return (
-    <View className="flex-row items-start border-b border-gray-100 py-4 last:border-b-0 dark:border-zinc-800">
-      <View className="h-10 w-10 items-center justify-center rounded-xl bg-violet-50 dark:bg-violet-950">
+    <View className="flex-row items-start border-b border-gray-100 py-4 last:border-b-0 ">
+      <View className="h-10 w-10 items-center justify-center rounded-xl bg-violet-50 ">
         <Ionicons name={icon} size={20} color="#6F3FA0" />
       </View>
       <View className="ml-3 flex-1">
-        <Text className="text-xs text-gray-500 dark:text-gray-400">
+        <Text className="text-xs text-gray-500 ">
           {label}
         </Text>
         <Text
           numberOfLines={lines}
-          className="mt-1 text-sm font-semibold text-gray-800 dark:text-white"
+          className="mt-1 text-sm font-semibold text-gray-800 "
         >
           {displayValue(value)}
         </Text>
@@ -58,7 +58,7 @@ export function ActionTile({
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.8}
-      className="mb-4 w-[48%] rounded-3xl border border-gray-100 bg-white p-4 shadow-sm dark:border-zinc-800 dark:bg-zinc-900"
+      className="mb-4 w-[48%] rounded-3xl border border-gray-100 bg-white p-4 shadow-sm  "
     >
       <View
         className="h-12 w-12 items-center justify-center rounded-2xl"
@@ -66,10 +66,10 @@ export function ActionTile({
       >
         <Ionicons name={icon} size={24} color={color} />
       </View>
-      <Text className="mt-4 font-bold text-gray-900 dark:text-white">
+      <Text className="mt-4 font-bold text-gray-900 ">
         {title}
       </Text>
-      <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+      <Text className="mt-1 text-xs text-gray-500 ">
         {subtitle}
       </Text>
       <View className="mt-3 flex-row items-center">
@@ -119,9 +119,9 @@ export function ProgressMetric({
           : "#DC2626";
 
   return (
-    <View className="mb-3 w-[48%] rounded-2xl bg-gray-50 p-4 dark:bg-zinc-800">
-      <Text className="text-xs text-gray-500 dark:text-gray-400">{label}</Text>
-      <Text className="mt-1 text-lg font-bold text-gray-900 dark:text-white">
+    <View className="mb-3 w-[48%] rounded-2xl bg-gray-50 p-4 ">
+      <Text className="text-xs text-gray-500 ">{label}</Text>
+      <Text className="mt-1 text-lg font-bold text-gray-900 ">
         {current !== null && current !== undefined && current !== ""
           ? `${current}${unit}`
           : "-"}

@@ -13,10 +13,10 @@ export function MemberActivities({
   return (
     <>
       <View className="mb-1 mt-7">
-        <Text className="text-xl font-bold text-gray-900 dark:text-white">
+        <Text className="text-xl font-bold text-gray-900 ">
           Aktivitas Member
         </Text>
-        <Text className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <Text className="mt-1 text-sm text-gray-500 ">
           Pilih informasi atau tindakan yang dibutuhkan
         </Text>
       </View>

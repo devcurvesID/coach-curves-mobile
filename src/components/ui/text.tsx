@@ -34,7 +34,7 @@ const Text = ({
     <RSText
       {...props}
       className={[
-        "text-[#212121] dark:text-[#FFFFFF]",
+        "text-[#212121] ",
         variantStyles[variant],
         weightStyles[weight],
         className,

@@ -23,43 +23,43 @@ export function MemberProgressSummary({
   return (
     <>
       {isPendingWeighMeasureProgress ? (
-        <View className="mt-5 flex-row items-center justify-center rounded-3xl border border-gray-100 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="mt-5 flex-row items-center justify-center rounded-3xl border border-gray-100 bg-white p-5  ">
           <Ionicons name="analytics-outline" size={20} color="#6F3FA0" />
-          <Text className="ml-2 text-sm text-gray-500 dark:text-gray-400">
+          <Text className="ml-2 text-sm text-gray-500 ">
             Memuat progres hasil latihan...
           </Text>
         </View>
       ) : isWeighMeasureProgressError ? (
-        <View className="mt-5 flex-row items-center rounded-3xl border border-red-100 bg-red-50 p-5 dark:border-red-900 dark:bg-red-950">
+        <View className="mt-5 flex-row items-center rounded-3xl border border-red-100 bg-red-50 p-5  ">
           <Ionicons name="alert-circle-outline" size={22} color="#DC2626" />
           <View className="ml-3 flex-1">
-            <Text className="font-bold text-red-700 dark:text-red-300">
+            <Text className="font-bold text-red-700 ">
               Progres latihan gagal dimuat
             </Text>
-            <Text className="mt-1 text-xs text-red-600 dark:text-red-400">
+            <Text className="mt-1 text-xs text-red-600 ">
               Silakan muat ulang halaman untuk mencoba kembali.
             </Text>
           </View>
         </View>
       ) : hasWeighMeasureProgress ? (
-        <View className="mt-5 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm dark:border-zinc-800 dark:bg-zinc-900">
+        <View className="mt-5 rounded-3xl border border-gray-100 bg-white p-5 shadow-sm  ">
           <View className="flex-row items-start justify-between">
             <View className="mr-3 flex-1">
-              <Text className="text-lg font-bold text-gray-900 dark:text-white">
+              <Text className="text-lg font-bold text-gray-900 ">
                 Progres Hasil Latihan
               </Text>
-              <Text className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+              <Text className="mt-1 text-xs text-gray-500 ">
                 Perbandingan dua penimbangan terakhir
               </Text>
             </View>
-            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 dark:bg-violet-950">
+            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-violet-50 ">
               <Ionicons name="analytics-outline" size={22} color="#6F3FA0" />
             </View>
           </View>
 
-          <View className="mt-4 flex-row items-center rounded-xl bg-violet-50 px-3 py-2.5 dark:bg-violet-950">
+          <View className="mt-4 flex-row items-center rounded-xl bg-violet-50 px-3 py-2.5 ">
             <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
-            <Text className="ml-2 text-xs font-semibold text-[#6F3FA0] dark:text-violet-300">
+            <Text className="ml-2 text-xs font-semibold text-[#6F3FA0] ">
               {formatDate(previousMeasurement!.wm_date)} →{" "}
               {formatDate(currentMeasurement!.wm_date)}
             </Text>
@@ -96,12 +96,20 @@ export function MemberProgressSummary({
 
           <TouchableOpacity
             onPress={onPress}
-            className="mt-1 flex-row items-center justify-center rounded-2xl bg-violet-50 py-3.5 dark:bg-violet-950"
+            accessibilityRole="button"
+            accessibilityLabel="Lihat hasil penimbangan member"
+            className="mt-1 flex-row items-center justify-center rounded-2xl bg-violet-50 py-3.5 "
           >
-            <Text className="font-bold text-[#6F3FA0] dark:text-violet-300">
-              Lihat Progres Lengkap
+            <Ionicons name="scale-outline" size={18} color="#6F3FA0" />
+            <Text className="ml-2 font-bold text-[#6F3FA0] ">
+              Lihat Hasil Penimbangan
             </Text>
-            <Ionicons name="arrow-forward" size={17} color="#6F3FA0" />
+            <Ionicons
+              name="chevron-forward"
+              size={18}
+              color="#6F3FA0"
+              className="ml-1"
+            />
           </TouchableOpacity>
         </View>
       ) : null}

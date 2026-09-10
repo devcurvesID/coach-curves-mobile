@@ -1,13 +1,13 @@
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/axios";
 import { socket } from "@/services/socket";
+import { scheduleLocalNotificationAsync } from "@/services/push-notification";
 import {
   useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
-import * as Notifications from "expo-notifications";
 import { useEffect } from "react";
 import type {
   WorkoutHistoryParams,
@@ -48,22 +48,24 @@ export const useWorkoutByUserId = () => {
   });
 };
 
+export const fetchWorkoutHistoryByUserId = async (
+  params: string | { user_id: string; year?: number; month?: number },
+) => {
+  const { user_id, year, month } =
+    typeof params === "string" ? { user_id: params } : params;
+  const { data } = await api.get("/workouts", {
+    params: {
+      user_id,
+      ...(year !== undefined ? { year } : {}),
+      ...(month !== undefined ? { month } : {}),
+    },
+  });
+  return data.response;
+};
+
 export const useWorkoutHistoryByUserId = () => {
   return useMutation({
-    mutationFn: async (
-      params: string | { user_id: string; year?: number; month?: number },
-    ) => {
-      const { user_id, year, month } =
-        typeof params === "string" ? { user_id: params } : params;
-      const { data } = await api.get("/workouts", {
-        params: {
-          user_id,
-          ...(year !== undefined ? { year } : {}),
-          ...(month !== undefined ? { month } : {}),
-        },
-      });
-      return data.response;
-    },
+    mutationFn: fetchWorkoutHistoryByUserId,
   });
 };
 
@@ -146,16 +148,15 @@ export const useNotificationTest = () => {
     if (!user) return;
     socket.emit("user-curves", `${user._id}_${user.source_id}`);
     const handleNotification = async (payload: any, eventName: string) => {
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: payload.title,
-          body: payload.body,
-          data: {
-            ...payload.data,
-            type: eventName,
-          },
+      await scheduleLocalNotificationAsync({
+        title: String(payload?.title ?? "Notifikasi Curves"),
+        body: String(payload?.body ?? "Ada informasi terbaru untuk Anda."),
+        data: {
+          ...(payload?.data && typeof payload.data === "object"
+            ? payload.data
+            : {}),
+          type: eventName,
         },
-        trigger: null,
       });
 
       switch (eventName) {
@@ -194,7 +195,11 @@ export const useNotificationTest = () => {
     ];
 
     const listeners = events.map((eventName) => {
-      const listener = (payload: any) => handleNotification(payload, eventName);
+      const listener = (payload: any) => {
+        void handleNotification(payload, eventName).catch(() => {
+          // Event socket tetap diproses meskipun notifikasi lokal tidak tersedia.
+        });
+      };
 
       socket.on(eventName, listener);
 
