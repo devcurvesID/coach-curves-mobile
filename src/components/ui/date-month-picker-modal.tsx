@@ -1,94 +1,88 @@
 import React from "react";
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Modal, Text, TouchableOpacity, View } from "react-native";
 import WheelPicker from "./wheel-picker";
 
-interface IDatePicker {
-  onSelect: (data: {
-    year: number;
-    month: number;
-    month_value: string;
-  }) => void;
+interface DateMonthValue {
+  year: number;
+  month: number;
+  month_value: string;
+}
+
+interface DateMonthPickerModalProps {
+  onSelect: (data: DateMonthValue) => void;
   joined_year: number;
-  selectedYear?: number;
-  selectedMonth?: number;
   onCancel: () => void;
   visible: boolean;
+  selectedYear?: number;
+  selectedMonth?: number;
 }
+
+interface MonthOption {
+  label: string;
+  value: number;
+}
+
+const getMonthLabel = (month: number): string =>
+  new Date(2000, month - 1, 1).toLocaleString("id-ID", {
+    month: "long",
+  });
 
 const DateMonthPickerModal = ({
   onSelect,
   onCancel,
   joined_year,
-  selectedYear = new Date().getFullYear(),
-  selectedMonth = new Date().getMonth() + 1,
   visible,
-}: IDatePicker) => {
+  selectedYear,
+  selectedMonth,
+}: DateMonthPickerModalProps) => {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1;
-  const [tempYear, setTempYear] = React.useState(selectedYear);
-  const [tempMonth, setTempMonth] = React.useState(selectedMonth);
-  const [labelMonth, setLabelMonth] = React.useState<string>(
-    new Date(0, selectedMonth - 1).toLocaleString("id-ID", {
-      month: "long",
-    }),
-  );
-
-  const years = React.useMemo(() => {
-    const arr = [];
-    const firstYear = Number.isFinite(joined_year)
-      ? Math.min(joined_year, currentYear)
-      : currentYear;
-    for (let y = currentYear; y >= firstYear; y--) {
-      // arr.push({ label: `${y}`, value: y });
-      arr.push(y);
-    }
-    return arr;
-  }, [currentYear, joined_year]);
-
-  // 🔥 generate bulan (dinamis)
-  const months = React.useMemo(() => {
-    const maxMonth = tempYear === currentYear ? currentMonth : 12;
-
-    const arr = [];
-    for (let m = 1; m <= maxMonth; m++) {
-      arr.push({
-        label: new Date(0, m - 1).toLocaleString("id-ID", {
-          month: "long",
-        }),
-        value: m,
-      });
-    }
-    return arr;
-  }, [tempYear]);
+  const [tempYear, setTempYear] = React.useState<number>(currentYear);
+  const [tempMonth, setTempMonth] = React.useState<number>(currentMonth);
 
   React.useEffect(() => {
     if (!visible) return;
-    const safeYear = Math.min(selectedYear, currentYear);
-    const maxMonth = safeYear === currentYear ? currentMonth : 12;
-    const safeMonth = Math.min(Math.max(selectedMonth, 1), maxMonth);
-    setTempYear(safeYear);
-    setTempMonth(safeMonth);
-    setLabelMonth(
-      new Date(0, safeMonth - 1).toLocaleString("id-ID", { month: "long" }),
-    );
+
+    const year = selectedYear ?? currentYear;
+    const month = selectedMonth ?? currentMonth;
+
+    setTempYear(year);
+    setTempMonth(month);
   }, [currentMonth, currentYear, selectedMonth, selectedYear, visible]);
+
+  const years = React.useMemo(() => {
+    const values: number[] = [];
+    for (let year = currentYear; year >= joined_year; year--) {
+      values.push(year);
+    }
+    return values;
+  }, [currentYear, joined_year]);
+
+  const months = React.useMemo(() => {
+    const maxMonth = tempYear === currentYear ? currentMonth : 12;
+    const values: MonthOption[] = [];
+
+    for (let month = 1; month <= maxMonth; month++) {
+      values.push({ label: getMonthLabel(month), value: month });
+    }
+    return values;
+  }, [currentMonth, currentYear, tempYear]);
 
   React.useEffect(() => {
     if (tempYear === currentYear && tempMonth > currentMonth) {
       setTempMonth(currentMonth);
-      setLabelMonth(
-        new Date(0, currentMonth - 1).toLocaleString("id-ID", {
-          month: "long",
-        }),
-      );
     }
   }, [currentMonth, currentYear, tempMonth, tempYear]);
 
-  const onSelectDate = async () => {
-    onSelect({ year: tempYear, month: tempMonth, month_value: labelMonth });
-    //   onPress();
+  const selectDate = () => {
+    onSelect({
+      year: tempYear,
+      month: tempMonth,
+      month_value: getMonthLabel(tempMonth),
+    });
   };
+
   return (
     <Modal
       visible={visible}
@@ -96,52 +90,56 @@ const DateMonthPickerModal = ({
       animationType="slide"
       onRequestClose={onCancel}
     >
-      <View
-        style={{
-          flex: 1,
-          justifyContent: "flex-end",
-          backgroundColor: "rgba(0,0,0,0.3)",
-        }}
-      >
-        <View
-          style={{
-            backgroundColor: "white",
-            padding: 20,
-            borderTopLeftRadius: 20,
-            borderTopRightRadius: 20,
-          }}
-        >
-          {/* HEADER */}
-          <View className="flex-row justify-between items-center mb-4">
-            <TouchableOpacity onPress={onCancel}>
+      <View className="flex-1 justify-end bg-black/30">
+        <View className="rounded-t-[20px] bg-white p-5">
+          <View className="mb-4 flex-row items-center justify-between">
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Batalkan pemilihan periode"
+              onPress={onCancel}
+            >
               <Text className="text-red-500">Batal</Text>
             </TouchableOpacity>
 
-            <Text className="font-bold text-lg">Pilih Tanggal</Text>
+            <Text className="text-lg font-bold">Pilih Tanggal</Text>
 
-            <TouchableOpacity onPress={onSelectDate}>
-              <Text className="text-purple-600 font-semibold">Pilih</Text>
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel="Gunakan periode terpilih"
+              onPress={selectDate}
+            >
+              <Text className="font-semibold text-purple-600">Pilih</Text>
             </TouchableOpacity>
           </View>
-          {/* PICKER */}
+
+          <View className="items-center rounded-2xl bg-purple-50 px-4 py-3">
+            <Text className="text-xs font-semibold uppercase tracking-wide text-purple-500">
+              Periode dipilih
+            </Text>
+            <Text className="mt-1 text-lg font-bold text-purple-900">
+              {getMonthLabel(tempMonth)} {tempYear}
+            </Text>
+          </View>
+
           <View className="flex-row justify-between">
             <View className="flex-1">
               <WheelPicker
                 data={years}
                 value={tempYear}
-                onChange={(val) => setTempYear(val)}
-                renderLabel={(item) => item.toString()}
+                keyExtractor={(year) => year.toString()}
+                onChange={setTempYear}
+                renderLabel={(year) => year.toString()}
               />
             </View>
+
             <View className="flex-1">
               <WheelPicker
                 data={months}
                 value={months.find((month) => month.value === tempMonth)}
-                onChange={(val) => {
-                  setTempMonth(val.value);
-                  setLabelMonth(val.label);
-                }}
-                renderLabel={(item) => item.label}
+                keyExtractor={(month) => month.value.toString()}
+                isEqual={(month, value) => month.value === value.value}
+                onChange={(month) => setTempMonth(month.value)}
+                renderLabel={(month) => month.label}
               />
             </View>
           </View>
@@ -152,5 +150,3 @@ const DateMonthPickerModal = ({
 };
 
 export default DateMonthPickerModal;
-
-const styles = StyleSheet.create({});

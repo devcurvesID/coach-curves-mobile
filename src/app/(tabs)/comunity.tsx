@@ -5,7 +5,7 @@ import { openGoogleMaps } from "@/services/maps";
 import { openWhatsApp } from "@/services/whatsapp";
 import type { Club } from "@/types/club";
 import { LinearGradient } from "expo-linear-gradient";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import React, {
   useCallback,
@@ -32,6 +32,7 @@ import { TABLET_CONTENT_MAX_WIDTH } from "@/components/ui/adaptive-content";
 
 const LIST_CONTENT_STYLE = {
   paddingHorizontal: 20,
+  paddingTop: 12,
   paddingBottom: 150,
   width: "100%",
   maxWidth: TABLET_CONTENT_MAX_WIDTH,
@@ -196,20 +197,40 @@ const CommunityScreen = () => {
           },
         ]}
       >
+        <View style={styles.searchSection}>
+          <View style={styles.searchContent}>
+            <View className="flex-row items-center rounded-2xl border border-purple-100 bg-white px-4 shadow-sm">
+              <Ionicons name="search-outline" size={21} color="#6F3FA0" />
+              <TextInput
+                accessibilityLabel="Cari lokasi club"
+                placeholder="Cari club, kota, kode club..."
+                placeholderTextColor="#94A3B8"
+                value={search}
+                onChangeText={setSearch}
+                autoCapitalize="none"
+                autoCorrect={false}
+                returnKeyType="search"
+                className="ml-3 flex-1 py-4 text-base text-slate-800"
+              />
+              {search.length > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Hapus pencarian lokasi"
+                  hitSlop={10}
+                  onPress={() => setSearch("")}
+                >
+                  <Ionicons name="close-circle" size={21} color="#94A3B8" />
+                </Pressable>
+              ) : null}
+            </View>
+          </View>
+        </View>
+
         <FlatList
+          style={styles.clubList}
           data={filteredClubs}
           keyExtractor={(item) => item._id}
           renderItem={renderClub}
-          ListHeaderComponent={
-            <View className="mb-4 mt-5">
-              <TextInput
-                placeholder="Cari club, kota, kode club..."
-                value={search}
-                onChangeText={setSearch}
-                className="rounded-2xl border border-gray-200 bg-white px-4 py-4"
-              />
-            </View>
-          }
           ListEmptyComponent={
             <View className="items-center px-6 py-16">
               <Text className="text-center text-base text-slate-500">
@@ -247,6 +268,20 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     flex: 1,
+  },
+  clubList: {
+    flex: 1,
+  },
+  searchSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 4,
+    zIndex: 10,
+  },
+  searchContent: {
+    width: "100%",
+    maxWidth: TABLET_CONTENT_MAX_WIDTH,
+    alignSelf: "center",
   },
   clubImage: {
     width: "100%",

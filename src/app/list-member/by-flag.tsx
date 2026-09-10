@@ -16,6 +16,8 @@ import {
 import { imageProfileURL } from "@/services/image";
 import { buildMemberFlagPdfHtml } from "@/utils/member-flag-pdf";
 import { Ionicons } from "@expo/vector-icons";
+import dayjs from "dayjs";
+import { File, Paths } from "expo-file-system";
 import * as Print from "expo-print";
 import { router } from "expo-router";
 import * as Sharing from "expo-sharing";
@@ -47,6 +49,18 @@ const getInitials = (name: string): string =>
     .map((word) => Array.from(word)[0])
     .join("")
     .toLocaleUpperCase("id-ID") || "M";
+
+const createFlagPdfFileName = (clubName: string): string => {
+  const safeClubName = clubName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+  const savedAt = dayjs().format("DD-MM-YYYY_HH-mm-ss");
+
+  return `FLAG-${safeClubName || "CLUB"}_${savedAt}.pdf`;
+};
 
 function MemberFlagAvatar({
   name,
@@ -119,13 +133,14 @@ export default function MemberFlagsScreen() {
     );
   }, [loadedMembers, search]);
   const hasClub = clubId !== undefined && clubId !== null && clubId !== "";
+  const clubName = userClubs?.[0]?.club_name || "Curves";
 
   const createPdfHtml = async () => {
     if (!clubId) throw new Error("Club pengguna belum tersedia.");
     const resume = await fetchMemberFlagResume(clubId);
     const groups = await fetchAllMembersGroupedByFlag(clubId, resume);
     return buildMemberFlagPdfHtml({
-      clubName: userClubs?.[0]?.club_name || "Curves",
+      clubName,
       groups,
     });
   };
@@ -154,6 +169,14 @@ export default function MemberFlagsScreen() {
       const { uri } = await Print.printToFileAsync({
         html: await createPdfHtml(),
       });
+      const generatedFile = new File(uri);
+      const namedFile = new File(
+        Paths.cache,
+        createFlagPdfFileName(clubName),
+      );
+      if (namedFile.exists) namedFile.delete();
+      generatedFile.move(namedFile);
+
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert(
           "PDF Berhasil Dibuat",
@@ -161,10 +184,10 @@ export default function MemberFlagsScreen() {
         );
         return;
       }
-      await Sharing.shareAsync(uri, {
+      await Sharing.shareAsync(namedFile.uri, {
         mimeType: "application/pdf",
         UTI: "com.adobe.pdf",
-        dialogTitle: "Simpan Printout Member Berdasarkan Flag",
+        dialogTitle: `Simpan Printout Member Flag ${clubName}`,
       });
     } catch (pdfError) {
       Alert.alert(

@@ -2,7 +2,7 @@ import { InformationWorkOutView } from "@/components/profile/information-workout
 import { ProfileCardView } from "@/components/profile/profile-card";
 import { FullscreenImage } from "@/components/ui/fullscreen-image";
 import { LoadingView } from "@/components/ui/loading";
-import { DataWorkoutHistoryView } from "@/components/workout/list-workout";
+import { WorkoutHistoryTimeline } from "@/components/workout/workout-history-timeline";
 import { useAuth } from "@/context/auth";
 import { getDateTime } from "@/helpers/dates";
 import { useLastWorkout, useLastWorkoutSocket } from "@/hooks/useWorkout";
@@ -251,7 +251,15 @@ const WorkOutScreen = () => {
               />
             </View>
             {!isLoadingLastWorkout && lastWorkout && (
-              <DataWorkoutHistoryView data={lastWorkout} />
+              <View className="mt-5">
+                <WorkoutHistoryTimeline
+                  workouts={[lastWorkout]}
+                  summaryLabel="Workout terakhir"
+                  showSequence={false}
+                  cardOnly
+                />
+              </View>
+              // <DataWorkoutHistoryView data={lastWorkout} />
             )}
           </>
         )}

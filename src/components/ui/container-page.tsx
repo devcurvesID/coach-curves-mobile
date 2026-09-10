@@ -5,7 +5,9 @@ import {
   Text,
   View,
   type ViewProps,
+  useWindowDimensions,
 } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import AdaptiveContent from "./adaptive-content";
 import NavigationHeader from "./navigation-header";
 
@@ -28,6 +30,20 @@ const ContainerPage = ({
   backLabel = "Kembali",
   ...props
 }: ContainerPageProps) => {
+  const { width, height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  const horizontalGutter = Math.round(
+    Math.max(12, Math.min(width * 0.045, 24)),
+  );
+  const isCompactHeight = height < 700;
+  const contentTopSpacing = isCompactHeight ? 12 : height < 820 ? 16 : 20;
+  const containerTopSpacing = isCompactHeight ? 16 : height < 820 ? 20 : 24;
+  const headerTopSpacing = showBackButton
+    ? isCompactHeight
+      ? 6
+      : 10
+    : Math.max(insets.top + 12, isCompactHeight ? 44 : 56);
+
   return (
     <KeyboardAvoidingView
       {...props}
@@ -37,16 +53,27 @@ const ContainerPage = ({
       {showBackButton && (
         <NavigationHeader fallbackHref={backFallbackHref} label={backLabel} />
       )}
-      {/* HEADER */}
-      <AdaptiveContent className={`px-6 ${showBackButton ? "pt-3" : "pt-20"}`}>
-        <Text className="text-white text-2xl font-bold">{titleHeader}</Text>
-        <Text className="text-purple-200 mt-2">{titleContent}</Text>
+      <AdaptiveContent
+        style={{
+          paddingHorizontal: horizontalGutter,
+          paddingTop: headerTopSpacing,
+        }}
+      >
+        <Text className="text-2xl font-bold text-white">{titleHeader}</Text>
+        <Text className="mt-2 text-purple-200">{titleContent}</Text>
       </AdaptiveContent>
 
       <View
-        className={`${showBackButton ? "mt-6" : "mt-10"} flex-1 items-center rounded-t-[32px] bg-white`}
+        className="flex-1 items-center rounded-t-[32px] bg-white"
+        style={{ marginTop: containerTopSpacing }}
       >
-        <AdaptiveContent className="flex-1 px-6 pt-8">
+        <AdaptiveContent
+          className="flex-1"
+          style={{
+            paddingHorizontal: horizontalGutter,
+            paddingTop: contentTopSpacing,
+          }}
+        >
           {children}
         </AdaptiveContent>
       </View>

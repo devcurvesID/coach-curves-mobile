@@ -8,6 +8,7 @@ import { useWeighMeasureProgressByUserId } from "@/hooks/useWeighMeasure";
 import { imageProfileURL } from "@/services/image";
 import { buildWeighMeasurePdfHtml } from "@/utils/weigh-measure-pdf";
 import { Ionicons } from "@expo/vector-icons";
+import { File, Paths } from "expo-file-system";
 import * as Print from "expo-print";
 import { useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
@@ -49,6 +50,18 @@ const getInitials = (name: string): string =>
     .map((word) => word[0])
     .join("")
     .toUpperCase() || "?";
+
+const createPdfFileName = (memberName: string): string => {
+  const safeMemberName = memberName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+  const savedAt = moment().format("DD-MM-YYYY_HH-mm-ss");
+
+  return `WM-${safeMemberName || "MEMBER"}_${savedAt}.pdf`;
+};
 
 const InfoItem = ({ icon, label, value }: any) => (
   <View className="w-1/2 mb-4">
@@ -487,6 +500,11 @@ export default function DetailInformasiWMScreen() {
     setPdfAction("download");
     try {
       const { uri } = await Print.printToFileAsync({ html: createPdfHtml() });
+      const generatedFile = new File(uri);
+      const namedFile = new File(Paths.cache, createPdfFileName(memberName));
+      if (namedFile.exists) namedFile.delete();
+      generatedFile.move(namedFile);
+
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert(
           "PDF Berhasil Dibuat",
@@ -494,7 +512,7 @@ export default function DetailInformasiWMScreen() {
         );
         return;
       }
-      await Sharing.shareAsync(uri, {
+      await Sharing.shareAsync(namedFile.uri, {
         mimeType: "application/pdf",
         UTI: "com.adobe.pdf",
         dialogTitle: `Simpan Resume WM ${memberName}`,

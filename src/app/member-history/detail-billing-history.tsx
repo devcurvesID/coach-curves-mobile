@@ -15,6 +15,8 @@ import {
   Ionicons,
   MaterialCommunityIcons,
 } from "@expo/vector-icons";
+import dayjs from "dayjs";
+import { File, Paths } from "expo-file-system";
 import * as Print from "expo-print";
 import { useLocalSearchParams } from "expo-router";
 import * as Sharing from "expo-sharing";
@@ -50,6 +52,18 @@ interface MemberBillSummary {
 const toNumber = (value?: number | string | null): number => {
   const parsedValue = Number(value);
   return Number.isFinite(parsedValue) ? parsedValue : 0;
+};
+
+const createPaymentPdfFileName = (memberName: string): string => {
+  const safeMemberName = memberName
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-zA-Z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .toUpperCase();
+  const savedAt = dayjs().format("DD-MM-YYYY_HH-mm-ss");
+
+  return `PAYMENT-${safeMemberName || "MEMBER"}_${savedAt}.pdf`;
 };
 
 export default function DetailBillingHistoryScreen() {
@@ -186,6 +200,14 @@ export default function DetailBillingHistoryScreen() {
     setPdfAction("download");
     try {
       const { uri } = await Print.printToFileAsync({ html: createPdfHtml() });
+      const generatedFile = new File(uri);
+      const namedFile = new File(
+        Paths.cache,
+        createPaymentPdfFileName(recipientName),
+      );
+      if (namedFile.exists) namedFile.delete();
+      generatedFile.move(namedFile);
+
       if (!(await Sharing.isAvailableAsync())) {
         Alert.alert(
           "PDF Berhasil Dibuat",
@@ -193,7 +215,7 @@ export default function DetailBillingHistoryScreen() {
         );
         return;
       }
-      await Sharing.shareAsync(uri, {
+      await Sharing.shareAsync(namedFile.uri, {
         mimeType: "application/pdf",
         UTI: "com.adobe.pdf",
         dialogTitle: `Simpan Riwayat Pembayaran ${recipientName}`,

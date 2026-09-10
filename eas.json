@@ -1,0 +1,47 @@
+{
+  "cli": {
+    "version": ">= 22.2.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://curvesid.com",
+        "EXPO_PUBLIC_IMAGE_MEMBER_URL": "https://cms.curvesid.com/curves/images/member_photos",
+        "EXPO_PUBLIC_IMAGE_REWARD_URL": "https://cms.curvesid.com/curves/images/rewards",
+        "EXPO_PUBLIC_IMAGE_PUBLICITY_URL": "https://cms.curvesid.com/curves/images/publicities",
+        "EXPO_PUBLIC_IMAGE_CLUB_URL": "https://cms.curvesid.com/curves/images/club_photos"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://curvesid.com",
+        "EXPO_PUBLIC_IMAGE_MEMBER_URL": "https://cms.curvesid.com/curves/images/member_photos",
+        "EXPO_PUBLIC_IMAGE_REWARD_URL": "https://cms.curvesid.com/curves/images/rewards",
+        "EXPO_PUBLIC_IMAGE_PUBLICITY_URL": "https://cms.curvesid.com/curves/images/publicities",
+        "EXPO_PUBLIC_IMAGE_CLUB_URL": "https://cms.curvesid.com/curves/images/club_photos"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "credentialsSource": "remote",
+      "autoIncrement": true,
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://curvesid.com",
+        "EXPO_PUBLIC_IMAGE_MEMBER_URL": "https://cms.curvesid.com/curves/images/member_photos",
+        "EXPO_PUBLIC_IMAGE_REWARD_URL": "https://cms.curvesid.com/curves/images/rewards",
+        "EXPO_PUBLIC_IMAGE_PUBLICITY_URL": "https://cms.curvesid.com/curves/images/publicities",
+        "EXPO_PUBLIC_IMAGE_CLUB_URL": "https://cms.curvesid.com/curves/images/club_photos"
+      },
+      "ios": {
+        "buildConfiguration": "Release"
+      }
+    }
+  },
+  "submit": {
+    "production": {}
+  }
+}
