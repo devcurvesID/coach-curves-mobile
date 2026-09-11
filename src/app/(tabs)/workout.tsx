@@ -3,7 +3,7 @@ import { InformationWorkOutView } from "@/components/profile/information-workout
 import { ProfileCardView } from "@/components/profile/profile-card";
 import { FullscreenImage } from "@/components/ui/fullscreen-image";
 import { LoadingView } from "@/components/ui/loading";
-import { WorkoutHistoryTimeline } from "@/components/workout/workout-history-timeline";
+import { LastWorkoutCard } from "@/components/workout/last-workout-card";
 import { useAuth } from "@/context/auth";
 import { getDateTime } from "@/helpers/dates";
 import {
@@ -341,7 +341,7 @@ const WorkOutScreen = () => {
       return false;
     }
     let curr_date = getDateTime(new Date());
-    let last_workout = getDateTime(lastWorkout.workout_date);
+    let last_workout = getDateTime(new Date(lastWorkout.workout_date));
     console.log(curr_date, last_workout);
     if (curr_date === last_workout) {
       return true;
@@ -398,18 +398,16 @@ const WorkOutScreen = () => {
                 keyTagId={String(user.user_personal.key_tag_id)}
               />
             </View>
-            {!isLoadingLastWorkout && lastWorkout && (
-              <View className="mt-5">
-                <WorkoutHistoryTimeline
-                  workouts={[lastWorkout]}
-                  summaryLabel="Workout terakhir"
-                  showSequence={false}
-                  cardOnly
-                />
-              </View>
-            )}
           </>
         )}
+
+        <View className="mt-5">
+          <LastWorkoutCard
+            workout={lastWorkout ?? null}
+            isError={Boolean(error)}
+            onRetry={() => void refetch()}
+          />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

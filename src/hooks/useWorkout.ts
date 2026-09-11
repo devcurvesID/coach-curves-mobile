@@ -16,13 +16,17 @@ import {
 } from "@tanstack/react-query";
 import { useEffect } from "react";
 export const useLastWorkout = () => {
-  return useQuery({
+  return useQuery<WorkoutRecord | null>({
     queryKey: ["last-workout"],
     queryFn: async () => {
       const {
         data: { response },
-      } = await api.get("/user/last-workout");
-      return response;
+      } = await api.get<{ response?: WorkoutRecord | WorkoutRecord[] | null }>(
+        "/user/last-workout",
+      );
+
+      if (Array.isArray(response)) return response[0] ?? null;
+      return response ?? null;
     },
   });
 };
@@ -33,12 +37,10 @@ export interface ClubWorkoutHistoryDay {
 }
 
 interface ClubWorkoutHistoryResponse {
-  response?:
-    | Array<{
-        total?: number | string | null;
-        workout_date?: string | null;
-      }>
-    | null;
+  response?: Array<{
+    total?: number | string | null;
+    workout_date?: string | null;
+  }> | null;
 }
 
 export const useClubWorkoutHistory = (clubId?: string) =>
@@ -50,19 +52,17 @@ export const useClubWorkoutHistory = (clubId?: string) =>
         `/workouts/history-club/${encodeURIComponent(clubId!)}`,
         { signal },
       );
-      return (data.response ?? []).flatMap(
-        (item): ClubWorkoutHistoryDay[] => {
-          if (!item.workout_date) return [];
-          const total = Number(item.total);
+      return (data.response ?? []).flatMap((item): ClubWorkoutHistoryDay[] => {
+        if (!item.workout_date) return [];
+        const total = Number(item.total);
 
-          return [
-            {
-              workoutDate: item.workout_date,
-              total: Number.isFinite(total) ? total : 0,
-            },
-          ];
-        },
-      );
+        return [
+          {
+            workoutDate: item.workout_date,
+            total: Number.isFinite(total) ? total : 0,
+          },
+        ];
+      });
     },
   });
 

@@ -79,7 +79,7 @@ export const WorkoutHistoryTimeline = ({
         </View>
       )}
 
-      {workouts.map((workout: any, index) => {
+      {workouts.map((workout, index) => {
         const isLastItem = index === workouts.length - 1;
         const workoutSequence =
           workoutSequenceMap.get(workout._id) ?? index + 1;
@@ -142,7 +142,7 @@ export const WorkoutHistoryTimeline = ({
                   className="ml-2 flex-1 text-sm text-slate-500"
                   numberOfLines={1}
                 >
-                  {workout.club.club_name}
+                  {workout.club?.club_name || "Informasi club tidak tersedia"}
                 </Text>
               </View>
             </View>
