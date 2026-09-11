@@ -1,7 +1,13 @@
 import { useAuth } from "@/context/auth";
 import { api } from "@/lib/axios";
-import { socket } from "@/services/socket";
 import { scheduleLocalNotificationAsync } from "@/services/push-notification";
+import { socket } from "@/services/socket";
+import type {
+  WorkoutByUserParams,
+  WorkoutHistoryParams,
+  WorkoutHistoryResponse,
+  WorkoutRecord,
+} from "@/types/workout";
 import {
   useInfiniteQuery,
   useMutation,
@@ -9,11 +15,6 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { useEffect } from "react";
-import type {
-  WorkoutHistoryParams,
-  WorkoutHistoryResponse,
-} from "@/types/workout";
-
 export const useLastWorkout = () => {
   return useQuery({
     queryKey: ["last-workout"],
@@ -25,6 +26,45 @@ export const useLastWorkout = () => {
     },
   });
 };
+
+export interface ClubWorkoutHistoryDay {
+  workoutDate: string;
+  total: number;
+}
+
+interface ClubWorkoutHistoryResponse {
+  response?:
+    | Array<{
+        total?: number | string | null;
+        workout_date?: string | null;
+      }>
+    | null;
+}
+
+export const useClubWorkoutHistory = (clubId?: string) =>
+  useQuery<ClubWorkoutHistoryDay[]>({
+    queryKey: ["workout-history-club", clubId],
+    enabled: Boolean(clubId),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<ClubWorkoutHistoryResponse>(
+        `/workouts/history-club/${encodeURIComponent(clubId!)}`,
+        { signal },
+      );
+      return (data.response ?? []).flatMap(
+        (item): ClubWorkoutHistoryDay[] => {
+          if (!item.workout_date) return [];
+          const total = Number(item.total);
+
+          return [
+            {
+              workoutDate: item.workout_date,
+              total: Number.isFinite(total) ? total : 0,
+            },
+          ];
+        },
+      );
+    },
+  });
 
 export const useWorkoutHistory = () => {
   return useMutation({
@@ -38,14 +78,16 @@ export const useWorkoutHistory = () => {
 };
 
 export const useWorkoutByUserId = () => {
-  return useMutation({
-    mutationFn: async ({ user_id, offset, limit }: any) => {
-      const { data } = await api.get(
-        `/workouts?user_id=${user_id}&offset=${offset}&limit=${limit}`,
-      );
-      return data;
+  return useMutation<{ response: WorkoutRecord[] }, Error, WorkoutByUserParams>(
+    {
+      mutationFn: async ({ user_id, offset, limit }: WorkoutByUserParams) => {
+        const { data } = await api.get(
+          `/workouts?user_id=${user_id}&offset=${offset}&limit=${limit}`,
+        );
+        return data;
+      },
     },
-  });
+  );
 };
 
 export const fetchWorkoutHistoryByUserId = async (

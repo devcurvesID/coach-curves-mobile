@@ -1,5 +1,6 @@
 import { MemberActivities } from "@/components/member-detail/member-activities";
 import { MemberAppointmentCard } from "@/components/member-detail/member-appointment-card";
+import { CurrentChallengeCard } from "@/components/challenge/current-challenge-card";
 import { MemberPersonalInfo } from "@/components/member-detail/member-personal-info";
 import { MemberProfile } from "@/components/member-detail/member-profile";
 import { MemberProgressSummary } from "@/components/member-detail/member-progress-summary";
@@ -82,6 +83,8 @@ export default function DetailInformasiMemberScreen() {
 
   const member = data as MemberDetail;
   const memberId = member.user_id || id;
+  console.log("memberId", memberId);
+
   const weighMeasureProgress = weighMeasureProgressData as
     WeighMeasureProgress | null | undefined;
   const appointments = (
@@ -159,6 +162,10 @@ export default function DetailInformasiMemberScreen() {
             isWeighMeasureProgressError={isWeighMeasureProgressError}
             onPress={() => setIsWorkoutResultVisible(true)}
           />
+
+          <View className="mt-5">
+            <CurrentChallengeCard userId={memberId} />
+          </View>
 
           <MemberActivities memberId={memberId} memberName={member.user.name} />
         </ScrollView>

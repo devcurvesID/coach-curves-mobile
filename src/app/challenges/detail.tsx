@@ -1,63 +1,157 @@
 import ContainerPage from "@/components/ui/container-page";
+import { FullscreenImage } from "@/components/ui/fullscreen-image";
 import { LoadingView } from "@/components/ui/loading";
+import { WorkoutHistoryTimeline } from "@/components/workout/workout-history-timeline";
 import { useAuth } from "@/context/auth";
 import { useWorkoutByUserId } from "@/hooks/useWorkout";
-import { PATH_PUBLIC_IMAGE_REWARD } from "@/utils/constants";
-import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
-import dayjs from "dayjs";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { rewardImageURL } from "@/services/image";
+import { memberService } from "@/services/memberService";
+import type { WorkoutRecord } from "@/types/workout";
+import { useLocalSearchParams } from "expo-router";
 import React from "react";
-import { Image, ScrollView, Text, TouchableOpacity, View } from "react-native";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+
+const WORKOUT_PAGE_SIZE = 10;
+
 export default function DetailChallengeScreen() {
-  const router = useRouter();
   const params = useLocalSearchParams();
   const challenge = JSON.parse(params.data as string);
-  console.log("detail club", challenge);
-  const { user, signOut } = useAuth();
-  const {
-    mutate: workoutByUserIdFn,
-    data: workoutUser,
-    isPending: isPendingWorkoutUser,
-  } = useWorkoutByUserId();
+  const { user } = useAuth();
+  const { mutateAsync: loadWorkoutPage } = useWorkoutByUserId();
+  const [workouts, setWorkouts] = React.useState<WorkoutRecord[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = React.useState(true);
+  const [isLoadingMore, setIsLoadingMore] = React.useState(false);
+  const [loadError, setLoadError] = React.useState<string | null>(null);
+  const [totalWorkout, setTotalWorkout] = React.useState<number | null>(null);
+  const [isProgressLoading, setIsProgressLoading] = React.useState(true);
+  const [progressError, setProgressError] = React.useState<string | null>(null);
+  const [reloadKey, setReloadKey] = React.useState(0);
+  const target = Math.max(
+    Math.floor(Number(challenge.variable_target) || 0),
+    0,
+  );
 
   React.useEffect(() => {
-    async function getWorkout() {
-      await workoutByUserIdFn({
-        user_id: user._id,
-        offset: 0,
-        limit: challenge.variable_target,
-      });
+    let isActive = true;
+
+    const getChallengeInformation = async () => {
+      try {
+        setIsProgressLoading(true);
+        setProgressError(null);
+        const information = await memberService.getInformationChallengesUser(
+          user._id,
+        );
+        if (!isActive) return;
+
+        setTotalWorkout(
+          Math.max(Math.floor(Number(information?.total_workout) || 0), 0),
+        );
+      } catch (error) {
+        if (!isActive) return;
+        setProgressError(
+          error instanceof Error
+            ? error.message
+            : "Progress challenge gagal dimuat.",
+        );
+      } finally {
+        if (isActive) setIsProgressLoading(false);
+      }
+    };
+
+    void getChallengeInformation();
+    return () => {
+      isActive = false;
+    };
+  }, [reloadKey, user._id]);
+
+  React.useEffect(() => {
+    let isActive = true;
+
+    const getWorkoutInPages = async () => {
+      setWorkouts([]);
+      setLoadError(null);
+      setIsInitialLoading(true);
+
+      let loadedWorkouts: WorkoutRecord[] = [];
+
+      try {
+        while (isActive && loadedWorkouts.length < target) {
+          const remaining = target - loadedWorkouts.length;
+          const limit = Math.min(WORKOUT_PAGE_SIZE, remaining);
+
+          if (loadedWorkouts.length > 0) setIsLoadingMore(true);
+
+          const page = await loadWorkoutPage({
+            user_id: user._id,
+            offset: loadedWorkouts.length,
+            limit,
+          });
+          if (!isActive) return;
+
+          const existingIds = new Set(
+            loadedWorkouts.map((workout) => workout._id),
+          );
+          const newWorkouts = page.response.filter(
+            (workout) => !existingIds.has(workout._id),
+          );
+
+          loadedWorkouts = [...loadedWorkouts, ...newWorkouts].slice(0, target);
+          setWorkouts(loadedWorkouts);
+          setIsInitialLoading(false);
+
+          // A short page means the API has no more records. No new IDs also
+          // prevents an endless loop if an API ignores the offset parameter.
+          if (page.response.length < limit || newWorkouts.length === 0) break;
+        }
+      } catch (error) {
+        if (!isActive) return;
+        setLoadError(
+          error instanceof Error
+            ? error.message
+            : "Riwayat workout gagal dimuat.",
+        );
+      } finally {
+        if (isActive) {
+          setIsInitialLoading(false);
+          setIsLoadingMore(false);
+        }
+      }
+    };
+
+    if (target === 0) {
+      setIsInitialLoading(false);
+      return () => {
+        isActive = false;
+      };
     }
-    getWorkout();
-  }, []);
-  const current_progress = workoutUser ? workoutUser.response.length : 0;
+
+    void getWorkoutInPages();
+    return () => {
+      isActive = false;
+    };
+  }, [loadWorkoutPage, reloadKey, target, user._id]);
+
+  const current_progress = totalWorkout ?? 0;
   const percentage = Math.min(
-    (current_progress / challenge.variable_target) * 100,
+    target > 0 ? (current_progress / target) * 100 : 0,
     100,
   );
 
-  const user_personal = user.user_personal;
-
-  // 🔥 generate bulan (dinamis)
-
-  const imageChallengeURL = (fileName?: string) => {
-    if (!fileName) {
-      return "https://placehold.co/600x400/png";
-    }
-    return `${PATH_PUBLIC_IMAGE_REWARD}/${fileName}`;
-  };
-
   const getTargetChallenge = () => {
-    if (current_progress > challenge.variable_target) {
-      return challenge.variable_target;
+    if (current_progress > target) {
+      return target;
     }
     return current_progress;
   };
-  if (isPendingWorkoutUser || !workoutUser) {
+  if (isInitialLoading) {
     return <LoadingView />;
   }
-  console.log("workoutUser", workoutUser);
-
   return (
     <>
       <ContainerPage
@@ -72,28 +166,44 @@ export default function DetailChallengeScreen() {
           contentContainerClassName=" pt-5 pb-32"
           showsVerticalScrollIndicator={false}
         >
-          <View>
+          {/* FULL WIDTH IMAGE */}
+          {/* <View
+            className="bg-white rounded-3xl mb-5 overflow-hidden"
+            style={{
+              shadowColor: "#000",
+              shadowOpacity: 0.08,
+              shadowRadius: 12,
+              elevation: 4,
+            }}
+          >
             <Image
               source={{
-                uri: imageChallengeURL(challenge.picture),
+                uri: rewardImageURL(challenge.picture),
               }}
               style={{
                 width: "100%",
-                height: 180,
+                aspectRatio: 1440 / 200,
               }}
               resizeMode="cover"
             />
-            <View className="absolute top-14 right-5 bg-green-500 px-4 py-2 rounded-full">
+
+            <View className="absolute top-12 right-5 bg-green-500 px-4 py-2 rounded-full">
               <Text className="text-white font-bold">
-                {getTargetChallenge() >= challenge.variable_target
+                {getTargetChallenge() >= target
                   ? "🏆 COMPLETED"
                   : "ACTIVE"}
               </Text>
             </View>
-          </View>
+          </View> */}
+
+          <FullscreenImage
+            imageUrl={rewardImageURL(challenge.picture)}
+            accessibilityLabel="Buka gambar challenge dalam layar penuh"
+            status={getTargetChallenge() >= target ? "🏆 COMPLETED" : "ACTIVE"}
+          />
 
           {/* Content */}
-          <View className="bg-white rounded-t-[35px] -mt-8 p-6">
+          <View className="bg-white rounded-t-[35px] mt-8 p-6">
             {/* Title */}
             <Text className="text-3xl font-bold text-gray-800">
               {challenge.challenge}
@@ -109,7 +219,9 @@ export default function DetailChallengeScreen() {
                 <Text className="text-gray-500">Progress</Text>
 
                 <Text className="font-bold text-purple-600">
-                  {Math.round(percentage)}%
+                  {isProgressLoading
+                    ? "Memuat..."
+                    : `${Math.round(percentage)}%`}
                 </Text>
               </View>
 
@@ -123,8 +235,25 @@ export default function DetailChallengeScreen() {
               </View>
 
               <Text className="mt-3 text-lg font-semibold text-gray-800">
-                {getTargetChallenge()} / {challenge.variable_target} Workout
+                {isProgressLoading ? "-" : getTargetChallenge()} / {target}{" "}
+                Workout
               </Text>
+
+              {progressError && (
+                <View className="mt-3 flex-row items-center justify-between rounded-xl bg-red-50 px-3 py-2.5">
+                  <Text className="mr-3 flex-1 text-sm text-red-700">
+                    Progress gagal dimuat.
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setReloadKey((value) => value + 1)}
+                  >
+                    <Text className="font-semibold text-red-700">
+                      Coba Lagi
+                    </Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
 
             {/* Info */}
@@ -149,9 +278,7 @@ export default function DetailChallengeScreen() {
                 <View className="flex-row justify-between py-2">
                   <Text className="text-gray-500">Target</Text>
 
-                  <Text className="font-semibold">
-                    {challenge.variable_target}
-                  </Text>
+                  <Text className="font-semibold">{target}</Text>
                 </View>
 
                 <View className="flex-row justify-between py-2">
@@ -163,7 +290,7 @@ export default function DetailChallengeScreen() {
             </View>
 
             {/* Reward */}
-            <View className="mt-8">
+            {/* <View className="mt-8">
               <Text className="text-xl font-bold mb-4">Rewards</Text>
 
               <View className="bg-purple-50 rounded-3xl p-5">
@@ -187,50 +314,57 @@ export default function DetailChallengeScreen() {
                   </Text>
                 </View>
               </View>
-            </View>
+            </View> */}
 
             {/* Recent Progress */}
             <View className="mt-8">
-              <Text className="text-xl font-bold mb-4">Recent Progress</Text>
+              <Text className="mb-1 text-xl font-bold text-slate-900">
+                Riwayat Progress
+              </Text>
+              <Text className="mb-5 text-sm leading-5 text-slate-500">
+                Daftar workout yang telah dihitung dalam challenge ini.
+              </Text>
 
-              {!isPendingWorkoutUser &&
-                workoutUser.response &&
-                workoutUser.response.map((item: any, index: number) => (
-                  <View
-                    key={item._id}
-                    className="flex-row items-center bg-gray-50 rounded-2xl p-4 mb-3"
+              <WorkoutHistoryTimeline
+                workouts={workouts}
+                target={target}
+                summaryLabel="Riwayat dimuat"
+                emptyDescription="Selesaikan workout pertama untuk mulai mencatat progress challenge."
+              />
+
+              {isLoadingMore && (
+                <View className="mt-2 flex-row items-center justify-center rounded-2xl bg-purple-50 px-4 py-3">
+                  <ActivityIndicator size="small" color="#6F3FA0" />
+                  <Text className="ml-2 text-sm font-medium text-purple-700">
+                    Memuat riwayat {workouts.length}/{target}...
+                  </Text>
+                </View>
+              )}
+
+              {loadError && (
+                <View className="mt-4 rounded-2xl border border-red-100 bg-red-50 p-4">
+                  <Text className="text-center text-sm text-red-700">
+                    {loadError}
+                  </Text>
+                  <Pressable
+                    accessibilityRole="button"
+                    onPress={() => setReloadKey((value) => value + 1)}
+                    className="mt-3 items-center rounded-xl bg-red-600 py-3"
                   >
-                    <View className="w-10 h-10 rounded-full bg-purple-100 items-center justify-center">
-                      <MaterialCommunityIcons
-                        name="dumbbell"
-                        size={20}
-                        color="#6F3FA0"
-                      />
-                    </View>
-
-                    <View className="ml-3">
-                      <Text className="font-semibold">
-                        Workout #{index + 1} Completed
-                      </Text>
-                      <Text className="text-gray-500 text-sm">
-                        {dayjs(item.workout_date).format("DD MMM YYYY")}
-                      </Text>
-                      <Text className="text-gray-500 text-sm">
-                        {item.club.club_name}
-                      </Text>
-                    </View>
-                  </View>
-                ))}
+                    <Text className="font-semibold text-white">Coba Lagi</Text>
+                  </Pressable>
+                </View>
+              )}
             </View>
             {/* Button */}
 
-            {getTargetChallenge() != challenge.variable_target ? (
+            {/* {getTargetChallenge() != challenge.variable_target ? (
               <TouchableOpacity className="bg-purple-600 py-4 rounded-2xl mt-8 mb-8">
                 <Text className="text-center text-white font-bold text-lg">
                   Continue Challenge
                 </Text>
               </TouchableOpacity>
-            ) : null}
+            ) : null} */}
           </View>
         </ScrollView>
       </ContainerPage>

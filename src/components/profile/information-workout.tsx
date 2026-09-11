@@ -1,96 +1,36 @@
+import type { MemberAppointment } from "@/components/member-detail/types";
+import { useAuth } from "@/context/auth";
 import { formatDate } from "@/helpers/dates";
-import { useWeighMeasureHistory } from "@/hooks/useWeighMeasure";
+import { useMemberAppointmentByUserId } from "@/hooks/useWeighMeasure";
 import { useWorkoutHistory } from "@/hooks/useWorkout";
+import { Ionicons } from "@expo/vector-icons";
+import dayjs from "dayjs";
+import React, { useEffect, useMemo } from "react";
 import {
-  FontAwesome5,
-  Ionicons,
-  MaterialCommunityIcons,
-} from "@expo/vector-icons";
-import React, { useEffect, useRef } from "react";
-import { Animated, Text, View } from "react-native";
+  ActivityIndicator,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from "react-native";
 import { Circle, Svg } from "react-native-svg";
 
-interface IProfileCard {
-  data: any;
+const MONTHLY_WORKOUT_TARGET = 12;
+
+interface CardProps {
+  children: React.ReactNode;
+  style?: StyleProp<ViewStyle>;
 }
 
-// ─── SVG Ring Progress ────────────────────────────────────────────────────────
-const RingProgress = ({
-  percentage,
-  size = 110,
-  strokeWidth = 12,
-}: {
-  percentage: number;
-  size?: number;
-  strokeWidth?: number;
-}) => {
-  const r = (size - strokeWidth) / 2;
-  const circ = 2 * Math.PI * r;
-  const progress = circ * (1 - Math.min(percentage, 100) / 100);
-  const animVal = useRef(new Animated.Value(circ)).current;
-
-  useEffect(() => {
-    Animated.timing(animVal, {
-      toValue: progress,
-      duration: 900,
-      useNativeDriver: false,
-    }).start();
-  }, [percentage]);
-
-  return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Svg width={size} height={size} style={{ position: "absolute" }}>
-        {/* Track */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="#FBCFE8"
-          strokeWidth={strokeWidth}
-          fill="none"
-        />
-        {/* Progress */}
-        <Circle
-          cx={size / 2}
-          cy={size / 2}
-          r={r}
-          stroke="#E91E63"
-          strokeWidth={strokeWidth}
-          fill="none"
-          strokeDasharray={circ}
-          strokeDashoffset={progress}
-          strokeLinecap="round"
-          rotation="-90"
-          origin={`${size / 2}, ${size / 2}`}
-        />
-      </Svg>
-      <Text style={{ fontSize: 20, fontWeight: "800", color: "#E91E63" }}>
-        {Math.round(percentage)}%
-      </Text>
-    </View>
-  );
-};
-// ─── Section Card ─────────────────────────────────────────────────────────────
-const Card = ({
-  children,
-  style,
-}: {
-  children: React.ReactNode;
-  style?: object;
-}) => (
+const Card = ({ children, style }: CardProps) => (
   <View
     style={[
       {
-        backgroundColor: "#FFFFFF",
-        borderRadius: 28,
         padding: 20,
+        borderWidth: 1,
+        borderColor: "#FBCFE8",
+        borderRadius: 28,
+        backgroundColor: "#FFF0F6",
         shadowColor: "#E91E63",
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.08,
@@ -104,446 +44,239 @@ const Card = ({
   </View>
 );
 
-const SectionTitle = ({
-  children,
-  color = "#E91E63",
-}: {
-  children: string;
-  color?: string;
-}) => (
-  <Text
-    style={{
-      fontSize: 14,
-      fontWeight: "800",
-      color,
-      textAlign: "center",
-      letterSpacing: 0.2,
-    }}
-  >
+const SectionTitle = ({ children }: { children: React.ReactNode }) => (
+  <Text className="text-center text-sm font-extrabold tracking-wide text-pink-600">
     {children}
   </Text>
 );
 
 const Divider = () => (
-  <View
-    style={{
-      borderTopWidth: 1,
-      borderColor: "#FBCFE8",
-      borderStyle: "dashed",
-      marginVertical: 14,
-    }}
-  />
+  <View className="my-3.5 border-t border-dashed border-pink-200" />
+);
+
+const RingProgress = ({ percentage }: { percentage: number }) => {
+  const size = 110;
+  const strokeWidth = 11;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const safePercentage = Math.min(Math.max(percentage, 0), 100);
+  const progressOffset = circumference * (1 - safePercentage / 100);
+
+  return (
+    <View className="h-[110px] w-[110px] items-center justify-center">
+      <Svg width={size} height={size} style={{ position: "absolute" }}>
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#FBCFE8"
+          strokeWidth={strokeWidth}
+          fill="none"
+        />
+        <Circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          stroke="#E91E63"
+          strokeWidth={strokeWidth}
+          fill="none"
+          strokeDasharray={circumference}
+          strokeDashoffset={progressOffset}
+          strokeLinecap="round"
+          rotation="-90"
+          origin={`${size / 2}, ${size / 2}`}
+        />
+      </Svg>
+      <Text className="text-xl font-extrabold text-pink-600">
+        {Math.round(safePercentage)}%
+      </Text>
+    </View>
+  );
+};
+
+const getNearestAppointment = (
+  data: MemberAppointment | MemberAppointment[] | null | undefined,
+): MemberAppointment | null => {
+  const appointments = (Array.isArray(data) ? data : data ? [data] : [])
+    .filter((appointment) => dayjs(appointment.app_date).isValid())
+    .sort(
+      (first, second) =>
+        dayjs(first.app_date).valueOf() - dayjs(second.app_date).valueOf(),
+    );
+  const today = dayjs().startOf("day");
+
+  return (
+    appointments.find(
+      (appointment) => !dayjs(appointment.app_date).isBefore(today, "day"),
+    ) ??
+    appointments.at(-1) ??
+    null
+  );
+};
+
+const AppointmentCard = ({
+  appointment,
+  isLoading,
+  isError,
+}: {
+  appointment: MemberAppointment | null;
+  isLoading: boolean;
+  isError: boolean;
+}) => (
+  <Card>
+    <View className="flex-row items-center">
+      <Ionicons name="calendar" size={16} color="#E91E63" />
+      <Text className="ml-1.5 text-sm font-extrabold text-pink-600">
+        Jadwal
+      </Text>
+    </View>
+    <Text className="mt-0.5 text-xs font-semibold text-purple-700">
+      Penimbangan & Pengukuran
+    </Text>
+    <Divider />
+
+    <View className="flex-row items-center rounded-2xl bg-pink-100 p-3">
+      {isLoading ? (
+        <>
+          <ActivityIndicator size="small" color="#E91E63" />
+          <Text className="ml-2 flex-1 text-xs font-semibold text-pink-600">
+            Memuat jadwal...
+          </Text>
+        </>
+      ) : isError ? (
+        <>
+          <Ionicons name="alert-circle-outline" size={18} color="#DC2626" />
+          <Text className="ml-2 flex-1 text-xs font-semibold text-red-600">
+            Jadwal gagal dimuat
+          </Text>
+        </>
+      ) : (
+        <>
+          <Ionicons name="scale-outline" size={18} color="#EC4899" />
+          <View className="ml-2 flex-1">
+            <Text className="text-xs font-bold text-pink-600">
+              {appointment
+                ? formatDate(appointment.app_date)
+                : "Belum dijadwalkan"}
+            </Text>
+            {/* {appointment?.app_hour ? (
+              <Text className="mt-1 text-[11px] text-pink-500">
+                Pukul {appointment.app_hour}
+              </Text>
+            ) : null} */}
+          </View>
+        </>
+      )}
+    </View>
+  </Card>
 );
 
 export const InformationWorkOutView = () => {
+  const { user } = useAuth();
   const {
-    mutate: workoutHistoryFn,
+    mutate: loadWorkoutHistory,
     data: workoutHistory,
-    isPending,
+    isPending: isLoadingWorkout,
   } = useWorkoutHistory();
   const {
-    mutate: weighMeasureHistoryFn,
-    data: weighMeasureHistory,
-    isPending: isPendingWM,
-  } = useWeighMeasureHistory();
+    data: appointmentData,
+    isLoading: isLoadingAppointment,
+    isError: isAppointmentError,
+  } = useMemberAppointmentByUserId(user?._id);
 
-  React.useEffect(() => {
-    async function getWorkout() {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      await workoutHistoryFn({ year: currentYear, month: currentMonth });
-    }
-    getWorkout();
-  }, []);
+  useEffect(() => {
+    const today = new Date();
+    loadWorkoutHistory({
+      year: today.getFullYear(),
+      month: today.getMonth(),
+    });
+  }, [loadWorkoutHistory]);
 
-  React.useEffect(() => {
-    async function getWeighMeasure() {
-      const now = new Date();
-      const currentYear = now.getFullYear();
-      const currentMonth = now.getMonth();
-      await weighMeasureHistoryFn({ year: currentYear, month: currentMonth });
-    }
-    getWeighMeasure();
-  }, []);
+  const appointment = useMemo(
+    () => getNearestAppointment(appointmentData),
+    [appointmentData],
+  );
+  const monthlyWorkoutTotal = workoutHistory?.total_workout_per_month ?? 0;
+  const allWorkoutTotal = workoutHistory?.total ?? 0;
+  const remainingWorkout = Math.max(
+    MONTHLY_WORKOUT_TARGET - monthlyWorkoutTotal,
+    0,
+  );
+  const workoutPercentage =
+    (monthlyWorkoutTotal / MONTHLY_WORKOUT_TARGET) * 100;
 
-  const getPercentageWorkout = (total: number) => {
-    const percentage = (total / 12) * 100;
-    return percentage;
-  };
+  if (isLoadingWorkout && !workoutHistory) {
+    return (
+      <View className="mt-5 items-center rounded-3xl bg-white px-6 py-10">
+        <ActivityIndicator color="#6F3FA0" />
+        <Text className="mt-3 text-sm text-slate-500">
+          Memuat informasi workout...
+        </Text>
+      </View>
+    );
+  }
+
   return (
-    <View style={{ flexDirection: "row", gap: 12 }}>
-      {/* LEFT COLUMN */}
-      <View style={{ flex: 1, gap: 12 }}>
-        {/* Total Workout Card */}
-
-        {/* Big number */}
-        {!isPending && workoutHistory && (
-          <Card
-            style={{
-              backgroundColor: "#FFF0F6",
-              borderWidth: 1,
-              borderColor: "#FBCFE8",
-            }}
-          >
-            <SectionTitle>Latihan Total</SectionTitle>
-            <SectionTitle>Sejak Menjadi Anggota</SectionTitle>
-            <Divider />
-            <View
-              style={{
-                backgroundColor: "#FFFFFF",
-                borderRadius: 20,
-                padding: 14,
-                alignItems: "center",
-                marginBottom: 12,
-                shadowColor: "#E91E63",
-                shadowOffset: { width: 0, height: 2 },
-                shadowOpacity: 0.08,
-                shadowRadius: 8,
-                elevation: 2,
-              }}
-            >
-              <Text
-                style={{
-                  fontSize: 48,
-                  fontWeight: "900",
-                  color: "#6F3FA0",
-                  lineHeight: 54,
-                }}
-              >
-                {workoutHistory.total}
-                <Text style={{ fontSize: 20, color: "#E91E63" }}>x</Text>
-              </Text>
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: "#9CA3AF",
-                  textAlign: "center",
-                  marginTop: 2,
-                }}
-              >
-                latihan sejak jadi anggota
-              </Text>
-            </View>
-            <Divider />
-
-            <View
-              style={{
-                backgroundColor: "#FCE4EC",
-                borderRadius: 16,
-                padding: 12,
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <Ionicons name="flag" size={14} color="#E91E63" />
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: "#E91E63",
-                  }}
-                >
-                  Target
-                </Text>
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "baseline",
-                  gap: 4,
-                  marginTop: 4,
-                  // height: 100,
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 20,
-                    fontWeight: "900",
-                    color: "#E91E63",
-                    // flex: 1,
-                  }}
-                >
-                  {12 - workoutHistory.total_workout_per_month}x
-                </Text>
-                <Text style={{ fontSize: 11, color: "#9CA3AF" }}>
-                  lagi untuk capai
-                </Text>
-              </View>
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: "900",
-                  color: "#FF1493",
-                  textAlign: "right",
-                  // marginTop: -4,
-                }}
-              >
-                12!
-              </Text>
-            </View>
-          </Card>
-        )}
-
-        {/* Promo Card */}
-        <Card
-          style={{
-            backgroundColor: "#F5F3FF",
-            borderWidth: 1,
-            borderColor: "#DDD6FE",
-            minHeight: 160,
-          }}
-        >
-          <SectionTitle color="#7C3AED">Promosi Mitra Curves</SectionTitle>
+    <View className="mt-5 flex-row gap-3">
+      <View className="flex-1 gap-3">
+        <Card>
+          <SectionTitle>Latihan Total</SectionTitle>
+          <SectionTitle>Sejak Menjadi Anggota</SectionTitle>
           <Divider />
-          <View
-            style={{
-              alignItems: "center",
-              justifyContent: "center",
-              flex: 1,
-              paddingVertical: 12,
-            }}
-          >
-            <View
-              style={{
-                width: 56,
-                height: 56,
-                borderRadius: 28,
-                backgroundColor: "#EDE9FE",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 10,
-              }}
-            >
-              <MaterialCommunityIcons
-                name="gift-outline"
-                size={28}
-                color="#A78BFA"
-              />
+
+          <View className="mb-3 items-center rounded-[20px] bg-white p-3.5 shadow-sm">
+            <Text className="text-5xl font-black leading-[54px] text-[#6F3FA0]">
+              {allWorkoutTotal}
+              <Text className="text-xl text-pink-600">x</Text>
+            </Text>
+            <Text className="mt-0.5 text-center text-[11px] text-slate-400">
+              latihan sejak jadi anggota
+            </Text>
+          </View>
+
+          <View className="rounded-2xl bg-pink-100 p-3">
+            <View className="flex-row items-center">
+              <Ionicons name="flag" size={14} color="#E91E63" />
+              <Text className="ml-1.5 text-xs font-bold text-pink-600">
+                Target
+              </Text>
             </View>
-            <Text
-              style={{
-                fontSize: 12,
-                color: "#9CA3AF",
-                textAlign: "center",
-                lineHeight: 18,
-              }}
-            >
-              Belum ada promosi{"\n"}tersedia
+            <Text className="mt-1 text-xl font-black text-pink-600">
+              {remainingWorkout}x
+            </Text>
+            <Text className="mt-0.5 text-[11px] text-slate-500">
+              lagi untuk mencapai {MONTHLY_WORKOUT_TARGET} workout
             </Text>
           </View>
         </Card>
       </View>
 
-      {/* RIGHT COLUMN */}
-      {!isPending && workoutHistory && (
-        <View style={{ flex: 1, gap: 12 }}>
-          {/* Monthly Workout Card */}
-          <Card
-            style={{
-              backgroundColor: "#FFF0F6",
-              borderWidth: 1,
-              borderColor: "#FBCFE8",
-            }}
-          >
-            <SectionTitle>Total Latihan Bulan Ini</SectionTitle>
-            <Divider />
-
-            <View style={{ alignItems: "center" }}>
-              <RingProgress
-                percentage={getPercentageWorkout(
-                  workoutHistory.total_workout_per_month,
-                )}
-                size={110}
-                strokeWidth={11}
-              />
-
-              <View
-                style={{
-                  backgroundColor: "#FCE4EC",
-                  borderRadius: 16,
-                  paddingVertical: 8,
-                  paddingHorizontal: 14,
-                  marginTop: 14,
-                  alignItems: "center",
-                }}
-              >
-                <Text
-                  style={{
-                    fontSize: 26,
-                    fontWeight: "900",
-                    color: "#FF1493",
-                  }}
-                >
-                  Ayo! 🔥
-                </Text>
-                <Text
-                  style={{
-                    fontSize: 12,
-                    fontWeight: "700",
-                    color: "#E91E63",
-                    textAlign: "center",
-                    marginTop: 2,
-                  }}
-                >
-                  capai 12x bulan ini!
-                </Text>
-              </View>
-
-              <Text
-                style={{
-                  fontSize: 11,
-                  color: "#9CA3AF",
-                  textAlign: "center",
-                  marginTop: 10,
-                }}
-              >
-                hanya perlu latihan minimal
-              </Text>
-              <Text
-                style={{
-                  fontSize: 18,
-                  fontWeight: "800",
-                  color: "#6F3FA0",
-                  marginTop: 2,
-                }}
-              >
-                {12 - workoutHistory.total_workout_per_month} kali lagi!
+      <View className="flex-1 gap-3">
+        <Card>
+          <SectionTitle>Total Latihan Bulan Ini</SectionTitle>
+          <Divider />
+          <View className="items-center">
+            <RingProgress percentage={workoutPercentage} />
+            <View className="mt-3.5 items-center rounded-2xl bg-pink-100 px-3.5 py-2">
+              <Text className="text-2xl font-black text-pink-500">Ayo! 🔥</Text>
+              <Text className="mt-0.5 text-center text-xs font-bold text-pink-600">
+                capai {MONTHLY_WORKOUT_TARGET}x bulan ini!
               </Text>
             </View>
-          </Card>
-          {/* Schedule Card */}
+            <Text className="mt-2.5 text-center text-[11px] text-slate-400">
+              {remainingWorkout > 0
+                ? `hanya perlu ${remainingWorkout} kali lagi!`
+                : "target bulan ini tercapai!"}
+            </Text>
+          </View>
+        </Card>
 
-          {!isPendingWM && weighMeasureHistory && (
-            <Card
-              style={{
-                backgroundColor: "#FFF0F6",
-                borderWidth: 1,
-                borderColor: "#FBCFE8",
-              }}
-            >
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 6,
-                }}
-              >
-                <Ionicons name="calendar" size={16} color="#E91E63" />
-                <Text
-                  style={{
-                    fontSize: 14,
-                    fontWeight: "800",
-                    color: "#E91E63",
-                  }}
-                >
-                  Jadwal
-                </Text>
-              </View>
-              <Text
-                style={{
-                  fontSize: 12,
-                  fontWeight: "600",
-                  color: "#9C27B0",
-                  marginTop: 2,
-                }}
-              >
-                Penimbangan & Pengukuran
-              </Text>
-              <Divider />
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  gap: 8,
-                  backgroundColor: "#FCE4EC",
-                  borderRadius: 14,
-                  padding: 10,
-                }}
-              >
-                <Ionicons name="heart" size={16} color="#EC4899" />
-                <Text
-                  style={{
-                    fontSize: 12,
-                    color: "#EC4899",
-                    fontWeight: "600",
-                  }}
-                >
-                  {weighMeasureHistory.response.length > 0
-                    ? formatDate(weighMeasureHistory.response[0].created_at)
-                    : "Belum dijadwalkan"}
-                </Text>
-              </View>
-            </Card>
-          )}
-
-          {/* Message Card */}
-          <Card
-            style={{
-              backgroundColor: "#FFF0F6",
-              borderWidth: 1,
-              borderColor: "#FBCFE8",
-              minHeight: 160,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                gap: 6,
-              }}
-            >
-              <FontAwesome5 name="comment-dots" size={14} color="#E91E63" />
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: "800",
-                  color: "#E91E63",
-                }}
-              >
-                Pesan
-              </Text>
-            </View>
-            <Divider />
-            <View
-              style={{
-                alignItems: "center",
-                flex: 1,
-                paddingVertical: 8,
-              }}
-            >
-              <View
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 24,
-                  backgroundColor: "#FCE4EC",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <FontAwesome5 name="comment-dots" size={22} color="#F48FB1" />
-              </View>
-              <Text
-                style={{
-                  fontSize: 12,
-                  color: "#9CA3AF",
-                  textAlign: "center",
-                  lineHeight: 18,
-                }}
-              >
-                Belum ada pesan
-              </Text>
-            </View>
-          </Card>
-        </View>
-      )}
+        <AppointmentCard
+          appointment={appointment}
+          isLoading={isLoadingAppointment}
+          isError={isAppointmentError}
+        />
+      </View>
     </View>
   );
 };

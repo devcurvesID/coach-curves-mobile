@@ -200,6 +200,11 @@ export default function ProfileScreen() {
           title="Riwayat Workout"
           onPress={() => router.push("/user/attendance")}
         />
+        <MenuItem
+          icon="barbell-sharp"
+          title="Challenges Saya"
+          onPress={() => router.push("/challenges")}
+        />
         <View className="my-5 h-px bg-gray-100 " />
 
         {/* Menu */}
