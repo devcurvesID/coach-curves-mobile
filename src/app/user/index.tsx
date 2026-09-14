@@ -1,3 +1,4 @@
+import { UserRoleBadge } from "@/components/profile/user-role-badge";
 import ContainerPage from "@/components/ui/container-page";
 import Item from "@/components/ui/item";
 import { LoadingView } from "@/components/ui/loading";
@@ -53,6 +54,12 @@ export default function ProfileScreen() {
             }}
           />
         </LinearGradient>
+        <Text className="mt-4 text-xl font-bold text-slate-900">
+          {user.name}
+        </Text>
+        <View className="mt-2">
+          <UserRoleBadge role={user.user_role} />
+        </View>
       </View>
       <ScrollView
         contentContainerClassName="px-2 pt-5 pb-32"

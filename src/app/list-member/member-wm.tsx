@@ -71,10 +71,7 @@ function KeyTagSearchModal({
           accessible={false}
           className="absolute inset-0"
         />
-        <View
-          accessibilityViewIsModal
-          className="rounded-3xl bg-white p-6 "
-        >
+        <View accessibilityViewIsModal className="rounded-3xl bg-white p-6 ">
           <View className="flex-row items-start justify-between">
             <View className="h-14 w-14 items-center justify-center rounded-2xl bg-violet-100 ">
               <Ionicons name="key-outline" size={28} color="#6F3FA0" />
@@ -131,9 +128,7 @@ function KeyTagSearchModal({
             onPress={onClose}
             className="mt-3 items-center rounded-2xl border border-gray-200 py-4 "
           >
-            <Text className="font-semibold text-gray-600 ">
-              Batal
-            </Text>
+            <Text className="font-semibold text-gray-600 ">Batal</Text>
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>
@@ -307,16 +302,12 @@ function AppointmentCard({
 
                 <View
                   className={`rounded-full px-2.5 py-1 ${
-                    completed
-                      ? "bg-green-50 "
-                      : "bg-amber-50 "
+                    completed ? "bg-green-50 " : "bg-amber-50 "
                   }`}
                 >
                   <Text
                     className={`text-[10px] font-bold ${
-                      completed
-                        ? "text-green-700 "
-                        : "text-amber-700 "
+                      completed ? "text-green-700 " : "text-amber-700 "
                     }`}
                   >
                     {completed ? "SELESAI" : "MENUNGGU WM"}
@@ -328,9 +319,7 @@ function AppointmentCard({
 
           <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 ">
             <View className="flex-1 border-r border-violet-200 pr-3 ">
-              <Text className="text-xs text-gray-500 ">
-                TANGGAL
-              </Text>
+              <Text className="text-xs text-gray-500 ">TANGGAL</Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
                 <Text className="ml-1.5 font-bold text-gray-900 ">
@@ -339,9 +328,7 @@ function AppointmentCard({
               </View>
             </View>
             <View className="flex-1 pl-4">
-              <Text className="text-xs text-gray-500 ">
-                JAM
-              </Text>
+              <Text className="text-xs text-gray-500 ">JAM</Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="time-outline" size={17} color="#6F3FA0" />
                 <Text className="ml-1.5 font-bold text-gray-900 ">
@@ -457,14 +444,7 @@ export default function ListMemberWMToday() {
   const coach_club_id = user_personal.member_club_id
     ? user_personal.member_club_id
     : user?.club_id?.[0];
-  const clubId =
-    typeof coach_club_id === "string"
-      ? coach_club_id
-      : coach_club_id &&
-          typeof coach_club_id === "object" &&
-          "_id" in coach_club_id
-        ? String(coach_club_id._id)
-        : undefined;
+
   const {
     data,
     error,
@@ -475,7 +455,7 @@ export default function ListMemberWMToday() {
     isRefetching,
     refetch,
   } = useInfiniteMemberAppointments({
-    club_id: clubId,
+    club_id: coach_club_id,
     key_tag_id: keyTagId || undefined,
     name: debouncedNameSearch || undefined,
     limit: PAGE_SIZE,
@@ -710,7 +690,7 @@ export default function ListMemberWMToday() {
                   ? `Tidak ada jadwal WM dengan Key Tag ${keyTagId}. Periksa kembali Key Tag yang dimasukkan.`
                   : debouncedNameSearch
                     ? `Tidak ada jadwal WM atas nama “${debouncedNameSearch}”. Coba gunakan nama lain.`
-                  : "Belum ada member yang dijadwalkan melakukan penimbangan hari ini."}
+                    : "Belum ada member yang dijadwalkan melakukan penimbangan hari ini."}
             </Text>
           </View>
         }

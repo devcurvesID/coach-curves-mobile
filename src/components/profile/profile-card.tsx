@@ -1,4 +1,5 @@
 import { FullscreenImage } from "@/components/ui/fullscreen-image";
+import { UserRoleBadge } from "@/components/profile/user-role-badge";
 import { useAuth } from "@/context/auth";
 import { formatDate } from "@/helpers/dates";
 import { getMemberFlag, MONTHLY_WORKOUT_TARGET } from "@/helpers/member-flag";
@@ -161,19 +162,7 @@ export const ProfileCardView = () => {
           </View>
         </View>
 
-        {/* Badge */}
-        <View
-          style={{
-            backgroundColor: "#F3E8FF",
-            borderRadius: 20,
-            paddingHorizontal: 10,
-            paddingVertical: 5,
-          }}
-        >
-          <Text style={{ fontSize: 11, fontWeight: "700", color: "#7C3AED" }}>
-            Member ✨
-          </Text>
-        </View>
+        <UserRoleBadge role={user.user_role} />
       </View>
 
       {/* Stat pills */}

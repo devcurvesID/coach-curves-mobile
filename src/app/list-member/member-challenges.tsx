@@ -1,6 +1,9 @@
 import ContainerPage from "@/components/ui/container-page";
 import { LoadingView } from "@/components/ui/loading";
-import { useChallenges } from "@/hooks/useChallenges";
+import {
+  useChallenges,
+  useCompletedUserChallenges,
+} from "@/hooks/useChallenges";
 import { useWorkoutHistoryByUserId } from "@/hooks/useWorkout";
 import { PATH_PUBLIC_IMAGE_REWARD } from "@/utils/constants";
 import { Ionicons } from "@expo/vector-icons";
@@ -33,14 +36,18 @@ const getChallengeTarget = (challenge: Challenge): number =>
 function ChallengeCard({
   challenge,
   workoutCount,
+  completedOverride = false,
+  completedAt,
 }: {
   challenge: Challenge;
   workoutCount: number;
+  completedOverride?: boolean;
+  completedAt?: string | null;
 }) {
   const target = getChallengeTarget(challenge);
-  const progress = Math.min(workoutCount, target);
+  const completed = completedOverride || workoutCount >= target;
+  const progress = completed ? target : Math.min(workoutCount, target);
   const percentage = Math.min((progress / target) * 100, 100);
-  const completed = workoutCount >= target;
 
   return (
     <View className="mx-5 mb-4 overflow-hidden rounded-3xl border border-gray-100 bg-white shadow-sm  ">
@@ -61,16 +68,12 @@ function ChallengeCard({
           </View>
           <View
             className={`rounded-full px-2.5 py-1 ${
-              completed
-                ? "bg-green-50 "
-                : "bg-amber-50 "
+              completed ? "bg-green-50 " : "bg-amber-50 "
             }`}
           >
             <Text
               className={`text-[10px] font-bold ${
-                completed
-                  ? "text-green-700 "
-                  : "text-amber-700 "
+                completed ? "text-green-700 " : "text-amber-700 "
               }`}
             >
               {completed ? "SELESAI" : "BERJALAN"}
@@ -79,9 +82,7 @@ function ChallengeCard({
         </View>
 
         <View className="mt-5 flex-row items-center justify-between">
-          <Text className="text-xs text-gray-500 ">
-            Progres workout
-          </Text>
+          <Text className="text-xs text-gray-500 ">Progres workout</Text>
           <Text className="text-xs font-bold text-[#6F3FA0] ">
             {progress}/{target} sesi
           </Text>
@@ -96,7 +97,13 @@ function ChallengeCard({
         </View>
         <Text className="mt-3 text-xs text-gray-500 ">
           {completed
-            ? "Target challenge telah tercapai."
+            ? completedAt
+              ? `Diselesaikan pada ${new Intl.DateTimeFormat("id-ID", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                }).format(new Date(completedAt))}.`
+              : "Target challenge telah tercapai."
             : `${Math.max(target - workoutCount, 0)} workout lagi untuk menyelesaikan challenge.`}
         </Text>
       </View>
@@ -112,6 +119,11 @@ export default function MemberChallengesScreen() {
     isLoading: isLoadingChallenges,
     isError: isChallengeError,
   } = useChallenges(id);
+  const {
+    data: completedChallengeData = [],
+    isLoading: isLoadingCompletedChallenges,
+    isError: isCompletedChallengeError,
+  } = useCompletedUserChallenges(id);
   const {
     mutate: loadWorkoutHistory,
     data: workoutData,
@@ -130,27 +142,54 @@ export default function MemberChallengesScreen() {
   }, [id, loadWorkoutHistory]);
 
   const challenges = (challengeData ?? []) as Challenge[];
-  const workoutCount = ((workoutData ?? []) as WorkoutRecord[]).length;
-  const completedCount = challenges.filter(
-    (challenge) => workoutCount >= getChallengeTarget(challenge),
-  ).length;
-  const visibleChallenges = useMemo(
+  const completedChallenges = useMemo(
     () =>
-      challenges.filter((challenge) => {
-        const completed = workoutCount >= getChallengeTarget(challenge);
-        return filter === "completed" ? completed : !completed;
+      completedChallengeData.flatMap((userChallenge) => {
+        if (!userChallenge.challenge) return [];
+
+        return [
+          {
+            challenge: {
+              _id: userChallenge._id,
+              challenge: userChallenge.challenge.challenge,
+              type: userChallenge.challenge.type,
+              picture: userChallenge.challenge.picture,
+              variable_target: userChallenge.challenge.variable_target,
+            } satisfies Challenge,
+            completedAt: userChallenge.updated_at,
+          },
+        ];
       }),
-    [challenges, filter, workoutCount],
+    [completedChallengeData],
+  );
+  const workoutCount = ((workoutData ?? []) as WorkoutRecord[]).length;
+  const incompleteChallenges = useMemo(
+    () =>
+      challenges.filter(
+        (challenge) => workoutCount < getChallengeTarget(challenge),
+      ),
+    [challenges, workoutCount],
   );
 
   if (
     (isLoadingChallenges && !challengeData) ||
-    (isLoadingWorkouts && !workoutData)
+    (isLoadingWorkouts && !workoutData) ||
+    isLoadingCompletedChallenges
   ) {
     return <LoadingView />;
   }
 
-  const hasError = isChallengeError || isWorkoutError;
+  const hasError =
+    filter === "completed"
+      ? isCompletedChallengeError
+      : isChallengeError || isWorkoutError;
+  const visibleChallenges =
+    filter === "completed"
+      ? completedChallenges.map((item) => item.challenge)
+      : incompleteChallenges;
+  const completedDates = new Map(
+    completedChallenges.map((item) => [item.challenge._id, item.completedAt]),
+  );
 
   return (
     <ContainerPage
@@ -161,7 +200,12 @@ export default function MemberChallengesScreen() {
         data={visibleChallenges}
         keyExtractor={(challenge) => challenge._id}
         renderItem={({ item }) => (
-          <ChallengeCard challenge={item} workoutCount={workoutCount} />
+          <ChallengeCard
+            challenge={item}
+            workoutCount={workoutCount}
+            completedOverride={filter === "completed"}
+            completedAt={completedDates.get(item._id)}
+          />
         )}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120, flexGrow: 1 }}
@@ -175,7 +219,7 @@ export default function MemberChallengesScreen() {
               <View className="mt-5 flex-row">
                 <View className="flex-1 border-r border-white/20">
                   <Text className="text-2xl font-bold text-white">
-                    {challenges.length - completedCount}
+                    {incompleteChallenges.length}
                   </Text>
                   <Text className="mt-1 text-xs text-violet-200">
                     Belum selesai
@@ -183,7 +227,7 @@ export default function MemberChallengesScreen() {
                 </View>
                 <View className="flex-1 pl-5">
                   <Text className="text-2xl font-bold text-white">
-                    {completedCount}
+                    {completedChallenges.length}
                   </Text>
                   <Text className="mt-1 text-xs text-violet-200">Selesai</Text>
                 </View>
@@ -207,9 +251,7 @@ export default function MemberChallengesScreen() {
                   filter === "completed" ? "bg-white " : ""
                 }`}
               >
-                <Text className="font-semibold text-gray-700 ">
-                  Selesai
-                </Text>
+                <Text className="font-semibold text-gray-700 ">Selesai</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -55,9 +55,7 @@ function PaymentCard({ payment }: { payment: ClubPayment }) {
               : payment.payment_status || "Status belum tersedia"}
           </Text>
         </View>
-        <Text className="text-xs text-gray-500 ">
-          {paymentDate}
-        </Text>
+        <Text className="text-xs text-gray-500 ">{paymentDate}</Text>
       </View>
       {overdueDays !== null && overdueDays > 0 ? (
         <View
@@ -75,32 +73,23 @@ function PaymentCard({ payment }: { payment: ClubPayment }) {
           </View>
         </View>
       ) : null}
-      <Text
-        selectable
-        className="mt-3 text-xs text-gray-500 "
-      >
+      <Text selectable className="mt-3 text-xs text-gray-500 ">
         No. pembayaran: {payment.payment_number || "—"}
       </Text>
       <View className="mt-4 rounded-2xl bg-blue-50 p-4 ">
-        <Text className="text-xs text-gray-600 ">
-          Total Tagihan
-        </Text>
+        <Text className="text-xs text-gray-600 ">Total Tagihan</Text>
         <Text className="mt-1 text-xl font-bold text-blue-700 ">
           {formatAmount(payment.amount_due)}
         </Text>
         <View className="mt-4 flex-row gap-3">
           <View className="flex-1">
-            <Text className="text-xs text-gray-600 ">
-              Sudah Dibayar
-            </Text>
+            <Text className="text-xs text-gray-600 ">Sudah Dibayar</Text>
             <Text className="mt-1 font-semibold text-gray-900 ">
               {formatAmount(payment.amount_paid)}
             </Text>
           </View>
           <View className="flex-1">
-            <Text className="text-xs text-gray-600 ">
-              Sisa Tagihan
-            </Text>
+            <Text className="text-xs text-gray-600 ">Sisa Tagihan</Text>
             <Text className="mt-1 font-semibold text-gray-900 ">
               {formatAmount(payment.rest_of_bill)}
             </Text>
@@ -130,14 +119,11 @@ function PaymentCard({ payment }: { payment: ClubPayment }) {
 
 export default function MemberPaymentsScreen() {
   const { user } = useAuth();
-  const firstClub: unknown = user?.club_id?.[0];
-  const rawClubId =
-    typeof firstClub === "string"
-      ? firstClub
-      : firstClub && typeof firstClub === "object" && "_id" in firstClub
-        ? firstClub._id
-        : undefined;
-  const clubId = typeof rawClubId === "string" ? rawClubId : undefined;
+
+  const user_personal = user.user_personal;
+  const coach_club_id = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const {
     data,
     isLoading,
@@ -148,7 +134,7 @@ export default function MemberPaymentsScreen() {
     fetchNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
-  } = useClubMemberPayments(clubId);
+  } = useClubMemberPayments(coach_club_id);
   const payments = data?.pages.flatMap((page) => page.response) ?? [];
   const total = data?.pages[0]?.total;
 
@@ -167,7 +153,7 @@ export default function MemberPaymentsScreen() {
         contentContainerStyle={{ paddingBottom: 100, flexGrow: 1 }}
         refreshing={isRefetching && !isFetchingNextPage}
         onRefresh={() => {
-          if (clubId) void refetch();
+          if (coach_club_id) void refetch();
         }}
         onEndReachedThreshold={0.4}
         onEndReached={() => {
@@ -215,7 +201,7 @@ export default function MemberPaymentsScreen() {
                 <View className="mb-4 rounded-full bg-blue-50 p-5">
                   <Ionicons
                     name={
-                      isError || !clubId
+                      isError || !coach_club_id
                         ? "alert-circle-outline"
                         : "receipt-outline"
                     }
@@ -224,20 +210,20 @@ export default function MemberPaymentsScreen() {
                   />
                 </View>
                 <Text className="text-center text-lg font-bold text-gray-900 ">
-                  {!clubId
+                  {!coach_club_id
                     ? "Club belum tersedia"
                     : isError
                       ? "Tagihan gagal dimuat"
                       : "Belum ada tagihan anggota"}
                 </Text>
                 <Text className="mt-2 text-center text-sm text-gray-500 ">
-                  {!clubId
+                  {!coach_club_id
                     ? "Data club user login belum tersedia."
                     : isError
                       ? "Periksa koneksi lalu coba kembali."
                       : "Tagihan member akan muncul di sini ketika tersedia."}
                 </Text>
-                {clubId ? (
+                {coach_club_id ? (
                   <TouchableOpacity
                     accessibilityRole="button"
                     onPress={() => void refetch()}

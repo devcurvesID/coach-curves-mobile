@@ -19,7 +19,7 @@ interface ClubPaymentPage {
   response: ClubPayment[] | null;
 }
 
-export const useClubMemberPayments = (clubId?: string) => {
+export const useClubMemberPayments = (clubId: string) => {
   const limit = 20;
   return useInfiniteQuery({
     queryKey: ["club-member-payments", clubId],
@@ -27,10 +27,13 @@ export const useClubMemberPayments = (clubId?: string) => {
     staleTime: 60 * 1000,
     initialPageParam: 0,
     queryFn: async ({ pageParam, signal }) => {
-      const { data } = await api.get<ClubPaymentPage>("/member-payment", {
-        params: { club_id: clubId, offset: pageParam, limit },
-        signal,
-      });
+      const { data } = await api.get<ClubPaymentPage>(
+        `/member-payment/club-bill/${clubId}`,
+        {
+          params: { club_id: clubId, offset: pageParam, limit },
+          signal,
+        },
+      );
       if (data.response != null && !Array.isArray(data.response)) {
         throw new Error("Format daftar tagihan tidak sesuai");
       }

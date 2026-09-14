@@ -1,3 +1,4 @@
+import { UserRoleBadge } from "@/components/profile/user-role-badge";
 import { FullscreenImage } from "@/components/ui/fullscreen-image";
 import { getDateTime } from "@/helpers/dates";
 import { getMemberFlag } from "@/helpers/member-flag";
@@ -78,6 +79,9 @@ export function InfoMemberCard() {
             <Text className="mt-1 font-semibold text-purple-600">
               {userPersonal.key_tag_id}
             </Text>
+            <View className="mt-2">
+              <UserRoleBadge role={user.user_role} />
+            </View>
           </View>
         </View>
 
@@ -137,7 +141,11 @@ export function InfoMemberCard() {
               <Text className="mb-4 text-base font-bold text-gray-800">
                 Informasi Member
               </Text>
-              <InfoRow icon="person" label="Tipe" value={membershipType} />
+              <InfoRow
+                icon="person"
+                label="Tipe"
+                value={user.user_role ? user.user_role.role : "Staff"}
+              />
               <InfoRow
                 icon="workspace-premium"
                 label="Keanggotaan"

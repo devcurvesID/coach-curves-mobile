@@ -97,6 +97,8 @@ export interface CompletedUserChallenge {
     _id: string;
     challenge: string;
     variable_target: number;
+    type?: string | null;
+    picture?: string | null;
   };
 }
 
@@ -104,9 +106,10 @@ export const useCompletedUserChallenges = (userId?: string) =>
   useQuery<CompletedUserChallenge[]>({
     queryKey: ["user-challenge", "completed", userId],
     enabled: Boolean(userId),
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const { data } = await api.get("/user-challenge", {
         params: { user_id: userId },
+        signal,
       });
       const response = data.response ?? [];
       if (!Array.isArray(response)) {
