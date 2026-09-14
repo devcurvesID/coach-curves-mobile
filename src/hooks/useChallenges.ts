@@ -107,10 +107,12 @@ export const useCompletedUserChallenges = (userId?: string) =>
     queryKey: ["user-challenge", "completed", userId],
     enabled: Boolean(userId),
     queryFn: async ({ signal }) => {
-      const { data } = await api.get("/user-challenge", {
-        params: { user_id: userId },
-        signal,
-      });
+      const { data } = await api.get(
+        `/user-challenge/challenge-completed/${userId}`,
+        {
+          signal,
+        },
+      );
       const response = data.response ?? [];
       if (!Array.isArray(response)) {
         throw new Error("Format challenge selesai tidak sesuai.");

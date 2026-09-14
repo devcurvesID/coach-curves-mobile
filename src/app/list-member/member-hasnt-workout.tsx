@@ -1,7 +1,6 @@
 import ContainerPage from "@/components/ui/container-page";
 import { useAuth } from "@/context/auth";
 import {
-  getHasntWorkoutClubId,
   type MemberHasntWorkout,
   useMembersHasntWorkout,
 } from "@/hooks/useMemberHasntWorkout";
@@ -118,14 +117,10 @@ function MemberCard({ member }: { member: MemberHasntWorkout }) {
         </View>
 
         <View className="mt-5 rounded-2xl bg-violet-50 p-4 ">
-          <Text className="text-[11px] text-gray-500 ">
-            TANGGAL BERGABUNG
-          </Text>
+          <Text className="text-[11px] text-gray-500 ">TANGGAL BERGABUNG</Text>
           <View className="mt-1.5 flex-row items-center">
             <Ionicons name="calendar-outline" size={17} color="#6F3FA0" />
-            <Text className="ml-2 font-bold text-gray-900 ">
-              {joined.date}
-            </Text>
+            <Text className="ml-2 font-bold text-gray-900 ">{joined.date}</Text>
           </View>
         </View>
 
@@ -153,9 +148,7 @@ function MemberCard({ member }: { member: MemberHasntWorkout }) {
           })
         }
         className={`flex-row items-center justify-center py-4 ${
-          hasPhone
-            ? "bg-green-50 "
-            : "bg-gray-50 "
+          hasPhone ? "bg-green-50 " : "bg-gray-50 "
         }`}
       >
         <Ionicons
@@ -177,7 +170,11 @@ function MemberCard({ member }: { member: MemberHasntWorkout }) {
 
 export default function MemberHasntWorkoutScreen() {
   const { user } = useAuth();
-  const clubId = getHasntWorkoutClubId(user?.user_personal?.member_club_id);
+  const user_personal = user.user_personal;
+
+  const clubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 

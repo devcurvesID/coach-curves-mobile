@@ -1,10 +1,6 @@
 import ContainerPage from "@/components/ui/container-page";
 import { useAuth } from "@/context/auth";
-import {
-  getMemberHoldClubId,
-  type MemberHold,
-  useMemberHolds,
-} from "@/hooks/useMemberHold";
+import { type MemberHold, useMemberHolds } from "@/hooks/useMemberHold";
 import { imageProfileURL } from "@/services/image";
 import { openWhatsApp } from "@/services/whatsapp";
 import { Ionicons } from "@expo/vector-icons";
@@ -116,9 +112,7 @@ function MemberHoldCard({ member }: { member: MemberHold }) {
 
         <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 ">
           <View className="flex-1 border-r border-violet-200 pr-3 ">
-            <Text className="text-[11px] text-gray-500 ">
-              MULAI CUTI
-            </Text>
+            <Text className="text-[11px] text-gray-500 ">MULAI CUTI</Text>
             <View className="mt-1.5 flex-row items-center">
               <Ionicons name="calendar-outline" size={16} color="#6F3FA0" />
               <Text className="ml-2 text-sm font-bold text-gray-800 ">
@@ -127,9 +121,7 @@ function MemberHoldCard({ member }: { member: MemberHold }) {
             </View>
           </View>
           <View className="flex-1 pl-4">
-            <Text className="text-[11px] text-gray-500 ">
-              SELESAI CUTI
-            </Text>
+            <Text className="text-[11px] text-gray-500 ">SELESAI CUTI</Text>
             <View className="mt-1.5 flex-row items-center">
               <Ionicons name="calendar-outline" size={16} color="#6F3FA0" />
               <Text className="ml-2 text-sm font-bold text-gray-800 ">
@@ -177,9 +169,7 @@ function MemberHoldCard({ member }: { member: MemberHold }) {
           })
         }
         className={`flex-row items-center justify-center py-4 ${
-          hasPhone
-            ? "bg-green-50 "
-            : "bg-gray-50 "
+          hasPhone ? "bg-green-50 " : "bg-gray-50 "
         }`}
       >
         <Ionicons
@@ -201,7 +191,11 @@ function MemberHoldCard({ member }: { member: MemberHold }) {
 
 export default function MemberHoldScreen() {
   const { user } = useAuth();
-  const clubId = getMemberHoldClubId(user?.user_personal?.member_club_id);
+  const user_personal = user.user_personal;
+
+  const clubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
 

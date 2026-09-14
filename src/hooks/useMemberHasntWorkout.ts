@@ -21,15 +21,6 @@ interface MemberHasntWorkoutResponse {
   total?: number | string;
 }
 
-export const getHasntWorkoutClubId = (club: unknown): string | undefined => {
-  if (typeof club === "string") return club.trim() || undefined;
-  if (typeof club === "number" && Number.isFinite(club)) return String(club);
-  if (club && typeof club === "object" && "_id" in club) {
-    return getHasntWorkoutClubId(club._id);
-  }
-  return undefined;
-};
-
 export const useMembersHasntWorkout = ({
   clubId,
   name,

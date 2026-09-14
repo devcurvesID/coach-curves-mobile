@@ -43,16 +43,6 @@ interface SummaryCardProps {
   onPress?: () => void;
 }
 
-const getClubId = (club: unknown): string | undefined => {
-  if (typeof club === "string") return club;
-  if (club && typeof club === "object" && "_id" in club) {
-    const clubId = (club as { _id?: unknown })._id;
-    return typeof clubId === "string" ? clubId : undefined;
-  }
-
-  return undefined;
-};
-
 const getPublicityImageUrl = (fileName?: string | null): string => {
   if (!fileName) return "";
   return `${PATH_PUBLIC_IMAGE_PUBLICITY}/${fileName}`;
@@ -188,7 +178,10 @@ export default function DashboardScreen() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const { user } = useAuth();
 
-  const coachClubId = getClubId(user?.user_personal?.member_club_id);
+  const user_personal = user.user_personal;
+  const coachClubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const {
     data: dashboardTotals,
     isLoading: isLoadingDashboard,

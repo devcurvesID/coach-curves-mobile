@@ -119,7 +119,7 @@ interface WorkoutTodayPage<T = unknown> {
 }
 
 export const useMemberWorkoutToday = <T = unknown>(
-  clubId?: string,
+  clubId: string,
   limit = 10,
 ) => {
   return useInfiniteQuery({
@@ -127,10 +127,13 @@ export const useMemberWorkoutToday = <T = unknown>(
     enabled: Boolean(clubId),
     initialPageParam: 0,
     queryFn: async ({ pageParam, signal }) => {
-      const { data } = await api.get<WorkoutTodayPage<T>>("/workouts/today", {
-        params: { club_id: clubId, offset: pageParam, limit },
-        signal,
-      });
+      const { data } = await api.get<WorkoutTodayPage<T>>(
+        `/workouts/today/${clubId}`,
+        {
+          params: { offset: pageParam, limit },
+          signal,
+        },
+      );
 
       return {
         ...data,

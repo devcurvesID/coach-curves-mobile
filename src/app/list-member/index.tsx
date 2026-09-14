@@ -30,15 +30,6 @@ const getInitials = (name: string): string => {
     .toUpperCase();
 };
 
-const getClubId = (club: unknown): string | undefined => {
-  if (typeof club === "string") return club;
-  if (club && typeof club === "object" && "_id" in club) {
-    const id = (club as { _id?: unknown })._id;
-    return typeof id === "string" ? id : undefined;
-  }
-  return undefined;
-};
-
 const displayValue = (value?: string | number | null): string => {
   if (value === null || value === undefined) return "-";
 
@@ -185,7 +176,10 @@ export default function ListMemberScreen() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const clubId = getClubId(user?.club_id?.[0]);
+  const user_personal = user.user_personal;
+  const clubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
 
   useEffect(() => {
     const timer = setTimeout(

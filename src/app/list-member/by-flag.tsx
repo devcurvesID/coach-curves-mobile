@@ -8,7 +8,6 @@ import { useUserClub } from "@/hooks/useClubs";
 import {
   fetchAllMembersGroupedByFlag,
   fetchMemberFlagResume,
-  getMemberFlagClubId,
   type MemberByFlag,
   useMemberFlagResume,
   useMembersByFlag,
@@ -98,7 +97,10 @@ function MemberFlagAvatar({
 
 export default function MemberFlagsScreen() {
   const { user } = useAuth();
-  const clubId = getMemberFlagClubId(user?.user_personal?.member_club_id);
+  const user_personal = user.user_personal;
+  const clubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const [flag, setFlag] = useState<MemberFlag["flag"]>("A");
   const [search, setSearch] = useState("");
   const [isResumeVisible, setIsResumeVisible] = useState(false);
@@ -170,10 +172,7 @@ export default function MemberFlagsScreen() {
         html: await createPdfHtml(),
       });
       const generatedFile = new File(uri);
-      const namedFile = new File(
-        Paths.cache,
-        createFlagPdfFileName(clubName),
-      );
+      const namedFile = new File(Paths.cache, createFlagPdfFileName(clubName));
       if (namedFile.exists) namedFile.delete();
       generatedFile.move(namedFile);
 

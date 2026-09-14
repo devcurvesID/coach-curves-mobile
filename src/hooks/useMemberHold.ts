@@ -26,15 +26,6 @@ interface MemberHoldApiResponse {
   total?: number | string;
 }
 
-export const getMemberHoldClubId = (club: unknown): string | undefined => {
-  if (typeof club === "string") return club.trim() || undefined;
-  if (typeof club === "number" && Number.isFinite(club)) return String(club);
-  if (club && typeof club === "object" && "_id" in club) {
-    return getMemberHoldClubId(club._id);
-  }
-  return undefined;
-};
-
 export const useMemberHolds = ({
   clubId,
   name,

@@ -1,7 +1,6 @@
 import ContainerPage from "@/components/ui/container-page";
 import { useAuth } from "@/context/auth";
 import {
-  getNonMemberClubId,
   type NonMember,
   type NonMemberStatus,
   useNonMemberStatus,
@@ -103,16 +102,12 @@ function MemberCard({ member }: { member: NonMember }) {
             </Text>
             <View
               className={`mt-2 self-start rounded-full px-3 py-1 ${
-                isStopped
-                  ? "bg-red-50 "
-                  : "bg-amber-50 "
+                isStopped ? "bg-red-50 " : "bg-amber-50 "
               }`}
             >
               <Text
                 className={`text-[11px] font-bold ${
-                  isStopped
-                    ? "text-red-700 "
-                    : "text-amber-700 "
+                  isStopped ? "text-red-700 " : "text-amber-700 "
                 }`}
               >
                 {isStopped ? "STOP" : "INACTIVE"}
@@ -123,9 +118,7 @@ function MemberCard({ member }: { member: NonMember }) {
 
         <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 ">
           <View className="flex-1 border-r border-violet-200 pr-3 ">
-            <Text className="text-[11px] text-gray-500 ">
-              MULAI STATUS
-            </Text>
+            <Text className="text-[11px] text-gray-500 ">MULAI STATUS</Text>
             <View className="mt-1.5 flex-row items-center">
               <Ionicons name="calendar-outline" size={16} color="#6F3FA0" />
               <Text className="ml-2 text-sm font-bold text-gray-800 ">
@@ -134,9 +127,7 @@ function MemberCard({ member }: { member: NonMember }) {
             </View>
           </View>
           <View className="flex-1 pl-4">
-            <Text className="text-[11px] text-gray-500 ">
-              SAMPAI
-            </Text>
+            <Text className="text-[11px] text-gray-500 ">SAMPAI</Text>
             <View className="mt-1.5 flex-row items-center">
               <Ionicons name="calendar-outline" size={16} color="#6F3FA0" />
               <Text className="ml-2 text-sm font-bold text-gray-800 ">
@@ -163,9 +154,7 @@ function MemberCard({ member }: { member: NonMember }) {
           })
         }
         className={`flex-row items-center justify-center py-4 ${
-          hasPhone
-            ? "bg-green-50 "
-            : "bg-gray-50 "
+          hasPhone ? "bg-green-50 " : "bg-gray-50 "
         }`}
       >
         <Ionicons
@@ -187,7 +176,11 @@ function MemberCard({ member }: { member: NonMember }) {
 
 export default function NonMemberStatusScreen() {
   const { user } = useAuth();
-  const clubId = getNonMemberClubId(user?.user_personal?.member_club_id);
+  const user_personal = user.user_personal;
+
+  const clubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const currentYear = new Date().getFullYear();
   const years = useMemo(
     () => Array.from({ length: 25 }, (_, index) => currentYear - index),
@@ -300,9 +293,7 @@ export default function NonMemberStatusScreen() {
           className="flex-row items-center px-5 py-2"
         >
           <Ionicons name="calendar-outline" size={18} color="#6F3FA0" />
-          <Text className="mx-2 font-bold text-gray-800 ">
-            Tahun {year}
-          </Text>
+          <Text className="mx-2 font-bold text-gray-800 ">Tahun {year}</Text>
           <Ionicons name="chevron-down" size={17} color="#6F3FA0" />
         </Pressable>
         <Pressable
@@ -508,9 +499,7 @@ export default function NonMemberStatusScreen() {
                     setYearPickerOpen(false);
                   }}
                   className={`h-[52px] flex-row items-center justify-between rounded-xl px-4 ${
-                    item === year
-                      ? "bg-violet-50 "
-                      : "bg-white "
+                    item === year ? "bg-violet-50 " : "bg-white "
                   }`}
                 >
                   <Text

@@ -230,14 +230,8 @@ export default function EditProfileScreen() {
   const { data: provinces, isLoading: isLoadingProv } = useProvinces();
   const [imageLoading, setImageLoading] = useState(false);
   const router = useRouter();
-  const {
-    user,
-    signOut,
-    isLoading: isLoadingUser,
-    onReloadUserMobile,
-  } = useAuth();
+  const { user, isLoading: isLoadingUser, onReloadUserMobile } = useAuth();
   const user_personal = user.user_personal;
-  console.log("user_personal", user_personal);
 
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const {
@@ -249,12 +243,8 @@ export default function EditProfileScreen() {
     district_name,
     village_name,
   } = user_personal;
-  console.log("user_personal", user_personal);
-  const {
-    mutate: updateUserIdFn,
-    data: userUpdate,
-    isPending: isPendingUpdateUser,
-  } = useUpdateUser();
+  const { mutateAsync: updateUser, isPending: isPendingUpdateUser } =
+    useUpdateUser();
   const {
     control,
     handleSubmit,
@@ -274,27 +264,26 @@ export default function EditProfileScreen() {
       nik: nik ? nik.toString() : "",
     },
   });
-  console.log("errors", errors);
-
   const onSubmit = async (data: any) => {
     try {
       setImageLoading(true);
-      console.log("errors", errors);
-      let body_req = {
+      const bodyRequest = {
         ...data,
         tshirt_size: Number(data.tshirt_size),
         nik: Number(data.nik),
       };
-      await updateUserIdFn(body_req);
+      await updateUser(bodyRequest);
       await onReloadUserMobile();
 
-      // await signOut();
-      alert("data berhasil diupdate, silahkan login kembali");
+      Alert.alert("Berhasil", "Data profil berhasil diperbarui.");
       router.back();
-
-      // 🔥 call API di sini
     } catch (error) {
-      console.log("error", error);
+      Alert.alert(
+        "Gagal memperbarui profil",
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan saat menyimpan perubahan.",
+      );
     } finally {
       setImageLoading(false);
     }
@@ -307,11 +296,10 @@ export default function EditProfileScreen() {
   };
   const uploadPhoto = async (asset: ImagePicker.ImagePickerAsset) => {
     const formData = new FormData();
-    // const imageResponse = await fetch(asset.uri);
-    // const blob = await imageResponse.blob();
+    const extension = asset.mimeType?.split("/")[1] || "jpg";
     formData.append("photo", {
       uri: asset.uri,
-      name: asset.fileName || "photo.jpg",
+      name: asset.fileName || `profile-${user._id}.${extension}`,
       type: asset.mimeType || "image/jpeg",
     } as any);
     const response = await api.post("/upload", formData, {
@@ -322,37 +310,76 @@ export default function EditProfileScreen() {
     });
     return response.data;
   };
-  const pickImage = async () => {
+
+  const uploadSelectedPhoto = async (
+    asset: ImagePicker.ImagePickerAsset,
+  ): Promise<void> => {
     try {
       setImageLoading(true);
-      const permission =
-        await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-      if (!permission.granted) {
-        Alert.alert("Izin Ditolak", "Aplikasi memerlukan akses galeri.");
-        return;
-      }
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ["images"],
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-      if (!result.canceled) {
-        const asset = result.assets[0];
-        console.log(JSON.stringify(asset, null, 2));
-        setPhotoUri(asset.uri);
-        console.log(result.assets[0]);
-        await uploadPhoto(asset);
-        await onReloadUserMobile();
-        router.back();
-      }
-    } catch (error: any) {
-      alert(JSON.stringify(error));
-      console.log("error", error);
+      setPhotoUri(asset.uri);
+      await uploadPhoto(asset);
+      await onReloadUserMobile();
+      Alert.alert(
+        "Foto berhasil diperbarui",
+        "Foto profil baru telah diunggah.",
+      );
+    } catch (error) {
+      setPhotoUri(null);
+      Alert.alert(
+        "Foto gagal diunggah",
+        error instanceof Error
+          ? error.message
+          : "Periksa koneksi lalu coba kembali.",
+      );
     } finally {
       setImageLoading(false);
     }
+  };
+
+  const openCamera = async (): Promise<void> => {
+    const permission = await ImagePicker.requestCameraPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin kamera diperlukan",
+        "Aktifkan akses kamera agar foto profil dapat diambil.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) await uploadSelectedPhoto(result.assets[0]);
+  };
+
+  const openGallery = async (): Promise<void> => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert(
+        "Izin galeri diperlukan",
+        "Aktifkan akses galeri agar foto profil dapat dipilih.",
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled) await uploadSelectedPhoto(result.assets[0]);
+  };
+
+  const selectPhotoSource = (): void => {
+    Alert.alert("Ubah Foto Profil", "Pilih sumber foto yang ingin digunakan.", [
+      { text: "Ambil dari Kamera", onPress: () => void openCamera() },
+      { text: "Pilih dari Galeri", onPress: () => void openGallery() },
+      { text: "Batal", style: "cancel" },
+    ]);
   };
 
   if (imageLoading) {
@@ -387,7 +414,7 @@ export default function EditProfileScreen() {
               >
                 <Image
                   source={{
-                    uri: imageProfileURL(user_personal.photo),
+                    uri: photoUri || imageProfileURL(user_personal.photo),
                   }}
                   style={{
                     width: 100,
@@ -400,7 +427,9 @@ export default function EditProfileScreen() {
               {/* BUTTON CAMERA */}
               <TouchableOpacity
                 activeOpacity={0.8}
-                onPress={pickImage}
+                onPress={selectPhotoSource}
+                accessibilityRole="button"
+                accessibilityLabel="Ubah foto profil"
                 className="absolute bottom-0 right-0 bg-[#6F3FA0] w-10 h-10 rounded-full items-center justify-center border-2 border-white"
                 style={{
                   elevation: 5,
@@ -409,6 +438,12 @@ export default function EditProfileScreen() {
                 <Ionicons name="camera" size={18} color="white" />
               </TouchableOpacity>
             </View>
+            <Text className="mt-3 text-sm font-semibold text-slate-700">
+              Ubah Foto Profil
+            </Text>
+            <Text className="mt-1 text-center text-xs text-slate-500">
+              Ambil foto menggunakan kamera atau pilih dari galeri
+            </Text>
           </View>
           {/* ACCOUNT */}
           <Section title="Account Info">

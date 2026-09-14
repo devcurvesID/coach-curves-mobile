@@ -1,6 +1,6 @@
 import { useAuth } from "@/context/auth";
-import { api } from "@/lib/axios";
 import { useWorkoutHistory } from "@/hooks/useWorkout";
+import { api } from "@/lib/axios";
 import { useInfiniteQuery, useMutation, useQuery } from "@tanstack/react-query";
 import { useEffect } from "react";
 
@@ -50,13 +50,13 @@ interface UseListMemberParams {
   limit?: number;
 }
 
-export const useMemberTotal = (clubId?: string) => {
+export const useMemberTotal = (clubId: string) => {
   return useQuery({
     queryKey: ["members", "total", clubId],
     enabled: Boolean(clubId),
     queryFn: async () => {
       const { data } = await api.get<MembersApiResponse>(
-        `/members?club_id=${encodeURIComponent(clubId ?? "")}`,
+        `/members/club-member-list/${clubId}`,
       );
       const page = normalizeMembersResponse(data.response, data.total);
 
@@ -133,14 +133,16 @@ export const useInfiniteMembers = ({
     enabled: Boolean(clubId),
     initialPageParam: 0,
     queryFn: async ({ pageParam }) => {
-      const { data } = await api.get<MembersApiResponse>("/members", {
-        params: {
-          club_id: clubId,
-          ...(name ? { name } : {}),
-          offset: pageParam,
-          limit,
+      const { data } = await api.get<MembersApiResponse>(
+        `/members/club-member-list/${clubId}`,
+        {
+          params: {
+            ...(name ? { name } : {}),
+            offset: pageParam,
+            limit,
+          },
         },
-      });
+      );
       return normalizeMembersResponse(
         data.response,
         data.total,

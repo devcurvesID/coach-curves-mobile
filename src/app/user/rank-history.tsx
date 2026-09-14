@@ -162,13 +162,10 @@ export default function RankHistoryScreen() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
   const [rankScope, setRankScope] = useState<RankScope>("monthly");
-  const rawClubId = user?.user_personal?.member_club_id;
-  const clubId =
-    typeof rawClubId === "string"
-      ? rawClubId
-      : rawClubId && typeof rawClubId === "object" && "_id" in rawClubId
-        ? String(rawClubId._id)
-        : undefined;
+  const user_personal = user.user_personal;
+  const clubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const currentPeriodLabel = useMemo(() => {
     const now = new Date();
 

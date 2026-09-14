@@ -1,5 +1,5 @@
-import { api } from "@/lib/axios";
 import type { MemberFlag } from "@/helpers/member-flag-options";
+import { api } from "@/lib/axios";
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 
 export interface MemberByFlag {
@@ -133,15 +133,6 @@ export const fetchAllMembersGroupedByFlag = async (
       return { flag, total, members: members.slice(0, total) };
     }),
   );
-};
-
-export const getMemberFlagClubId = (club: unknown): string | undefined => {
-  if (typeof club === "string") return club.trim() || undefined;
-  if (typeof club === "number" && Number.isFinite(club)) return String(club);
-  if (club && typeof club === "object" && "_id" in club) {
-    return getMemberFlagClubId(club._id);
-  }
-  return undefined;
 };
 
 export const useMemberFlagResume = (clubId?: string, enabled = true) =>

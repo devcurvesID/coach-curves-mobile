@@ -6,6 +6,7 @@ import { LoadingView } from "@/components/ui/loading";
 import { LastWorkoutCard } from "@/components/workout/last-workout-card";
 import { useAuth } from "@/context/auth";
 import { getDateTime } from "@/helpers/dates";
+import { getMemberFlagStyle } from "@/helpers/member-flag";
 import {
   useClubWorkoutHistory,
   useLastWorkout,
@@ -31,15 +32,6 @@ import QRCode from "react-native-qrcode-svg";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 const DAY_LABELS = ["Sen", "Sel", "Rab", "Kam", "Jum", "Sab", "Min"];
-
-const getClubId = (club: unknown): string | undefined => {
-  if (typeof club === "string") return club.trim() || undefined;
-  if (typeof club === "number" && Number.isFinite(club)) return String(club);
-  if (club && typeof club === "object" && "_id" in club) {
-    return getClubId(club._id);
-  }
-  return undefined;
-};
 
 const getCurrentWeek = (today: Date): Date[] => {
   const mondayOffset = (today.getDay() + 6) % 7;
@@ -262,21 +254,33 @@ const ClubWorkoutHistoryCard = ({ clubId }: { clubId?: string }) => {
 const MemberQrCode = ({
   memberName,
   keyTagId,
+  flag,
 }: {
   memberName: string;
   keyTagId: string;
+  flag?: string | null;
 }) => {
   const { width: screenWidth } = useWindowDimensions();
   const qrSize = Math.max(Math.min(screenWidth - 128, 330), 180);
+  const flagLabel = flag?.trim().toUpperCase();
+  const flagStyle = getMemberFlagStyle(flagLabel);
 
   const renderQrCode = (size: number) => (
-    <View style={styles.qrCard}>
+    <View
+      style={[
+        styles.qrCard,
+        {
+          borderColor: flagStyle.color,
+          shadowColor: flagStyle.color,
+        },
+      ]}
+    >
       <QRCode
         value={keyTagId}
         logo={require("@/assets/images/logocurves.png")}
         logoSize={size > 350 ? 48 : 40}
         logoBackgroundColor="#F2F2F2"
-        color="#8B5CF6"
+        color={flagStyle.color}
         backgroundColor="#FFFFFF"
         quietZone={12}
         size={size}
@@ -297,6 +301,20 @@ const MemberQrCode = ({
       <View style={styles.memberInformation}>
         <Text style={styles.memberName}>{memberName}</Text>
         <Text style={styles.memberId}>MEMBER ID • {keyTagId}</Text>
+        {flagLabel ? (
+          <View
+            className="mt-3 flex-row items-center rounded-full px-3 py-1.5"
+            style={{ backgroundColor: flagStyle.backgroundColor }}
+          >
+            <Ionicons name="flag" size={14} color={flagStyle.color} />
+            <Text
+              className="ml-1.5 text-xs font-bold"
+              style={{ color: flagStyle.color }}
+            >
+              Flag {flagLabel}
+            </Text>
+          </View>
+        ) : null}
         <Text style={styles.qrHint}>Ketuk QR untuk memperbesar</Text>
       </View>
     </View>
@@ -307,7 +325,11 @@ const WorkOutScreen = () => {
   useLastWorkoutSocket();
 
   const { user, isLoading, onReloadUserMobile } = useAuth();
-  const clubId = getClubId(user?.user_personal?.member_club_id);
+  const user_personal = user.user_personal;
+
+  const clubId = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const userId = user?._id ? String(user._id) : undefined;
   const {
     data: lastWorkout,
@@ -315,7 +337,6 @@ const WorkOutScreen = () => {
     isLoading: isLoadingLastWorkout,
     refetch,
   } = useLastWorkout();
-  console.log("lastWorkout", lastWorkout);
 
   React.useEffect(() => {
     console.log("socket.connected", socket.connected);
@@ -342,7 +363,6 @@ const WorkOutScreen = () => {
     }
     let curr_date = getDateTime(new Date());
     let last_workout = getDateTime(new Date(lastWorkout.workout_date));
-    console.log(curr_date, last_workout);
     if (curr_date === last_workout) {
       return true;
     }
@@ -396,6 +416,7 @@ const WorkOutScreen = () => {
               <MemberQrCode
                 memberName={user.name}
                 keyTagId={String(user.user_personal.key_tag_id)}
+                flag={user.user_personal.flag}
               />
             </View>
           </>
@@ -421,8 +442,8 @@ const styles = StyleSheet.create({
   qrCard: {
     padding: 20,
     borderRadius: 28,
+    borderWidth: 2,
     backgroundColor: "#FFFFFF",
-    shadowColor: "#7C3AED",
     shadowOffset: { width: 0, height: 12 },
     shadowOpacity: 0.3,
     shadowRadius: 24,

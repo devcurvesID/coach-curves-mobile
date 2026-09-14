@@ -236,9 +236,7 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
 
           <View className="mt-5 flex-row rounded-2xl bg-violet-50 p-4 ">
             <View className="flex-1 border-r border-violet-200 pr-3 ">
-              <Text className="text-xs text-gray-500 ">
-                CHECK-IN
-              </Text>
+              <Text className="text-xs text-gray-500 ">CHECK-IN</Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="time-outline" size={17} color="#6F3FA0" />
                 <Text className="ml-1.5 font-bold text-gray-900 ">
@@ -249,9 +247,7 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
             </View>
 
             <View className="flex-1 pl-4">
-              <Text className="text-xs text-gray-500 ">
-                ESTIMASI SESI
-              </Text>
+              <Text className="text-xs text-gray-500 ">ESTIMASI SESI</Text>
               <View className="mt-1.5 flex-row items-center">
                 <Ionicons name="fitness-outline" size={17} color="#6F3FA0" />
                 <Text className="ml-1.5 font-bold text-[#6F3FA0] ">
@@ -295,9 +291,7 @@ function WorkoutMemberCard({ member, onMeasurement }: WorkoutMemberCardProps) {
               <Ionicons name="key-outline" size={18} color="#6F3FA0" />
             </View>
             <View className="ml-3 flex-1">
-              <Text className="text-[11px] text-gray-500 ">
-                KEY TAG MEMBER
-              </Text>
+              <Text className="text-[11px] text-gray-500 ">KEY TAG MEMBER</Text>
               <Text className="mt-0.5 font-bold text-gray-800 ">
                 {isLoadingMemberDetail
                   ? "Memuat Key Tag..."
@@ -423,13 +417,10 @@ export default function ListMemberWOScreen() {
   const { user } = useAuth();
   const [search, setSearch] = useState("");
 
-  const firstClub: unknown = user?.club_id?.[0];
-  const clubId =
-    typeof firstClub === "string"
-      ? firstClub
-      : firstClub && typeof firstClub === "object" && "_id" in firstClub
-        ? String(firstClub._id)
-        : undefined;
+  const user_personal = user.user_personal;
+  const coach_club_id = user_personal.member_club_id
+    ? user_personal.member_club_id
+    : user?.club_id?.[0];
   const {
     data,
     isLoading,
@@ -440,7 +431,7 @@ export default function ListMemberWOScreen() {
     hasNextPage,
     isFetchingNextPage,
     isFetchNextPageError,
-  } = useMemberWorkoutToday<WorkoutMember>(clubId);
+  } = useMemberWorkoutToday<WorkoutMember>(coach_club_id);
 
   const workoutMembers = data?.pages.flatMap((page) => page.response) ?? [];
   const workoutTotal = data?.pages[0]?.total;
