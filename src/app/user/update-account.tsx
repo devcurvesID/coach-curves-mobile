@@ -8,6 +8,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { LinearGradient } from "expo-linear-gradient";
+import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import { Controller, useForm } from "react-hook-form";
 import {
@@ -115,12 +116,14 @@ const RequirementItem = ({
 );
 
 export default function UpdateAccountScreen() {
+  const router = useRouter();
   const { user, signOut } = useAuth();
 
   const { mutateAsync: updateAccount, isPending } = useUpdateAccount();
   const [requestError, setRequestError] = useState<string | null>(null);
   const [isSuccessVisible, setIsSuccessVisible] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isRedirectingToLogin, setIsRedirectingToLogin] = useState(false);
   const {
     control,
     handleSubmit,
@@ -131,7 +134,7 @@ export default function UpdateAccountScreen() {
     resolver: zodResolver(updateAccountSchema),
     mode: "onChange",
     defaultValues: {
-      username: user.username ?? "",
+      username: user?.username ?? "",
       password: "",
       verify_password: "",
     },
@@ -171,11 +174,32 @@ export default function UpdateAccountScreen() {
 
     try {
       setIsSigningOut(true);
+      setIsRedirectingToLogin(true);
+      setIsSuccessVisible(false);
       await signOut();
+      router.replace("/(auth)");
+    } catch (error) {
+      setIsRedirectingToLogin(false);
+      setRequestError(
+        error instanceof Error
+          ? error.message
+          : "Sesi belum berhasil diakhiri. Silakan coba kembali.",
+      );
     } finally {
       setIsSigningOut(false);
     }
   };
+
+  if (isRedirectingToLogin) {
+    return (
+      <View className="flex-1 items-center justify-center bg-white">
+        <ActivityIndicator size="large" color="#6F3FA0" />
+        <Text className="mt-3 text-sm font-medium text-slate-600">
+          Mengarahkan ke halaman login...
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <>
