@@ -2,7 +2,6 @@ import ContainerPage from "@/components/ui/container-page";
 import { useAuth } from "@/context/auth";
 import { type MemberHold, useMemberHolds } from "@/hooks/useMemberHold";
 import { imageProfileURL } from "@/services/image";
-import { openWhatsApp } from "@/services/whatsapp";
 import { Ionicons } from "@expo/vector-icons";
 import dayjs from "dayjs";
 import React, { useEffect, useMemo, useState } from "react";
@@ -153,7 +152,7 @@ function MemberHoldCard({ member }: { member: MemberHold }) {
         </View>
       </View>
 
-      <Pressable
+      {/* <Pressable
         accessibilityRole="button"
         accessibilityLabel={
           hasPhone
@@ -184,7 +183,7 @@ function MemberHoldCard({ member }: { member: MemberHold }) {
         >
           {hasPhone ? "Ajak Bergabung Kembali" : "Nomor belum tersedia"}
         </Text>
-      </Pressable>
+      </Pressable> */}
     </View>
   );
 }

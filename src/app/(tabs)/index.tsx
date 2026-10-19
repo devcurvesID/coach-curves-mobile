@@ -333,6 +333,24 @@ export default function DashboardScreen() {
             Akses informasi yang Anda butuhkan.
           </Text>
           <QuickAction
+            title="Chat"
+            description="Lihat daftar percakapan terbaru"
+            icon="chatbubbles-outline"
+            onPress={() => router.push("/chats")}
+          />
+          <QuickAction
+            title="Report Harian"
+            description="Isi dan perbarui aktivitas coach hari ini"
+            icon="clipboard-outline"
+            onPress={() => router.push("/user/daily-report")}
+          />
+          {/* <QuickAction
+            title="Aktivitas Coach"
+            description="Lihat ringkasan layanan dan transaksi harian"
+            icon="analytics-outline"
+            onPress={() => router.push("/user/coach-activity")}
+          /> */}
+          <QuickAction
             title="Member per Flag"
             description="Lihat member berdasarkan kategori flag"
             icon="flag-outline"

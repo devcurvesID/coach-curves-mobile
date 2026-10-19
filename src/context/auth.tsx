@@ -1,7 +1,7 @@
 import { validatePhoneNumber } from "@/helpers";
 import { api } from "@/lib/axios";
-import { socket } from "@/services/socket";
 import { scheduleLocalNotificationAsync } from "@/services/push-notification";
+import { socket } from "@/services/socket";
 import { tokenCache } from "@/utils/cache";
 import { router } from "expo-router";
 import React from "react";
@@ -28,7 +28,7 @@ const MEMBER_SYNC_ENDPOINTS = [
 const getErrorMessage = (error: unknown): string =>
   error instanceof Error && error.message.trim()
     ? error.message
-    : "Proses verifikasi member belum berhasil.";
+    : "Proses verifikasi coach belum berhasil.";
 
 const syncNewMemberData = async (sourceId: string | number): Promise<void> => {
   for (const endpoint of MEMBER_SYNC_ENDPOINTS) {
@@ -223,8 +223,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
   const verifyNotification = (): Promise<string | null> =>
     scheduleLocalNotificationAsync({
-      title: "Verifikasi Member",
-      body: "Terima kasih sudah melakukan verifikasi member.",
+      title: "Verifikasi Coach",
+      body: "Terima kasih sudah melakukan verifikasi coach.",
       data: { type: "member-verification" },
     });
   const onCreateNewUser = async (
@@ -260,7 +260,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // Verifikasi tetap berhasil meskipun notifikasi lokal tidak tersedia.
       });
     } catch (error: unknown) {
-      Alert.alert("Verifikasi Member Gagal", getErrorMessage(error));
+      Alert.alert("Verifikasi Coach Gagal", getErrorMessage(error));
     } finally {
       setIsLoading(false);
     }

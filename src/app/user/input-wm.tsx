@@ -393,15 +393,6 @@ export default function InputWeighMeasureScreen() {
   };
 
   const openGallery = async (): Promise<void> => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permission.granted) {
-      Alert.alert(
-        "Izin galeri diperlukan",
-        "Aktifkan akses galeri agar foto hasil latihan dapat dipilih.",
-      );
-      return;
-    }
-
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
       allowsEditing: true,

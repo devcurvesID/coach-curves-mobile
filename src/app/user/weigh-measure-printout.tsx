@@ -4,7 +4,10 @@ import Text from "@/components/ui/text";
 import { useAuth } from "@/context/auth";
 import { formatDate, formatDateString } from "@/helpers/dates";
 import { useWeighMeasurePrintout } from "@/hooks/useWeighMeasure";
-import { imageProfileURL } from "@/services/image";
+import {
+  imageProfileURL,
+  weighMeasureProgressImageURL,
+} from "@/services/image";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import moment from "moment";
@@ -84,6 +87,12 @@ export default function WeighMeasurePrintOutScreen() {
   const router = useRouter();
   const params = useLocalSearchParams();
   const data = JSON.parse(params.data as string);
+  const imageProgress =
+    typeof data.image_progress === "string" && data.image_progress.trim()
+      ? data.image_progress.trim()
+      : null;
+  const [hasProgressImageError, setHasProgressImageError] =
+    React.useState(false);
   console.log("wm_printout", data.wm_date);
   const { user, signOut } = useAuth();
 
@@ -92,6 +101,7 @@ export default function WeighMeasurePrintOutScreen() {
     data: weighMeasurePrintout,
     isPending: isPendingPrintOut,
   } = useWeighMeasurePrintout();
+  console.log("weighMeasurePrintout", weighMeasurePrintout);
 
   React.useEffect(() => {
     async function getWeighMeasure({ wm_date }: any) {
@@ -187,6 +197,41 @@ export default function WeighMeasurePrintOutScreen() {
               <Text className="text-white/80 text-xs">kg</Text>
             </View>
           </View>
+
+          {imageProgress ? (
+            <View className="mt-4 overflow-hidden rounded-3xl bg-white p-5 shadow">
+              <View className="mb-4 flex-row items-center">
+                <View className="h-11 w-11 items-center justify-center rounded-2xl bg-purple-100">
+                  <Ionicons name="images-outline" size={22} color="#6F3FA0" />
+                </View>
+                <View className="ml-3 flex-1">
+                  <Text className="text-lg font-bold text-gray-800">
+                    Foto Progress Latihan
+                  </Text>
+                  <Text className="mt-1 text-sm text-gray-500">
+                    Dokumentasi hasil penimbangan dan pengukuran
+                  </Text>
+                </View>
+              </View>
+
+              {hasProgressImageError ? (
+                <View className="h-64 items-center justify-center rounded-2xl bg-gray-100 px-8">
+                  <Ionicons name="image-outline" size={38} color="#94A3B8" />
+                  <Text className="mt-3 text-center text-sm text-gray-500">
+                    Foto progress belum berhasil dimuat.
+                  </Text>
+                </View>
+              ) : (
+                <Image
+                  source={{ uri: weighMeasureProgressImageURL(imageProgress) }}
+                  onError={() => setHasProgressImageError(true)}
+                  resizeMode="cover"
+                  className="h-80 w-full rounded-2xl bg-gray-100"
+                  accessibilityLabel={`Foto progress latihan ${user.name}`}
+                />
+              )}
+            </View>
+          ) : null}
 
           <View className="bg-white rounded-3xl p-5 shadow mt-4">
             <Text className="text-lg font-bold text-[#6F3FA0] mb-4">

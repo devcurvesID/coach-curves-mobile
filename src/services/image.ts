@@ -17,6 +17,8 @@ export const publicityImageURL = (filename?: string): string =>
     : DEFAULT_PUBLIC_IMAGE_URL;
 export const rewardImageURL = (filename?: string): string =>
   buildPublicImageUrl(PATH_PUBLIC_IMAGE_REWARD, filename);
+export const weighMeasureProgressImageURL = (filename: string): string =>
+  `${BASE_URL}/api/weigh-measure/image-progress/${encodeURIComponent(filename)}`;
 export function imageProfileURL(
   memberNameOrFilename?: string,
   profileFilename?: string,
