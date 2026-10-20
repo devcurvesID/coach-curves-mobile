@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 export interface PerformanceStaffReport {
   member_club_id?: string | number | null;
+  report_date?: string | null;
   total_calling: number;
   answer: number;
   apo_confirm: number;
@@ -30,9 +31,158 @@ export interface PerformanceStaffReport {
   sales?: number | null;
 }
 
+export interface PerformanceStaffPrintoutItem extends PerformanceStaffReport {
+  _id?: string;
+  id?: string;
+  staff_id?: string;
+  club_id?: string;
+  report_date: string;
+  total_apo?: number | null;
+  persen_call?: string | null;
+  persen_su?: string | null;
+  promo?: number | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface PerformanceStaffPrintout {
+  total: number;
+  response: PerformanceStaffPrintoutItem[];
+  from_date: string;
+  to_date: string;
+}
+
+export interface PerformanceStaffWmActivityRecord {
+  _id: string;
+  id?: string;
+  app_hour?: string | null;
+  user_id?:
+    | string
+    | {
+        _id?: string;
+        name?: string | null;
+      }
+    | null;
+  staff_id?: string | null;
+  app_date?: string | null;
+  status?: boolean | string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface PerformanceStaffWmActivity {
+  total: number;
+  response: PerformanceStaffWmActivityRecord[];
+}
+
+export interface PerformanceStaffRenewalActivityRecord {
+  _id: string;
+  source_id?: number | null;
+  user_id?:
+    | string
+    | {
+        _id?: string;
+        name?: string | null;
+      }
+    | null;
+  payment_number?: string | null;
+  sf_amount?: number | string | null;
+  mf_amount?: number | string | null;
+  dc_amount?: number | string | null;
+  tax_amount?: number | string | null;
+  amount_due?: number | string | null;
+  payment_category?: string | null;
+  payment_date?: string | null;
+  amount_paid?: number | string | null;
+  rest_of_bill?: number | string | null;
+  payment_status?: string | null;
+  renewal?: boolean | null;
+  conversion?: boolean | null;
+  deposit_amount?: number | string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface PerformanceStaffRenewalActivity {
+  total: number;
+  response: PerformanceStaffRenewalActivityRecord[];
+}
+
+export interface PerformanceStaffProductActivityRecord {
+  _id: string;
+  member_id?:
+    | string
+    | {
+        _id?: string;
+        name?: string | null;
+      }
+    | null;
+  payment_number?: string | null;
+  subtotal?: number | string | null;
+  total?: number | string | null;
+  tax_value?: number | string | null;
+  voucher_code?: string | null;
+  voucher_value?: number | string | null;
+  pay?: number | string | null;
+  change?: number | string | null;
+  invoice_discount?: number | string | null;
+  payment_date?: string | null;
+  is_reward?: boolean | null;
+  is_billed?: boolean | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+}
+
+export interface PerformanceStaffProductActivity {
+  total: number;
+  response: PerformanceStaffProductActivityRecord[];
+}
+
+export interface PerformanceStaffPromoConversionActivityRecord {
+  _id: string;
+  payment_number?: string | null;
+  amount_due?: number | string | null;
+  payment_date?: string | null;
+  amount_paid?: number | string | null;
+  rest_of_bill?: number | string | null;
+  payment_status?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  data_member?: {
+    name?: string | null;
+  } | null;
+}
+
+export interface PerformanceStaffPromoConversionActivity {
+  total: number;
+  response: PerformanceStaffPromoConversionActivityRecord[];
+}
+
+export interface PerformanceStaffLockerActivityRecord {
+  _id: string;
+  payment_number?: string | null;
+  price?: number | string | null;
+  quantity?: number | string | null;
+  subtotal?: number | string | null;
+  tax_amount?: number | string | null;
+  pay?: number | string | null;
+  payment_date?: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
+  data_member?: {
+    name?: string | null;
+  } | null;
+}
+
+export interface PerformanceStaffLockerActivity {
+  total: number;
+  response: PerformanceStaffLockerActivityRecord[];
+}
+
 export type EditablePerformanceStaffReport = Omit<
   PerformanceStaffReport,
   | "member_club_id"
+  | "report_date"
   | "wm"
   | "loker"
   | "konversi_promo"
@@ -50,6 +200,38 @@ export type UpdatePerformanceStaffReportPayload =
 
 interface PerformanceStaffReportResponse {
   response?: PerformanceStaffReport | null;
+}
+
+interface PerformanceStaffPrintoutResponse {
+  total?: number;
+  response?: PerformanceStaffPrintoutItem[] | null;
+  from_date?: string;
+  to_date?: string;
+}
+
+interface PerformanceStaffWmActivityResponse {
+  total?: number;
+  response?: PerformanceStaffWmActivityRecord[] | null;
+}
+
+interface PerformanceStaffRenewalActivityResponse {
+  total?: number;
+  response?: PerformanceStaffRenewalActivityRecord[] | null;
+}
+
+interface PerformanceStaffProductActivityResponse {
+  total?: number;
+  response?: PerformanceStaffProductActivityRecord[] | null;
+}
+
+interface PerformanceStaffPromoConversionActivityResponse {
+  total?: number;
+  response?: PerformanceStaffPromoConversionActivityRecord[] | null;
+}
+
+interface PerformanceStaffLockerActivityResponse {
+  total?: number;
+  response?: PerformanceStaffLockerActivityRecord[] | null;
 }
 
 const REPORT_QUERY_KEY = "performance-staff-report";
@@ -106,3 +288,156 @@ export const useUpdatePerformanceStaffReport = (reportDate: string) => {
     onSuccess: invalidateReport,
   });
 };
+
+export const usePerformanceStaffPrintout = (userId?: string) =>
+  useMutation({
+    mutationFn: async ({
+      fromDate,
+      toDate,
+    }: {
+      fromDate: string;
+      toDate: string;
+    }): Promise<PerformanceStaffPrintout> => {
+      if (!userId) throw new Error("Identitas pengguna belum tersedia.");
+
+      const { data } = await api.post<PerformanceStaffPrintoutResponse>(
+        `/performance-staff/print-out/${encodeURIComponent(userId)}`,
+        { from_date: fromDate, to_date: toDate },
+      );
+      const reports = Array.isArray(data.response) ? data.response : [];
+
+      return {
+        total: Number.isFinite(Number(data.total))
+          ? Number(data.total)
+          : reports.length,
+        response: reports,
+        from_date: data.from_date ?? fromDate,
+        to_date: data.to_date ?? toDate,
+      };
+    },
+  });
+
+export const usePerformanceStaffWmActivity = (reportDate?: string) =>
+  useQuery<PerformanceStaffWmActivity>({
+    queryKey: ["performance-staff", "activity", "wm", reportDate],
+    enabled: Boolean(reportDate),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<PerformanceStaffWmActivityResponse>(
+        `/performance-staff/activity/wm/${encodeURIComponent(reportDate!)}`,
+        { signal },
+      );
+
+      const activities = Array.isArray(data.response) ? data.response : [];
+      return {
+        total: Number.isFinite(Number(data.total))
+          ? Number(data.total)
+          : activities.length,
+        response: activities,
+      };
+    },
+  });
+
+export const usePerformanceStaffRenewalActivity = (reportDate?: string) =>
+  useQuery<PerformanceStaffRenewalActivity>({
+    queryKey: ["performance-staff", "activity", "renewal", reportDate],
+    enabled: Boolean(reportDate),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<PerformanceStaffRenewalActivityResponse>(
+        `/performance-staff/activity/renewal/${encodeURIComponent(reportDate!)}`,
+        { signal },
+      );
+      const activities = Array.isArray(data.response) ? data.response : [];
+
+      return {
+        total: Number.isFinite(Number(data.total))
+          ? Number(data.total)
+          : activities.length,
+        response: activities,
+      };
+    },
+  });
+
+export const usePerformanceStaffRegularConversionActivity = (
+  reportDate?: string,
+) =>
+  useQuery<PerformanceStaffRenewalActivity>({
+    queryKey: ["performance-staff", "activity", "konversi_regular", reportDate],
+    enabled: Boolean(reportDate),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<PerformanceStaffRenewalActivityResponse>(
+        `/performance-staff/activity/konversi_regular/${encodeURIComponent(reportDate!)}`,
+        { signal },
+      );
+      const activities = Array.isArray(data.response) ? data.response : [];
+
+      return {
+        total: Number.isFinite(Number(data.total))
+          ? Number(data.total)
+          : activities.length,
+        response: activities,
+      };
+    },
+  });
+
+export const usePerformanceStaffProductActivity = (reportDate?: string) =>
+  useQuery<PerformanceStaffProductActivity>({
+    queryKey: ["performance-staff", "activity", "product", reportDate],
+    enabled: Boolean(reportDate),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<PerformanceStaffProductActivityResponse>(
+        `/performance-staff/activity/product/${encodeURIComponent(reportDate!)}`,
+        { signal },
+      );
+      const activities = Array.isArray(data.response) ? data.response : [];
+
+      return {
+        total: Number.isFinite(Number(data.total))
+          ? Number(data.total)
+          : activities.length,
+        response: activities,
+      };
+    },
+  });
+
+export const usePerformanceStaffPromoConversionActivity = (
+  reportDate?: string,
+) =>
+  useQuery<PerformanceStaffPromoConversionActivity>({
+    queryKey: ["performance-staff", "activity", "konversi_promo", reportDate],
+    enabled: Boolean(reportDate),
+    queryFn: async ({ signal }) => {
+      const { data } =
+        await api.get<PerformanceStaffPromoConversionActivityResponse>(
+          `/performance-staff/activity/konversi_promo/${encodeURIComponent(reportDate!)}`,
+          { signal },
+        );
+      const activities = Array.isArray(data.response) ? data.response : [];
+
+      return {
+        total: Number.isFinite(Number(data.total))
+          ? Number(data.total)
+          : activities.length,
+        response: activities,
+      };
+    },
+  });
+
+export const usePerformanceStaffLockerActivity = (reportDate?: string) =>
+  useQuery<PerformanceStaffLockerActivity>({
+    queryKey: ["performance-staff", "activity", "locker", reportDate],
+    enabled: Boolean(reportDate),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<PerformanceStaffLockerActivityResponse>(
+        `/performance-staff/activity/locker/${encodeURIComponent(reportDate!)}`,
+        { signal },
+      );
+      const activities = Array.isArray(data.response) ? data.response : [];
+
+      return {
+        total: Number.isFinite(Number(data.total))
+          ? Number(data.total)
+          : activities.length,
+        response: activities,
+      };
+    },
+  });

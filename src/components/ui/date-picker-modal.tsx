@@ -5,6 +5,7 @@ import { Modal, Pressable, Text, View } from "react-native";
 interface DatePickerModalProps {
   eyebrow?: string;
   maximumDate?: Date;
+  minimumDate?: Date;
   onCancel: () => void;
   onSelect: (date: Date) => void;
   selectedDate: Date;
@@ -42,6 +43,7 @@ const getCalendarDays = (month: Date): CalendarDay[] => {
 const DatePickerModal = ({
   eyebrow = "Tanggal Point",
   maximumDate,
+  minimumDate,
   onCancel,
   onSelect,
   selectedDate,
@@ -68,6 +70,13 @@ const DatePickerModal = ({
         maximumDate.getFullYear(),
         maximumDate.getMonth(),
         maximumDate.getDate(),
+      )
+    : undefined;
+  const minimumDay = minimumDate
+    ? new Date(
+        minimumDate.getFullYear(),
+        minimumDate.getMonth(),
+        minimumDate.getDate(),
       )
     : undefined;
   const nextMonth = new Date(
@@ -158,7 +167,10 @@ const DatePickerModal = ({
           <View className="mt-2 flex-row flex-wrap">
             {calendarDays.map(({ date, isCurrentMonth }) => {
               const isSelected = isSameDay(date, selectedDate);
-              const isDisabled = Boolean(maximumDay && date > maximumDay);
+              const isDisabled = Boolean(
+                (maximumDay && date > maximumDay) ||
+                (minimumDay && date < minimumDay),
+              );
 
               return (
                 <View

@@ -11,6 +11,7 @@ import {
 } from "@/hooks/usePerformanceStaffReport";
 import { imageProfileURL } from "@/services/image";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -28,6 +29,7 @@ import { KeyboardAwareScrollView } from "react-native-keyboard-aware-scroll-view
 type NumericReportField = Exclude<
   keyof PerformanceStaffReport,
   | "member_club_id"
+  | "report_date"
   | "lead_guespass"
   | "wm"
   | "loker"
@@ -435,6 +437,11 @@ export default function DailyCoachReportScreen() {
   const hasChanges = Boolean(
     updatePayload && Object.keys(updatePayload).length > 0,
   );
+  const activityReportDate =
+    savedReport?.report_date &&
+    /^\d{4}-\d{2}-\d{2}/.test(savedReport.report_date)
+      ? savedReport.report_date.slice(0, 10)
+      : reportDate;
   const isSaving = isCreating || isUpdating;
   const displayDate = new Intl.DateTimeFormat("id-ID", {
     weekday: "long",
@@ -536,6 +543,30 @@ export default function DailyCoachReportScreen() {
               </View>
             </View>
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Buat PDF report harian"
+            onPress={() => router.push("/user/daily-report-printout")}
+            className="mt-4 flex-row items-center rounded-2xl border border-purple-100 bg-purple-50 p-4 active:bg-purple-100"
+          >
+            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-purple-700">
+              <Ionicons
+                name="document-text-outline"
+                size={22}
+                color="#FFFFFF"
+              />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="font-black text-slate-900">
+                Printout Report Harian
+              </Text>
+              <Text className="mt-1 text-xs leading-5 text-slate-500">
+                Pilih periode, preview, dan download report dalam format PDF.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={19} color="#6F3FA0" />
+          </Pressable>
 
           {isLoading ? (
             <View className="items-center py-16">
@@ -657,11 +688,88 @@ export default function DailyCoachReportScreen() {
                     {READONLY_REPORT_ITEMS.map((item) => {
                       const value = Number(savedReport[item.field]);
                       const displayValue = Number.isFinite(value) ? value : 0;
+                      const canViewDetails = [
+                        "wm",
+                        "renewal",
+                        "konversi_promo",
+                        "konversi_regular",
+                        "product",
+                        "loker",
+                      ].includes(item.field);
+                      const detailLabel =
+                        item.field === "wm"
+                          ? "member yang melakukan Weigh & Measure"
+                          : item.field === "renewal"
+                            ? "aktivitas renewal"
+                            : item.field === "konversi_promo"
+                              ? "aktivitas konversi promo"
+                              : item.field === "konversi_regular"
+                                ? "aktivitas konversi regular"
+                                : item.field === "product"
+                                  ? "transaksi product"
+                                  : "transaksi loker";
 
                       return (
-                        <View
+                        <Pressable
                           key={item.field}
-                          className="mb-3 w-[48.5%] rounded-2xl bg-slate-50 p-3"
+                          accessibilityRole={
+                            canViewDetails ? "button" : undefined
+                          }
+                          accessibilityLabel={
+                            canViewDetails
+                              ? `Lihat ${displayValue} ${detailLabel}`
+                              : undefined
+                          }
+                          disabled={!canViewDetails}
+                          onPress={() => {
+                            if (item.field === "wm") {
+                              router.push({
+                                pathname: "/user/daily-report-wm",
+                                params: { reportDate: activityReportDate },
+                              });
+                              return;
+                            }
+                            if (item.field === "renewal") {
+                              router.push({
+                                pathname: "/user/daily-report-renewal",
+                                params: { reportDate: activityReportDate },
+                              });
+                              return;
+                            }
+                            if (item.field === "konversi_regular") {
+                              router.push({
+                                pathname:
+                                  "/user/daily-report-regular-conversion",
+                                params: { reportDate: activityReportDate },
+                              });
+                              return;
+                            }
+                            if (item.field === "konversi_promo") {
+                              router.push({
+                                pathname: "/user/daily-report-promo-conversion",
+                                params: { reportDate: activityReportDate },
+                              });
+                              return;
+                            }
+                            if (item.field === "product") {
+                              router.push({
+                                pathname: "/user/daily-report-product",
+                                params: { reportDate: activityReportDate },
+                              });
+                              return;
+                            }
+                            if (item.field === "loker") {
+                              router.push({
+                                pathname: "/user/daily-report-locker",
+                                params: { reportDate: activityReportDate },
+                              });
+                            }
+                          }}
+                          className={`mb-3 w-[48.5%] rounded-2xl p-3 ${
+                            canViewDetails
+                              ? "border border-purple-200 bg-purple-50 active:bg-purple-100"
+                              : "bg-slate-50"
+                          }`}
                         >
                           <View className="flex-row items-center">
                             <View className="h-9 w-9 items-center justify-center rounded-xl bg-white">
@@ -671,12 +779,21 @@ export default function DailyCoachReportScreen() {
                                 color="#6F3FA0"
                               />
                             </View>
-                            <Ionicons
-                              name="lock-closed"
-                              size={11}
-                              color="#94A3B8"
-                              style={{ marginLeft: "auto" }}
-                            />
+                            {canViewDetails ? (
+                              <Ionicons
+                                name="chevron-forward"
+                                size={16}
+                                color="#6F3FA0"
+                                style={{ marginLeft: "auto" }}
+                              />
+                            ) : (
+                              <Ionicons
+                                name="lock-closed"
+                                size={11}
+                                color="#94A3B8"
+                                style={{ marginLeft: "auto" }}
+                              />
+                            )}
                           </View>
                           <Text className="mt-3 text-2xl font-black text-slate-900">
                             {displayValue.toLocaleString("id-ID")}
@@ -690,7 +807,30 @@ export default function DailyCoachReportScreen() {
                           >
                             {item.description}
                           </Text>
-                        </View>
+                          {canViewDetails ? (
+                            <View className="mt-2 flex-row items-center border-t border-purple-100 pt-2">
+                              <Ionicons
+                                name="people-outline"
+                                size={13}
+                                color="#6F3FA0"
+                              />
+                              <Text className="ml-1 text-[10px] font-bold text-purple-700">
+                                {item.field === "wm"
+                                  ? "Lihat daftar member"
+                                  : item.field === "renewal"
+                                    ? "Lihat detail renewal"
+                                    : [
+                                          "konversi_promo",
+                                          "konversi_regular",
+                                        ].includes(item.field)
+                                      ? "Lihat detail konversi"
+                                      : item.field === "product"
+                                        ? "Lihat transaksi product"
+                                        : "Lihat transaksi loker"}
+                              </Text>
+                            </View>
+                          ) : null}
+                        </Pressable>
                       );
                     })}
                   </View>
