@@ -3,15 +3,23 @@ import ContainerPage from "@/components/ui/container-page";
 import { useAuth } from "@/context/auth";
 import {
   type CreatePerformanceStaffReportPayload,
+  type PerformanceStaffAutomaticActivityPayload,
   type PerformanceStaffReport,
   type UpdatePerformanceStaffReportPayload,
   useCreatePerformanceStaffReport,
+  usePerformanceStaffLockerActivity,
+  usePerformanceStaffProductActivity,
+  usePerformanceStaffPromoConversionActivity,
+  usePerformanceStaffRegularConversionActivity,
+  usePerformanceStaffRenewalActivity,
   usePerformanceStaffReport,
+  usePerformanceStaffSalesActivity,
+  usePerformanceStaffWmActivity,
   useUpdatePerformanceStaffReport,
 } from "@/hooks/usePerformanceStaffReport";
 import { imageProfileURL } from "@/services/image";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { type Href, router } from "expo-router";
 import React from "react";
 import {
   ActivityIndicator,
@@ -38,6 +46,8 @@ type NumericReportField = Exclude<
   | "renewal"
   | "product"
   | "sales"
+  | "persen_call"
+  | "persen_su"
 >;
 
 type ReadonlyReportField =
@@ -282,6 +292,18 @@ const formatApiDate = (date: Date): string => {
   return `${year}-${month}-${day}`;
 };
 
+const formatAutomaticActivityValue = (
+  field: ReadonlyReportField,
+  value: number,
+): string =>
+  field === "sales"
+    ? new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        maximumFractionDigits: 0,
+      }).format(value)
+    : value.toLocaleString("id-ID");
+
 const toForm = (report: PerformanceStaffReport): DailyReportForm => {
   const form = createInitialReport();
   NUMERIC_FIELDS.forEach((field) => {
@@ -300,6 +322,7 @@ const formatPercentage = (value: number, total: number): string => {
 const getUpdatePayload = (
   form: DailyReportForm,
   savedReport: PerformanceStaffReport,
+  automaticActivities: PerformanceStaffAutomaticActivityPayload,
 ): UpdatePerformanceStaffReportPayload => {
   const changedFields: UpdatePerformanceStaffReportPayload = {};
 
@@ -313,6 +336,27 @@ const getUpdatePayload = (
   if (guestPass !== (savedReport.lead_guespass ?? "").trim()) {
     changedFields.lead_guespass = guestPass;
   }
+
+  const savedAutomaticActivities: PerformanceStaffAutomaticActivityPayload = {
+    wm: Number(savedReport.wm) || 0,
+    loker: Number(savedReport.loker) || 0,
+    konversi_promo: Number(savedReport.konversi_promo) || 0,
+    konversi_regular: Number(savedReport.konversi_regular) || 0,
+    renewal: Number(savedReport.renewal) || 0,
+    product: Number(savedReport.product) || 0,
+    sales: Number(savedReport.sales) || 0,
+    total_bayar: Number(savedReport.total_bayar) || 0,
+  };
+
+  (
+    Object.keys(
+      automaticActivities,
+    ) as (keyof PerformanceStaffAutomaticActivityPayload)[]
+  ).forEach((field) => {
+    if (automaticActivities[field] !== savedAutomaticActivities[field]) {
+      changedFields[field] = automaticActivities[field];
+    }
+  });
 
   return changedFields;
 };
@@ -406,6 +450,7 @@ export default function DailyCoachReportScreen() {
   const [isGuestPassFocused, setIsGuestPassFocused] = React.useState(false);
   const [successAction, setSuccessAction] =
     React.useState<ReportSuccessAction | null>(null);
+  const automaticSyncAttemptRef = React.useRef<string | null>(null);
   const todayDate = React.useMemo(() => new Date(), []);
   const reportDate = formatApiDate(todayDate);
   const userPersonal = user?.user_personal;
@@ -421,6 +466,10 @@ export default function DailyCoachReportScreen() {
     useCreatePerformanceStaffReport(reportDate);
   const { mutateAsync: updateReport, isPending: isUpdating } =
     useUpdatePerformanceStaffReport(reportDate);
+  const {
+    mutateAsync: updateAutomaticReport,
+    isPending: isSynchronizingAutomaticActivities,
+  } = useUpdatePerformanceStaffReport(reportDate);
 
   React.useEffect(() => {
     setReport(savedReport ? toForm(savedReport) : createInitialReport());
@@ -431,18 +480,103 @@ export default function DailyCoachReportScreen() {
   const showUp = Number(report.apo_slow_up) || 0;
   const callPercentage = formatPercentage(answer, totalCalling);
   const showUpPercentage = formatPercentage(showUp, totalCalling);
-  const updatePayload = savedReport
-    ? getUpdatePayload(report, savedReport)
-    : undefined;
-  const hasChanges = Boolean(
-    updatePayload && Object.keys(updatePayload).length > 0,
-  );
   const activityReportDate =
     savedReport?.report_date &&
     /^\d{4}-\d{2}-\d{2}/.test(savedReport.report_date)
       ? savedReport.report_date.slice(0, 10)
       : reportDate;
-  const isSaving = isCreating || isUpdating;
+  const activityQueryDate = activityReportDate;
+  const wmActivity = usePerformanceStaffWmActivity(activityQueryDate);
+  const lockerActivity = usePerformanceStaffLockerActivity(activityQueryDate);
+  const promoConversionActivity =
+    usePerformanceStaffPromoConversionActivity(activityQueryDate);
+  const regularConversionActivity =
+    usePerformanceStaffRegularConversionActivity(activityQueryDate);
+  const renewalActivity = usePerformanceStaffRenewalActivity(activityQueryDate);
+  const productActivity = usePerformanceStaffProductActivity(activityQueryDate);
+  const salesActivity = usePerformanceStaffSalesActivity(activityQueryDate);
+  const automaticActivityTotals: Record<ReadonlyReportField, number> = {
+    wm: wmActivity.data?.response.length ?? 0,
+    loker: lockerActivity.data?.response.length ?? 0,
+    konversi_promo: promoConversionActivity.data?.response.length ?? 0,
+    konversi_regular: regularConversionActivity.data?.response.length ?? 0,
+    renewal: renewalActivity.data?.response.length ?? 0,
+    product: productActivity.data?.response.length ?? 0,
+    sales: salesActivity.data?.total_bayar ?? 0,
+  };
+  const automaticActivityPayload: PerformanceStaffAutomaticActivityPayload = {
+    wm: automaticActivityTotals.wm,
+    loker: automaticActivityTotals.loker,
+    konversi_promo: automaticActivityTotals.konversi_promo,
+    konversi_regular: automaticActivityTotals.konversi_regular,
+    renewal: automaticActivityTotals.renewal,
+    product: automaticActivityTotals.product,
+    sales:
+      automaticActivityTotals.loker +
+      automaticActivityTotals.konversi_promo +
+      automaticActivityTotals.konversi_regular +
+      automaticActivityTotals.renewal +
+      automaticActivityTotals.product,
+    total_bayar: automaticActivityTotals.sales,
+  };
+  const automaticActivityLoading: Record<ReadonlyReportField, boolean> = {
+    wm: wmActivity.isLoading,
+    loker: lockerActivity.isLoading,
+    konversi_promo: promoConversionActivity.isLoading,
+    konversi_regular: regularConversionActivity.isLoading,
+    renewal: renewalActivity.isLoading,
+    product: productActivity.isLoading,
+    sales: salesActivity.isLoading,
+  };
+  const isAutomaticActivitiesLoading = Object.values(
+    automaticActivityLoading,
+  ).some(Boolean);
+  const isAutomaticActivitiesError = [
+    wmActivity,
+    lockerActivity,
+    promoConversionActivity,
+    regularConversionActivity,
+    renewalActivity,
+    productActivity,
+    salesActivity,
+  ].some((query) => query.isError);
+  const savedSales = Number(savedReport?.sales) || 0;
+  const automaticSyncKey = `${reportDate}:${savedSales}:${automaticActivityPayload.wm}:${automaticActivityPayload.loker}:${automaticActivityPayload.konversi_promo}:${automaticActivityPayload.konversi_regular}:${automaticActivityPayload.renewal}:${automaticActivityPayload.product}:${automaticActivityPayload.sales}:${automaticActivityPayload.total_bayar}`;
+
+  React.useEffect(() => {
+    if (
+      !savedReport ||
+      isAutomaticActivitiesLoading ||
+      isAutomaticActivitiesError ||
+      isSynchronizingAutomaticActivities ||
+      savedSales === automaticActivityPayload.sales ||
+      automaticSyncAttemptRef.current === automaticSyncKey
+    ) {
+      return;
+    }
+
+    automaticSyncAttemptRef.current = automaticSyncKey;
+    void updateAutomaticReport(automaticActivityPayload).catch(() => {
+      // Sinkronisasi dapat dicoba kembali saat screen dibuka atau data berubah.
+    });
+  }, [
+    automaticActivityPayload,
+    automaticSyncKey,
+    isAutomaticActivitiesError,
+    isAutomaticActivitiesLoading,
+    isSynchronizingAutomaticActivities,
+    savedReport,
+    savedSales,
+    updateAutomaticReport,
+  ]);
+  const updatePayload = savedReport
+    ? getUpdatePayload(report, savedReport, automaticActivityPayload)
+    : undefined;
+  const hasChanges = Boolean(
+    updatePayload && Object.keys(updatePayload).length > 0,
+  );
+  const isSaving =
+    isCreating || isUpdating || isSynchronizingAutomaticActivities;
   const displayDate = new Intl.DateTimeFormat("id-ID", {
     weekday: "long",
     day: "2-digit",
@@ -463,10 +597,28 @@ export default function DailyCoachReportScreen() {
       );
       return;
     }
+    if (isAutomaticActivitiesLoading) {
+      Alert.alert(
+        "Aktivitas masih dimuat",
+        "Tunggu hingga seluruh Aktivitas Otomatis selesai dimuat sebelum menyimpan report.",
+      );
+      return;
+    }
+    if (isAutomaticActivitiesError) {
+      Alert.alert(
+        "Aktivitas belum lengkap",
+        "Sebagian Aktivitas Otomatis gagal dimuat. Muat ulang halaman sebelum menyimpan report.",
+      );
+      return;
+    }
 
     try {
       if (savedReport) {
-        const changedFields = getUpdatePayload(report, savedReport);
+        const changedFields = getUpdatePayload(
+          report,
+          savedReport,
+          automaticActivityPayload,
+        );
         if (Object.keys(changedFields).length === 0) {
           Alert.alert(
             "Belum ada perubahan",
@@ -483,6 +635,7 @@ export default function DailyCoachReportScreen() {
         const payload: CreatePerformanceStaffReportPayload = {
           member_club_id: memberClubId,
           ...numericPayload,
+          ...automaticActivityPayload,
           lead_guespass: report.lead_guespass.trim(),
         };
         await createReport(payload);
@@ -543,6 +696,29 @@ export default function DailyCoachReportScreen() {
               </View>
             </View>
           </View>
+
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Lihat riwayat report harian"
+            onPress={() =>
+              router.push("/user/daily-report-history" as unknown as Href)
+            }
+            className="mt-4 flex-row items-center rounded-2xl border border-purple-100 bg-white p-4 active:bg-purple-50"
+          >
+            <View className="h-11 w-11 items-center justify-center rounded-2xl bg-purple-100">
+              <Ionicons name="time-outline" size={22} color="#6F3FA0" />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="font-black text-slate-900">
+                Riwayat Report Harian
+              </Text>
+              <Text className="mt-1 text-xs leading-5 text-slate-500">
+                Lihat report tanggal sebelumnya atau simpan aktivitas otomatis
+                jika report belum tersedia.
+              </Text>
+            </View>
+            <Ionicons name="chevron-forward" size={19} color="#6F3FA0" />
+          </Pressable>
 
           <Pressable
             accessibilityRole="button"
@@ -658,184 +834,222 @@ export default function DailyCoachReportScreen() {
                 </View>
               </View>
 
-              {savedReport ? (
-                <View className="mt-5 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
-                  <View className="flex-row items-start">
-                    <View className="h-11 w-11 items-center justify-center rounded-2xl bg-slate-100">
-                      <Ionicons
-                        name="lock-closed-outline"
-                        size={21}
-                        color="#64748B"
-                      />
-                    </View>
-                    <View className="ml-3 flex-1">
-                      <Text className="text-lg font-black text-slate-900">
-                        Aktivitas Otomatis
-                      </Text>
-                      <Text className="mt-1 text-xs leading-5 text-slate-500">
-                        Data berikut dihitung oleh sistem dan tidak dapat diedit
-                        dari report harian.
-                      </Text>
-                    </View>
-                    <View className="rounded-full bg-slate-100 px-2.5 py-1">
-                      <Text className="text-[10px] font-bold uppercase text-slate-600">
-                        Hanya dibaca
-                      </Text>
-                    </View>
+              <View className="mt-5 rounded-3xl border border-slate-100 bg-white p-4 shadow-sm">
+                <View className="flex-row items-start">
+                  <View className="h-11 w-11 items-center justify-center rounded-2xl bg-slate-100">
+                    <Ionicons
+                      name="lock-closed-outline"
+                      size={21}
+                      color="#64748B"
+                    />
                   </View>
-
-                  <View className="mt-4 flex-row flex-wrap justify-between">
-                    {READONLY_REPORT_ITEMS.map((item) => {
-                      const value = Number(savedReport[item.field]);
-                      const displayValue = Number.isFinite(value) ? value : 0;
-                      const canViewDetails = [
-                        "wm",
-                        "renewal",
-                        "konversi_promo",
-                        "konversi_regular",
-                        "product",
-                        "loker",
-                      ].includes(item.field);
-                      const detailLabel =
-                        item.field === "wm"
-                          ? "member yang melakukan Weigh & Measure"
-                          : item.field === "renewal"
-                            ? "aktivitas renewal"
-                            : item.field === "konversi_promo"
-                              ? "aktivitas konversi promo"
-                              : item.field === "konversi_regular"
-                                ? "aktivitas konversi regular"
-                                : item.field === "product"
-                                  ? "transaksi product"
-                                  : "transaksi loker";
-
-                      return (
-                        <Pressable
-                          key={item.field}
-                          accessibilityRole={
-                            canViewDetails ? "button" : undefined
-                          }
-                          accessibilityLabel={
-                            canViewDetails
-                              ? `Lihat ${displayValue} ${detailLabel}`
-                              : undefined
-                          }
-                          disabled={!canViewDetails}
-                          onPress={() => {
-                            if (item.field === "wm") {
-                              router.push({
-                                pathname: "/user/daily-report-wm",
-                                params: { reportDate: activityReportDate },
-                              });
-                              return;
-                            }
-                            if (item.field === "renewal") {
-                              router.push({
-                                pathname: "/user/daily-report-renewal",
-                                params: { reportDate: activityReportDate },
-                              });
-                              return;
-                            }
-                            if (item.field === "konversi_regular") {
-                              router.push({
-                                pathname:
-                                  "/user/daily-report-regular-conversion",
-                                params: { reportDate: activityReportDate },
-                              });
-                              return;
-                            }
-                            if (item.field === "konversi_promo") {
-                              router.push({
-                                pathname: "/user/daily-report-promo-conversion",
-                                params: { reportDate: activityReportDate },
-                              });
-                              return;
-                            }
-                            if (item.field === "product") {
-                              router.push({
-                                pathname: "/user/daily-report-product",
-                                params: { reportDate: activityReportDate },
-                              });
-                              return;
-                            }
-                            if (item.field === "loker") {
-                              router.push({
-                                pathname: "/user/daily-report-locker",
-                                params: { reportDate: activityReportDate },
-                              });
-                            }
-                          }}
-                          className={`mb-3 w-[48.5%] rounded-2xl p-3 ${
-                            canViewDetails
-                              ? "border border-purple-200 bg-purple-50 active:bg-purple-100"
-                              : "bg-slate-50"
-                          }`}
-                        >
-                          <View className="flex-row items-center">
-                            <View className="h-9 w-9 items-center justify-center rounded-xl bg-white">
-                              <Ionicons
-                                name={item.icon}
-                                size={18}
-                                color="#6F3FA0"
-                              />
-                            </View>
-                            {canViewDetails ? (
-                              <Ionicons
-                                name="chevron-forward"
-                                size={16}
-                                color="#6F3FA0"
-                                style={{ marginLeft: "auto" }}
-                              />
-                            ) : (
-                              <Ionicons
-                                name="lock-closed"
-                                size={11}
-                                color="#94A3B8"
-                                style={{ marginLeft: "auto" }}
-                              />
-                            )}
-                          </View>
-                          <Text className="mt-3 text-2xl font-black text-slate-900">
-                            {displayValue.toLocaleString("id-ID")}
-                          </Text>
-                          <Text className="mt-1 text-xs font-bold text-slate-700">
-                            {item.label}
-                          </Text>
-                          <Text
-                            numberOfLines={2}
-                            className="mt-1 text-[10px] leading-4 text-slate-500"
-                          >
-                            {item.description}
-                          </Text>
-                          {canViewDetails ? (
-                            <View className="mt-2 flex-row items-center border-t border-purple-100 pt-2">
-                              <Ionicons
-                                name="people-outline"
-                                size={13}
-                                color="#6F3FA0"
-                              />
-                              <Text className="ml-1 text-[10px] font-bold text-purple-700">
-                                {item.field === "wm"
-                                  ? "Lihat daftar member"
-                                  : item.field === "renewal"
-                                    ? "Lihat detail renewal"
-                                    : [
-                                          "konversi_promo",
-                                          "konversi_regular",
-                                        ].includes(item.field)
-                                      ? "Lihat detail konversi"
-                                      : item.field === "product"
-                                        ? "Lihat transaksi product"
-                                        : "Lihat transaksi loker"}
-                              </Text>
-                            </View>
-                          ) : null}
-                        </Pressable>
-                      );
-                    })}
+                  <View className="ml-3 flex-1">
+                    <Text className="text-lg font-black text-slate-900">
+                      Aktivitas Otomatis
+                    </Text>
+                    <Text className="mt-1 text-xs leading-5 text-slate-500">
+                      {savedReport
+                        ? "Data berikut dihitung oleh sistem dan tidak dapat diedit dari report harian."
+                        : "Data berikut dihitung oleh sistem dan akan disertakan saat report hari ini dibuat."}
+                    </Text>
+                  </View>
+                  <View
+                    className={`rounded-full px-2.5 py-1 ${
+                      isSynchronizingAutomaticActivities
+                        ? "bg-amber-100"
+                        : "bg-slate-100"
+                    }`}
+                  >
+                    <Text
+                      className={`text-[10px] font-bold uppercase ${
+                        isSynchronizingAutomaticActivities
+                          ? "text-amber-700"
+                          : "text-slate-600"
+                      }`}
+                    >
+                      {isSynchronizingAutomaticActivities
+                        ? "Menyinkronkan"
+                        : "Hanya dibaca"}
+                    </Text>
                   </View>
                 </View>
-              ) : null}
+
+                <View className="mt-4 flex-row flex-wrap justify-between">
+                  {READONLY_REPORT_ITEMS.map((item) => {
+                    const displayValue = automaticActivityTotals[item.field];
+                    const isLoadingActivity =
+                      automaticActivityLoading[item.field];
+                    const canViewDetails = [
+                      "wm",
+                      "renewal",
+                      "konversi_promo",
+                      "konversi_regular",
+                      "product",
+                      "loker",
+                      "sales",
+                    ].includes(item.field);
+                    const detailLabel =
+                      item.field === "wm"
+                        ? "member yang melakukan Weigh & Measure"
+                        : item.field === "renewal"
+                          ? "aktivitas renewal"
+                          : item.field === "konversi_promo"
+                            ? "aktivitas konversi promo"
+                            : item.field === "konversi_regular"
+                              ? "aktivitas konversi regular"
+                              : item.field === "product"
+                                ? "transaksi product"
+                                : item.field === "loker"
+                                  ? "transaksi loker"
+                                  : "ringkasan sales";
+
+                    return (
+                      <Pressable
+                        key={item.field}
+                        accessibilityRole={
+                          canViewDetails ? "button" : undefined
+                        }
+                        accessibilityLabel={
+                          canViewDetails
+                            ? `Lihat ${displayValue} ${detailLabel}`
+                            : undefined
+                        }
+                        disabled={!canViewDetails}
+                        onPress={() => {
+                          if (item.field === "wm") {
+                            router.push({
+                              pathname: "/user/daily-report-wm",
+                              params: { reportDate: activityReportDate },
+                            });
+                            return;
+                          }
+                          if (item.field === "renewal") {
+                            router.push({
+                              pathname: "/user/daily-report-renewal",
+                              params: { reportDate: activityReportDate },
+                            });
+                            return;
+                          }
+                          if (item.field === "konversi_regular") {
+                            router.push({
+                              pathname: "/user/daily-report-regular-conversion",
+                              params: { reportDate: activityReportDate },
+                            });
+                            return;
+                          }
+                          if (item.field === "konversi_promo") {
+                            router.push({
+                              pathname: "/user/daily-report-promo-conversion",
+                              params: { reportDate: activityReportDate },
+                            });
+                            return;
+                          }
+                          if (item.field === "product") {
+                            router.push({
+                              pathname: "/user/daily-report-product",
+                              params: { reportDate: activityReportDate },
+                            });
+                            return;
+                          }
+                          if (item.field === "loker") {
+                            router.push({
+                              pathname: "/user/daily-report-locker",
+                              params: { reportDate: activityReportDate },
+                            });
+                            return;
+                          }
+                          if (item.field === "sales") {
+                            router.push({
+                              pathname: "/user/daily-report-sales",
+                              params: { reportDate: activityReportDate },
+                            } as unknown as Href);
+                          }
+                        }}
+                        className={`mb-3 w-[48.5%] rounded-2xl p-3 ${
+                          canViewDetails
+                            ? "border border-purple-200 bg-purple-50 active:bg-purple-100"
+                            : "bg-slate-50"
+                        }`}
+                      >
+                        <View className="flex-row items-center">
+                          <View className="h-9 w-9 items-center justify-center rounded-xl bg-white">
+                            <Ionicons
+                              name={item.icon}
+                              size={18}
+                              color="#6F3FA0"
+                            />
+                          </View>
+                          {canViewDetails ? (
+                            <Ionicons
+                              name="chevron-forward"
+                              size={16}
+                              color="#6F3FA0"
+                              style={{ marginLeft: "auto" }}
+                            />
+                          ) : (
+                            <Ionicons
+                              name="lock-closed"
+                              size={11}
+                              color="#94A3B8"
+                              style={{ marginLeft: "auto" }}
+                            />
+                          )}
+                        </View>
+                        {isLoadingActivity ? (
+                          <View className="mt-3 h-7 items-start justify-center">
+                            <ActivityIndicator size="small" color="#6F3FA0" />
+                          </View>
+                        ) : (
+                          <Text
+                            numberOfLines={1}
+                            adjustsFontSizeToFit
+                            className="mt-3 text-2xl font-black text-slate-900"
+                          >
+                            {formatAutomaticActivityValue(
+                              item.field,
+                              displayValue,
+                            )}
+                          </Text>
+                        )}
+                        <Text className="mt-1 text-xs font-bold text-slate-700">
+                          {item.label}
+                        </Text>
+                        <Text
+                          numberOfLines={2}
+                          className="mt-1 text-[10px] leading-4 text-slate-500"
+                        >
+                          {item.description}
+                        </Text>
+                        {canViewDetails ? (
+                          <View className="mt-2 flex-row items-center border-t border-purple-100 pt-2">
+                            <Ionicons
+                              name="people-outline"
+                              size={13}
+                              color="#6F3FA0"
+                            />
+                            <Text className="ml-1 text-[10px] font-bold text-purple-700">
+                              {item.field === "wm"
+                                ? "Lihat daftar member"
+                                : item.field === "renewal"
+                                  ? "Lihat detail renewal"
+                                  : [
+                                        "konversi_promo",
+                                        "konversi_regular",
+                                      ].includes(item.field)
+                                    ? "Lihat detail konversi"
+                                    : item.field === "product"
+                                      ? "Lihat transaksi product"
+                                      : item.field === "loker"
+                                        ? "Lihat transaksi loker"
+                                        : "Lihat ringkasan sales"}
+                            </Text>
+                          </View>
+                        ) : null}
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              </View>
 
               {REPORT_SECTIONS.map((section) => (
                 <View
@@ -923,19 +1137,21 @@ export default function DailyCoachReportScreen() {
                 accessibilityRole="button"
                 disabled={
                   isSaving ||
+                  isAutomaticActivitiesLoading ||
                   !memberClubId ||
                   (Boolean(savedReport) && !hasChanges)
                 }
                 onPress={() => void submitReport()}
                 className={`mt-6 flex-row items-center justify-center rounded-2xl bg-purple-700 py-4 active:bg-purple-800 ${
                   isSaving ||
+                  isAutomaticActivitiesLoading ||
                   !memberClubId ||
                   (Boolean(savedReport) && !hasChanges)
                     ? "opacity-50"
                     : ""
                 }`}
               >
-                {isSaving ? (
+                {isSaving || isAutomaticActivitiesLoading ? (
                   <ActivityIndicator color="#FFFFFF" />
                 ) : (
                   <>
@@ -945,11 +1161,13 @@ export default function DailyCoachReportScreen() {
                       color="#FFFFFF"
                     />
                     <Text className="ml-2 text-base font-bold text-white">
-                      {savedReport
-                        ? hasChanges
-                          ? "Simpan Perubahan"
-                          : "Belum Ada Perubahan"
-                        : "Buat Report Hari Ini"}
+                      {isAutomaticActivitiesLoading
+                        ? "Memuat Aktivitas Otomatis"
+                        : savedReport
+                          ? hasChanges
+                            ? "Simpan Perubahan"
+                            : "Belum Ada Perubahan"
+                          : "Buat Report Hari Ini"}
                     </Text>
                   </>
                 )}

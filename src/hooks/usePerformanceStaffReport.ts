@@ -29,6 +29,9 @@ export interface PerformanceStaffReport {
   renewal?: number | null;
   product?: number | null;
   sales?: number | null;
+  total_bayar?: number | null;
+  persen_call?: string | null;
+  persen_su?: string | null;
 }
 
 export interface PerformanceStaffPrintoutItem extends PerformanceStaffReport {
@@ -179,6 +182,15 @@ export interface PerformanceStaffLockerActivity {
   response: PerformanceStaffLockerActivityRecord[];
 }
 
+export interface PerformanceStaffSalesActivity {
+  konversi_promo: number;
+  konversi_regular: number;
+  locker: number;
+  product: number;
+  renewal: number;
+  total_bayar: number;
+}
+
 export type EditablePerformanceStaffReport = Omit<
   PerformanceStaffReport,
   | "member_club_id"
@@ -190,13 +202,31 @@ export type EditablePerformanceStaffReport = Omit<
   | "renewal"
   | "product"
   | "sales"
+  | "total_bayar"
+  | "persen_call"
+  | "persen_su"
 >;
 
-export type CreatePerformanceStaffReportPayload =
-  EditablePerformanceStaffReport & { member_club_id: string | number };
+export interface PerformanceStaffAutomaticActivityPayload {
+  wm: number;
+  loker: number;
+  konversi_promo: number;
+  konversi_regular: number;
+  renewal: number;
+  product: number;
+  sales: number;
+  total_bayar: number;
+}
 
-export type UpdatePerformanceStaffReportPayload =
-  Partial<EditablePerformanceStaffReport>;
+export type CreatePerformanceStaffReportPayload =
+  EditablePerformanceStaffReport &
+    PerformanceStaffAutomaticActivityPayload & {
+      member_club_id: string | number;
+    };
+
+export type UpdatePerformanceStaffReportPayload = Partial<
+  EditablePerformanceStaffReport & PerformanceStaffAutomaticActivityPayload
+>;
 
 interface PerformanceStaffReportResponse {
   response?: PerformanceStaffReport | null;
@@ -232,6 +262,10 @@ interface PerformanceStaffPromoConversionActivityResponse {
 interface PerformanceStaffLockerActivityResponse {
   total?: number;
   response?: PerformanceStaffLockerActivityRecord[] | null;
+}
+
+interface PerformanceStaffSalesActivityResponse {
+  response?: Partial<PerformanceStaffSalesActivity> | null;
 }
 
 const REPORT_QUERY_KEY = "performance-staff-report";
@@ -438,6 +472,55 @@ export const usePerformanceStaffLockerActivity = (reportDate?: string) =>
           ? Number(data.total)
           : activities.length,
         response: activities,
+      };
+    },
+  });
+
+export const usePerformanceStaffSalesActivity = (reportDate?: string) =>
+  useQuery<PerformanceStaffSalesActivity | null>({
+    queryKey: ["performance-staff", "activity", "sales", reportDate],
+    enabled: Boolean(reportDate),
+    queryFn: async ({ signal }) => {
+      const { data } = await api.get<PerformanceStaffSalesActivityResponse>(
+        `/performance-staff/activity/sales/${encodeURIComponent(reportDate!)}`,
+        { signal },
+      );
+
+      if (
+        !data.response ||
+        typeof data.response !== "object" ||
+        Array.isArray(data.response)
+      ) {
+        return null;
+      }
+
+      const salesFields: (keyof PerformanceStaffSalesActivity)[] = [
+        "konversi_promo",
+        "konversi_regular",
+        "locker",
+        "product",
+        "renewal",
+        "total_bayar",
+      ];
+      const hasSalesData = salesFields.some(
+        (field) =>
+          data.response?.[field] !== null &&
+          data.response?.[field] !== undefined,
+      );
+      if (!hasSalesData) return null;
+
+      const toNumber = (value: unknown): number => {
+        const number = Number(value);
+        return Number.isFinite(number) ? number : 0;
+      };
+
+      return {
+        konversi_promo: toNumber(data.response.konversi_promo),
+        konversi_regular: toNumber(data.response.konversi_regular),
+        locker: toNumber(data.response.locker),
+        product: toNumber(data.response.product),
+        renewal: toNumber(data.response.renewal),
+        total_bayar: toNumber(data.response.total_bayar),
       };
     },
   });
